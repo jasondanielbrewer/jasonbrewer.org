@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#000000">
 <title>jasonbrewer.org</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&display=swap">
 <style>
   :root {
     --dot: #f0f0f0;           /* the color under the dot, replaced live */
@@ -14,7 +13,7 @@
     --ink: #f0f0f0;           /* text: the dot's color in night mode, black or white otherwise */
     --line: #000;             /* dot outline: black or white by day, black in night mode */
     --tick-room: 0px;         /* how far ENERGY / MOOD move down when the axis numbers show */
-    --font: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the page font, switched by clicking the site name */
+    --font: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the page font */
     --lab-fs: 14px;           /* font size of ENERGY / MOOD, set by the script */
     --cap: 0.72;              /* capital-letter height as a fraction of the font size, measured by the script */
     --size: min(33.333vh, calc(100vw - 48px));   /* refined by the script */
@@ -154,12 +153,7 @@
   :root.ticks #block { transform: translateY(var(--tick-room)); }
   @media (prefers-reduced-motion: reduce) { #block { transition: none; } }
 
-  /* invisible button laid over the site name so it can be clicked, tapped or reached by keyboard */
-  #site {
-    position: fixed; margin: 0; padding: 0; border: 0; background: none;
-    color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent;
-  }
-  #site:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; border-radius: 6px; }
+  #site { position: fixed; }   /* covers the site name so a click on it does nothing at all */
 </style>
 </head>
 <body>
@@ -175,7 +169,7 @@
   </g>
 </svg>
 <div id="safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
-<button id="site" type="button" aria-pressed="false" aria-label="jasonbrewer.org: switch the font"></button>
+<div id="site" aria-hidden="true"></div>
 <button id="night" class="switch" type="button" role="switch" aria-checked="true"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
 <button id="key" class="switch" type="button" role="switch" aria-checked="false"><span class="track" aria-hidden="true"><span class="thumb"></span></span><span class="words">SHOW KEY</span></button>
 <button id="hide" class="switch" type="button" role="switch" aria-checked="false" aria-label="Hide controls"><span class="words">HIDE CONTROLS</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
@@ -210,12 +204,8 @@
   }
 
   /* ---------- text ---------- */
-  var FONTS = {
-    geist:    '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    alegreya: '"Alegreya", Georgia, "Times New Roman", serif'
-  };
-  var fontName = 'geist';
-  var FAMILY = FONTS[fontName];   // the stack used for both drawing and measuring
+  // the page font: the stack used for both drawing and measuring
+  var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   var TITLE = 'How are you feeling?';
   var tTitle  = document.getElementById('t-title');
   var tSite   = document.getElementById('t-site');
@@ -318,7 +308,7 @@
     var site = measure(tSite.textContent, 400);
     var fsS = fsSite;
     place(tSite, edgeLeft + 16 + site.left * fsS, edgeTop + 16 + site.asc * fsS, fsS);
-    siteBtn.style.left   = (edgeLeft + 16 - 8) + 'px';              // its click area, a little larger than the letters
+    siteBtn.style.left   = (edgeLeft + 16 - 8) + 'px';              // the area over its letters where clicks do nothing
     siteBtn.style.top    = (edgeTop + 16 - 8) + 'px';
     siteBtn.style.width  = ((site.left + site.right) * fsS + 16) + 'px';
     siteBtn.style.height = ((site.asc + site.desc) * fsS + 16) + 'px';
@@ -647,7 +637,7 @@
   document.addEventListener('pointerdown', function (e) {
     if (activeId !== null) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    if (e.target && e.target.closest && e.target.closest('button')) return;
+    if (e.target && e.target.closest && e.target.closest('button, #site')) return;
     activeId = e.pointerId;
     try { field.setPointerCapture(e.pointerId); } catch (err) {}
     dot.classList.add('dragging');
@@ -714,7 +704,7 @@
   // re-fit the text once the font in use has arrived
   function fontsArrived() {
     if (!(document.fonts && document.fonts.load)) return;
-    var family = fontName === 'alegreya' ? 'Alegreya' : 'Geist';
+    var family = 'Geist';
     var sample = TITLE + '0123456789MOODENERGYNIGHTHIDECONTROLSSHOWKEY' + tSite.textContent;
     ['400', '700'].forEach(function (w) {
       document.fonts.load(w + ' 16px "' + family + '"', sample).then(layout, function () {});
@@ -723,20 +713,8 @@
   }
   fontsArrived();
 
-  /* ---------- site name: Geist <-> Alegreya for the whole page ---------- */
-  function setFont(name) {
-    fontName = name;
-    FAMILY = FONTS[name];
-    root.style.setProperty('--font', FAMILY);
-    siteBtn.setAttribute('aria-pressed', name === 'alegreya' ? 'true' : 'false');
-    layout();          // everything is measured again in the new font
-    fontsArrived();    // ...and once more when its files have loaded
-  }
-  siteBtn.addEventListener('click', function () {
-    setFont(fontName === 'geist' ? 'alegreya' : 'geist');
-    try { localStorage.setItem('page-font', fontName); } catch (err) {}   // remembered on this device
-  });
-  try { if (localStorage.getItem('page-font') === 'alegreya') setFont('alegreya'); } catch (err) {}
+  // an earlier version let a click on the site name switch fonts and remembered the choice; forget it
+  try { localStorage.removeItem('page-font'); } catch (err) {}
 
   if (img.complete && img.naturalWidth) loadPixels();
   else img.addEventListener('load', loadPixels);
