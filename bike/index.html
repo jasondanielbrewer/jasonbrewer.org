@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bike Fit Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>
 [hidden]{display:none!important}
 img{max-width:100%}
@@ -30,12 +30,18 @@ h1,h2,h3,p,dl,dd{margin:0}
 
 .app{position:relative;flex:1;min-height:0;display:grid;--pw:max(280px,min(var(--panel-w,384px),100% - 340px));grid-template-columns:var(--pw) minmax(0,1fr)}
 
-/* Site title, as on jasonbrewer.org: Geist regular, its letters 16px from the top and left edges, sized from the window
-   by the same rule that site uses (about 0.068 of a third of the window height, or of the width on narrow screens). */
-.site{flex:none;background:var(--panel);border-bottom:1px solid var(--line);padding:calc(16px - .11em) 16px 15px;
-  font:400 clamp(17px,calc(.0681*min(33.333vh,100vw - 2*max(24px,6vw))),30px)/1 var(--font);text-rendering:geometricPrecision}
-.site a{color:var(--ink);text-decoration:none;border-radius:3px}
-.site a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Site title: the same letters at the same size and in the same place as on the home page (jasonbrewer.org), whatever
+   the window's size or shape. The script just after the header repeats the home page's own sums and sets the size and
+   position; the letters are SVG text, as they are there, with an unseen link laid over them. The font size given here
+   is only a stand-in until that script has run. The bar is as tall as before: 32px plus .89 of the font size. */
+.site{position:relative;flex:none;background:var(--panel);border-bottom:1px solid var(--line);
+  height:calc(env(safe-area-inset-top,0px) + 32px + .89em);
+  font:400 clamp(9px,calc(.0694*min(33.333vh,100vw - 2*max(24px,6vw))),40px)/1 var(--font)}
+.site svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;user-select:none;-webkit-user-select:none}
+.site text{font-family:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-weight:400;
+  fill:var(--ink);text-anchor:start;text-rendering:geometricPrecision}
+.site a{position:absolute;color:var(--ink);border-radius:6px;-webkit-tap-highlight-color:transparent}
+.site a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
 /* Drag handle on the edge between the panel and the drawing. */
 .resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - 1px);width:11px;cursor:col-resize;touch-action:none;z-index:5}
 .resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;background:transparent;transition:background .12s}
@@ -214,7 +220,107 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 </style>
 </head>
 <body>
-<header class="site"><a href="https://www.jasonbrewer.org/">jasonbrewer.org</a></header>
+<header class="site" id="site-bar">
+  <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
+  <a id="site-link" href="https://www.jasonbrewer.org/" aria-label="jasonbrewer.org"></a>
+  <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
+</header>
+<script>
+/* Site title: sized and placed by the home page's own sums, so the name neither moves nor changes size when going
+   between the two pages. On the home page every text size is a fixed fraction of its square, so this works out how
+   big that square would be in this window and takes the same fraction of it.
+   It mirrors measure(), mobileFit(), layout() and layoutText() in /index.html, line for line where it can.
+   If the sizing there changes, change it here too. */
+(function () {
+  var bar  = document.getElementById('site-bar');
+  var name = document.getElementById('site-name');
+  var link = document.getElementById('site-link');
+  var safe = document.getElementById('site-safe');
+
+  var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  var TITLE = 'How are you feeling?';   // the home page's heading: as wide as its square
+  var PAD = 16, GAP_TOP = 12, GAP_BOTTOM = 14, NEAR = 0.09, BLOCK_GAP = 0.10;
+  var mctx = document.createElement('canvas').getContext('2d');
+
+  // Ink metrics of a string, as fractions of the font size.
+  function measure(text, weight) {
+    mctx.font = weight + ' 100px ' + FAMILY;
+    var m = mctx.measureText(text);
+    return {
+      left:  m.actualBoundingBoxLeft / 100,
+      right: m.actualBoundingBoxRight / 100,
+      asc:   m.actualBoundingBoxAscent / 100,
+      desc:  m.actualBoundingBoxDescent / 100
+    };
+  }
+
+  // The largest square the home page's mobile arrangement can hold.
+  function mobileFit(W, edgeTop, edgeBottom, edgeLeft) {
+    var t = measure(TITLE, 400), u = 1 / (t.left + t.right);
+    var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
+    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 700).asc;
+    var ten = measure('10', 400), site = measure(name.textContent, 400);
+    var fsL = 0.5625 * u, fsK = fsL * 2 / 3;
+    var clear = (0.05 + fsL * 0.35) * 2 / 3;
+    var keySide = clear + (ten.left + ten.right) * fsK + 0.7 * fsK + capH * fsK;
+    var keyDown = clear + digitH * fsK + 0.7 * fsK + capH * fsK;
+    var blockH  = digitH * 3 * u + 2.25 * capB * 0.45 * u + capB * fsL;
+    var above = { k: NEAR + (t.asc + t.desc) * u + (site.asc + site.desc) * 0.65625 * u, px: PAD + GAP_TOP };
+    var below = { k: BLOCK_GAP + keyDown + blockH + capH * fsL, px: PAD + GAP_BOTTOM };
+    return {
+      byWidth:  (W - 2 * (edgeLeft + PAD)) / (1 + 2 * keySide),
+      byHeight: (edgeBottom - edgeTop - above.px - below.px) / (1 + above.k + below.k)
+    };
+  }
+
+  function layout() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var cs = getComputedStyle(safe);
+    var edgeTop = parseFloat(cs.paddingTop) || 0;
+    var edgeBottom = H - (parseFloat(cs.paddingBottom) || 0);
+    var edgeLeft = parseFloat(cs.paddingLeft) || 0;
+
+    // the home page's square: 1/3 of the height on wide windows, fitted to the width on tall ones, blended in between
+    var k = Math.min(1, Math.max(0, (1 - W / H) / 0.25));
+    var mobile = k * k * (3 - 2 * k);
+    var margin = Math.max(24, W * 0.06);
+    var desk = Math.min(H / 3, W - 2 * margin);
+    var fit = mobileFit(W, edgeTop, edgeBottom, edgeLeft);
+    var mob = Math.min(fit.byWidth, fit.byHeight, Math.max(H / 3, 400));
+    var size = Math.max(21, Math.round(desk + (mob - desk) * mobile));
+
+    // the name's size as a fraction of that square
+    var t = measure(TITLE, 400);
+    var fs1 = size / (t.left + t.right);
+    var fsS = fs1 * (7 / 8) * 0.75;
+
+    // its ink sits 16px from the top and left edges; the link covers the letters and 8px around them
+    var site = measure(name.textContent, 400);
+    bar.style.fontSize = fsS + 'px';              // sets the bar's height
+    var r = bar.getBoundingClientRect();          // the SVG and the link are placed from the bar's corner
+    name.setAttribute('x', edgeLeft + 16 + site.left * fsS - r.left);
+    name.setAttribute('y', edgeTop + 16 + site.asc * fsS - r.top);
+    name.style.fontSize = fsS + 'px';
+    link.style.left   = (edgeLeft + 16 - 8 - r.left) + 'px';
+    link.style.top    = (edgeTop + 16 - 8 - r.top) + 'px';
+    link.style.width  = ((site.left + site.right) * fsS + 16) + 'px';
+    link.style.height = ((site.asc + site.desc) * fsS + 16) + 'px';
+  }
+
+  layout();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', layout);
+
+  // measure again once Geist has arrived
+  if (document.fonts && document.fonts.load) {
+    var sample = TITLE + '0123456789MOODENERGYH' + name.textContent;
+    ['400', '700'].forEach(function (w) {
+      document.fonts.load(w + ' 16px "Geist"', sample).then(layout, function () {});
+    });
+    if (document.fonts.ready) document.fonts.ready.then(layout);
+  }
+})();
+</script>
 
 <div class="app">
   <aside class="panel" id="panel" aria-label="Fit controls">
