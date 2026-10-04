@@ -1,9 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="night">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
 <title>Bike Fit Visualizer</title>
+<script>/* Night mode is on unless this device has switched it off (the same setting as the home page), decided before the first paint. */
+try { if (localStorage.getItem('night-mode') === '0') document.documentElement.classList.remove('night'); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>
@@ -11,16 +14,34 @@
 img{max-width:100%}
 /* Layout: scrolling control rail on the left in plain white, black and gray; bike and rider drawn
    to scale on a clear stage on the right, with fit readouts along the bottom edge.
-   One light look by design: white panel, black rider, red frame. */
+   Two looks: by day a white page, black rider, red frame; in night mode (the NIGHT MODE switch, upper right) a black
+   page with every lightness mirrored, so black becomes white and gray keeps its distance from the page. */
 :root{
   color-scheme:light;
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
   --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc; --scroll:#bdbdbd;
   --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e2e2e2; --slot:#d6d6d6;
   --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --pure:#ff000d; --full:#ff000d;
-  --rider:#000000; --rider-far:#b3b3b3;
+  --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --ok:#1c7f46; --warn:#a15f00; --bad:#bd3526;
+  --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
+  --lo:#000000; --hi:#ffffff; --gray-hi:#d9d9d9;  /* ends of the colour sliders' scales */
+  --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
+  --home-font:"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the home page's font stack */
   --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
+}
+
+/* Night mode: black page, text in the home page's night ink. Each fixed drawing colour is its day colour with the lightness mirrored;
+   the colours chosen under Appearance are mirrored the same way by the script (see applyColors). */
+:root.night{
+  color-scheme:dark;
+  --bg:#000000; --stage:#000000; --panel:#000000; --field:#000000; --page:#000000;
+  --ink:#ececec; --muted:#949494; --line:#2e2e2e; --scroll:#424242;   /* #ececec: the home page's night text, the colour under its dot at rest */
+  --accent:#ececec; --accent-ink:#000000; --accent-soft:#333333; --slot:#292929;
+  --metal:#717171; --part:#dddddd; --tire:#e3e3e3; --spin:#424242;
+  --rider:#ffffff;
+  --ok:#4cc27e; --warn:#e0992e; --bad:#ff6a5a;
+  --lo:#ffffff; --hi:#000000; --gray-hi:#262626;
 }
 
 html{box-sizing:border-box;height:100%}
@@ -42,6 +63,42 @@ h1,h2,h3,p,dl,dd{margin:0}
   fill:var(--ink);text-anchor:start;text-rendering:geometricPrecision}
 .site a{position:absolute;color:var(--ink);border-radius:6px;-webkit-tap-highlight-color:transparent}
 .site a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+/* The NIGHT MODE switch, copied from the home page: same markup, same rules, same place (its toggle 16px from the top and
+   right edges). Its words are the size of the home page's ENERGY / MOOD labels in regular weight. The toggle is sized in
+   the words' own units (em), to exactly the height of their capital letters, and stands on the same baseline as the words. */
+.switch {
+  --sw: calc(var(--cap) * 1em);
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
+  display: block;
+  margin: 0; padding: 10px 8px;
+  border: 0; background: none; color: var(--ink);
+  font: 400 var(--lab-fs)/1 var(--home-font);
+  text-rendering: geometricPrecision;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#night { top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: 10; }
+.switch:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; border-radius: 6px; }
+.switch .track {
+  display: inline-block; vertical-align: baseline;   /* an empty inline block sits exactly on the text baseline */
+  position: relative;
+  height: var(--sw); width: calc(var(--sw) * 1.75); box-sizing: border-box;
+  border: calc(var(--sw) * 0.12) solid currentColor; border-radius: 999px;
+}
+.switch .thumb {
+  position: absolute; top: 50%; left: calc(var(--sw) * 0.13);
+  width: calc(var(--sw) * 0.5); height: calc(var(--sw) * 0.5); border-radius: 50%;
+  background: currentColor;
+  transform: translateY(-50%);
+  transition: transform .15s;
+}
+.switch .words + .track, .switch .track + .words { margin-left: calc(var(--sw) * 0.8); }
+.switch[aria-checked="true"] .track { background: currentColor; }
+.switch[aria-checked="true"] .thumb { background: var(--page); transform: translate(calc(var(--sw) * 0.75), -50%); }
+@media (prefers-reduced-motion: reduce) { .switch .thumb { transition: none; } }
 /* Drag handle on the edge between the panel and the drawing. */
 .resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - 1px);width:11px;cursor:col-resize;touch-action:none;z-index:5}
 .resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;background:transparent;transition:background .12s}
@@ -56,8 +113,9 @@ h1,h2,h3,p,dl,dd{margin:0}
   scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
 .panel>*{flex:none}
 
-.sec{border-top:1px solid var(--line)}
-.sec:first-child{border-top:0}
+/* Space between sections: 45px from the end of one to the next heading (36px when the one above is collapsed). */
+.sec + .sec{margin-top:15px}
+.sec:not([open]) + .sec{margin-top:12px}
 .sec summary{display:flex;align-items:baseline;gap:10px;padding:12px 0;cursor:pointer;list-style:none;border-radius:4px}
 .sec summary::-webkit-details-marker{display:none}
 .sec summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
@@ -65,7 +123,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec[open] summary::before{transform:translateY(-5px) rotate(45deg)}
 .sec summary h2{font:600 20px/1.1 var(--font);letter-spacing:-.01em}
 .sec .sum{margin-left:auto;color:var(--muted);font:400 12px var(--font);font-variant-numeric:tabular-nums}
-.sec-body{display:flex;flex-direction:column;gap:16px;padding-bottom:18px}
+.sec-body{display:flex;flex-direction:column;gap:16px;padding:6px 0 18px}   /* 6px on top of the title's own 12px: 18px from a section title to its first line */
 
 .group{display:flex;flex-direction:column;gap:8px}
 .grp{font:600 11px/1.2 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -105,7 +163,13 @@ h1,h2,h3,p,dl,dd{margin:0}
 .slider{display:flex;flex-direction:column;gap:5px}
 .slider .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .slider output{font:500 14px var(--font);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;margin:0;accent-color:var(--accent)}
+input[type=range]{width:100%;margin:0;accent-color:var(--accent);box-shadow:none;filter:none}
+/* No shadows on sliders. Safari gives a range thumb a built-in drop shadow that survives appearance:none, so it is switched off by name
+   (one rule per engine: a selector the browser doesn't know would void the whole rule). */
+input[type=range]::-webkit-slider-thumb{box-shadow:none;filter:none}
+input[type=range]::-webkit-slider-runnable-track{box-shadow:none;filter:none}
+input[type=range]::-moz-range-thumb{box-shadow:none;filter:none}
+input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 
 .btn{font:500 13.5px var(--font);color:var(--ink);background:var(--field);border:1px solid var(--line);
   border-radius:6px;padding:6px 14px;cursor:pointer}
@@ -114,21 +178,23 @@ input[type=range]{width:100%;margin:0;accent-color:var(--accent)}
 .btn.link{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:500}
 :is(.btn,summary,input[type=range],.check input):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .group.sliders{gap:12px}
+/* Appearance: 28px between subsections (16px elsewhere), so each colour group reads as its own block. */
+#sec-appearance .sec-body{gap:28px}
 .grphead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
-.sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
+.sw-rider{background:var(--rider)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
    Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen. */
 .slot{display:flex;padding:3px;border-radius:999px;background:var(--slot)}
 .slot-hue{background:linear-gradient(to right,#f00 11px,#ff0 calc(11px + (100% - 22px)*.1667),#0f0 calc(11px + (100% - 22px)*.3333),#0ff calc(11px + (100% - 22px)*.5),#00f calc(11px + (100% - 22px)*.6667),#f0f calc(11px + (100% - 22px)*.8333),#f00 calc(100% - 11px))}
-.slot-sat{background:linear-gradient(to right,#fff 11px,var(--pure) calc(100% - 11px))}
-.slot-bri{background:linear-gradient(to right,#000 11px,var(--full) calc(100% - 11px))}
-.slot-gray{background:linear-gradient(to right,#000 11px,#d9d9d9 calc(100% - 11px))}
+.slot-sat{background:linear-gradient(to right,var(--hi) 11px,var(--pure) calc(100% - 11px))}
+.slot-bri{background:linear-gradient(to right,var(--lo) 11px,var(--full) calc(100% - 11px))}
+.slot-gray{background:linear-gradient(to right,var(--lo) 11px,var(--gray-hi) calc(100% - 11px))}
 .slot input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .slot input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .slot input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
-.slot input[type=range]::-moz-range-thumb{box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.slot input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
 .slot input[type=range]:focus-visible{outline-offset:5px}
 /* Plain sliders: a thin black line with a white, black-ringed handle sitting on it. */
 .rail{position:relative;display:flex;align-items:center;height:22px}
@@ -136,10 +202,10 @@ input[type=range]{width:100%;margin:0;accent-color:var(--accent)}
 .rail input[type=range]{-webkit-appearance:none;appearance:none;position:relative;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .rail input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .rail input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
-.rail input[type=range]::-moz-range-thumb{box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
 .rail input[type=range]:focus-visible{outline-offset:4px}
-.foot{border-top:1px solid var(--line);padding-top:14px;display:flex}
+.foot{padding-top:14px;display:flex}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
 
 /* ---------- stage ---------- */
@@ -196,11 +262,14 @@ svg .pedal{fill:var(--comp)}
 svg .pedal.far{fill:color-mix(in srgb,var(--comp) 55%,var(--stage))}
 svg .limb{stroke:var(--rider);fill:none;stroke-linecap:round}
 svg .limb.far{stroke:var(--rider-far)}
-svg .limbfill{fill:var(--rider);stroke:none}
-svg .limbfill.far{fill:var(--rider-far)}
+/* Rider edge line: a 3 mm outline that fades in (--rider-edge, 0 to 1, set by the script) as the rider's colour nears the page's,
+   as the frame's does. At 0 nothing is drawn. */
+svg .limbfill,svg .flesh{stroke:var(--ink);stroke-width:6;stroke-opacity:var(--rider-edge,0);stroke-linejoin:round;paint-order:stroke}
+svg .limbfill{fill:var(--rider)}
+svg .limbfill.far{fill:var(--rider-far);stroke:color-mix(in srgb,var(--ink) 30%,var(--stage))}
 svg .halo{stroke:var(--stage);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .flesh{fill:var(--rider)}
-svg .hand{stroke:var(--stage);stroke-width:9;paint-order:stroke;cursor:pointer}
+svg .hand{stroke:color-mix(in srgb,var(--ink) var(--rider-edge-pct,0%),var(--stage));stroke-opacity:1;stroke-width:9;paint-order:stroke;cursor:pointer}
 svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
 
@@ -223,6 +292,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 <header class="site" id="site-bar">
   <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
   <a id="site-link" href="https://www.jasonbrewer.org/" aria-label="jasonbrewer.org"></a>
+  <button id="night" class="switch" type="button" role="switch" aria-checked="true"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
   <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
 </header>
 <script>
@@ -230,12 +300,17 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
    between the two pages. On the home page every text size is a fixed fraction of its square, so this works out how
    big that square would be in this window and takes the same fraction of it.
    It mirrors measure(), mobileFit(), layout() and layoutText() in /index.html, line for line where it can.
-   If the sizing there changes, change it here too. */
+   If the sizing there changes, change it here too.
+   The NIGHT MODE switch is sized and placed the same way (layoutText() and placeSwitches() there), and switched by the
+   home page's own setNight(), with the same setting remembered under the same name, so the two pages agree. */
 (function () {
   var bar  = document.getElementById('site-bar');
   var name = document.getElementById('site-name');
   var link = document.getElementById('site-link');
   var safe = document.getElementById('site-safe');
+  var root = document.documentElement;
+  var nightBtn = document.getElementById('night');
+  var theme = document.querySelector('meta[name="theme-color"]');
 
   var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   var TITLE = 'How are you feeling?';   // the home page's heading: as wide as its square
@@ -305,7 +380,35 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     link.style.top    = (edgeTop + 16 - 8 - r.top) + 'px';
     link.style.width  = ((site.left + site.right) * fsS + 16) + 'px';
     link.style.height = ((site.asc + site.desc) * fsS + 16) + 'px';
+
+    // the switch's words are the size of the home page's labels, and its toggle as tall as their capitals
+    var fsL = fs1 * 0.45 * 1.25;
+    root.style.setProperty('--lab-fs', fsL + 'px');
+    root.style.setProperty('--cap', measure('H', 400).asc);
+    // the toggle sits the same distance from the top edge as from the right edge
+    var EDGE = 16;
+    nightBtn.style.top = '';
+    var nt = nightBtn.querySelector('.track').getBoundingClientRect();
+    nightBtn.style.top = (nightBtn.getBoundingClientRect().top + (edgeTop + EDGE) - nt.top) + 'px';
   }
+
+  /* ---------- night mode ---------- */
+  var night = false;
+  function setNight(on) {
+    night = on;
+    root.classList.toggle('night', on);
+    nightBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    if (theme) theme.setAttribute('content', on ? '#000' : '#fff');
+    document.dispatchEvent(new Event('nightchange'));   // the drawing's colours are worked out again
+  }
+  nightBtn.addEventListener('click', function () {
+    setNight(!night);
+    try { localStorage.setItem('night-mode', night ? '1' : '0'); } catch (err) {}   // remembered on this device
+  });
+  // night mode is on by default; a device that has switched it off keeps it off
+  var savedNight = null;
+  try { savedNight = localStorage.getItem('night-mode'); } catch (err) {}
+  setNight(savedNight !== '0');
 
   layout();
   window.addEventListener('resize', layout);
@@ -313,7 +416,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 
   // measure again once Geist has arrived
   if (document.fonts && document.fonts.load) {
-    var sample = TITLE + '0123456789MOODENERGYH' + name.textContent;
+    var sample = TITLE + '0123456789MOODENERGYNIGHTH' + name.textContent;
     ['400', '700'].forEach(function (w) {
       document.fonts.load(w + ' 16px "Geist"', sample).then(layout, function () {});
     });
@@ -326,7 +429,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
   <aside class="panel" id="panel" aria-label="Fit controls">
 
     <details class="sec" id="sec-body" open>
-      <summary><h2>Body</h2><span class="sum" id="sum-body"></span></summary>
+      <summary><h2>Your Body</h2><span class="sum" id="sum-body"></span></summary>
       <div class="sec-body">
         <div class="row2">
           <div class="ctl"><span class="cap" id="cap-units">Units</span>
@@ -406,6 +509,21 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     <details class="sec" id="sec-appearance" open>
       <summary><h2>Appearance</h2></summary>
       <div class="sec-body">
+        <div class="group sliders" id="grp-rider">
+          <div class="grphead"><h3 class="grp">Rider color</h3><i class="sw sw-rider" aria-hidden="true"></i></div>
+          <div class="slider">
+            <label class="cap" for="o-riderH">Hue</label>
+            <div class="slot slot-hue"><input id="o-riderH" type="range" min="0" max="359" step="1"></div>
+          </div>
+          <div class="slider">
+            <label class="cap" for="o-riderS">Saturation</label>
+            <div class="slot slot-sat"><input id="o-riderS" type="range" min="0" max="100" step="1"></div>
+          </div>
+          <div class="slider">
+            <label class="cap" for="o-riderB">Brightness</label>
+            <div class="slot slot-bri"><input id="o-riderB" type="range" min="0" max="100" step="1"></div>
+          </div>
+        </div>
         <div class="group sliders" id="grp-frame">
           <div class="grphead"><h3 class="grp">Frame color</h3><i class="sw sw-frame" aria-hidden="true"></i></div>
           <div class="slider">
@@ -441,6 +559,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <div class="slider">
             <div class="slot slot-gray"><input id="o-wheelGray" aria-label="Wheel color" type="range" min="0" max="100" step="1"></div>
           </div>
+          <div class="slider">
+            <div class="top"><label class="cap" for="o-rimDepth">Wheel depth</label><output id="o-rimDepth-out" for="o-rimDepth"></output></div>
+            <div class="rail"><input id="o-rimDepth" type="range" min="15" max="90" step="1"></div>
+          </div>
         </div>
         <div class="group sliders">
           <div class="grphead"><h3 class="grp">Components color</h3><i class="sw sw-comp" aria-hidden="true"></i></div>
@@ -450,11 +572,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         </div>
         <div class="slider">
           <div class="top"><label class="cap" for="o-tread">Tire tread</label><output id="o-tread-out" for="o-tread"></output></div>
-          <div class="rail"><input id="o-tread" type="range" min="0" max="100" step="1"></div>
-        </div>
-        <div class="slider">
-          <div class="top"><label class="cap" for="o-rimDepth">Wheel depth</label><output id="o-rimDepth-out" for="o-rimDepth"></output></div>
-          <div class="rail"><input id="o-rimDepth" type="range" min="15" max="90" step="1"></div>
+          <div class="rail"><input id="o-tread" type="range" min="0" max="100" step="25"></div>
         </div>
       </div>
     </details>
@@ -515,13 +633,18 @@ const RATIO = {
   m: { inseam: .470, thigh: .245, shank: .246, foot: .152, torso: .288, upperArm: .186, forearm: .187 },
   f: { inseam: .466, thigh: .245, shank: .244, foot: .148, torso: .290, upperArm: .183, forearm: .182 }
 };
-const averages = (h, sex) => { const o = {}; for (const k in RATIO[sex]) o[k] = Math.round(h * RATIO[sex][k]); return o; };
+// Standing height is a stack: ankle, lower leg, thigh, torso, then neck and head. The ankle (3.9%) and the neck and head (18.2%) are
+// fixed shares of height, which leaves STACK of it for lower leg + thigh + torso; those three always add up to exactly that.
+// Inseam runs alongside the leg (floor to crotch), so it grows and shrinks with thigh + lower leg.
+const STACK = .779;
+// Averages are whole millimetres; the torso takes up the rounding (under 2 mm) so the stack comes out exact.
+const averages = (h, sex) => { const o = {}; for (const k in RATIO[sex]) o[k] = Math.round(h * RATIO[sex][k]); o.torso = STACK * h - o.thigh - o.shank; return o; };
 const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stands this far above the top tube centreline
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130 };
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false,
-  frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18 };
+  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18 };
 let bike, body, opt, units, panelW = 384;
 function defaults() {
   bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in';
@@ -545,7 +668,7 @@ function restore(d) {
   if (!(d.v >= 6) && d.bike && Number.isFinite(d.bike.seatTube)) bike.seatTube += ST_TOP;
   if (bike.pinTT !== 'topTube') bike.pinTT = 'reach';
   if (bike.pinHT !== 'headLen') bike.pinHT = 'fork';
-  link();
+  link(); fitBody(); syncSaddle();
   // Settings remembered from before a default changed: drop the old default so the new one shows (a colour the user chose is kept).
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
@@ -554,6 +677,7 @@ function restore(d) {
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
   if (body.sex !== 'm' && body.sex !== 'f') body.sex = 'm';
   if (!['tops', 'hoods', 'drops'].includes(opt.hands)) opt.hands = 'hoods';
+  opt.tread = Math.round(clamp(opt.tread, 0, 100) / 25) * 25;   // tread has five stops; a value saved between two takes the nearer
   if (![622, 584, 559].includes(bike.rim)) bike.rim = 622;
 }
 // Nine frame numbers describe eight things, and the fork adds one more, so two pairs are tied together:
@@ -631,6 +755,33 @@ function bind(inp, o) {
   inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (Number.isFinite(v)) o.set(clamp(v, o.min(), o.max())); show(true); });
   shows.push(show);
 }
+// Fit a saved body to its height: legs and torso are scaled together, keeping their proportions.
+function fitBody() {
+  const L = body.thigh + body.shank, sum = L + body.torso; if (!(sum > 0)) return;
+  const k = STACK * body.height / sum;
+  body.thigh *= k; body.shank *= k; body.torso *= k; body.inseam += (k - 1) * L;
+}
+// Set one measurement (mm). Legs and torso trade against each other: a longer torso shortens thigh and lower leg in proportion,
+// a longer thigh, lower leg or inseam shortens the torso. Arms and feet are not part of the stack.
+function setPart(k, v) {
+  const b = body, L = b.thigh + b.shank;
+  if (k === 'torso' || k === 'inseam') {
+    const d = k === 'torso' ? b.torso - v : v - b.inseam, sc = (L + d) / L;   // d = how much the legs grow
+    b.thigh *= sc; b.shank *= sc; b.inseam += d; b.torso -= d;
+  } else if (k === 'thigh' || k === 'shank') { const d = v - b[k]; b[k] = v; b.inseam += d; b.torso -= d; }
+  else b[k] = v;
+}
+// The values (mm) a measurement can take right now without pushing itself or the ones that move with it out of their own limits.
+function partRange(k) {
+  const lim = j => BODY.find(f => f.k === j), f = lim(k), b = body, L = b.thigh + b.shank;
+  if (!['torso', 'inseam', 'thigh', 'shank'].includes(k)) return [f.min, f.max];
+  let lo = -Infinity, hi = Infinity; const need = (a, c) => { lo = Math.max(lo, a); hi = Math.min(hi, c); };   // limits on d, the growth of the legs
+  need(b.torso - lim('torso').max, b.torso - lim('torso').min); need(lim('inseam').min - b.inseam, lim('inseam').max - b.inseam);
+  if (k === 'thigh' || k === 'shank') need(f.min - b[k], f.max - b[k]);
+  else ['thigh', 'shank'].forEach(j => need(L * (lim(j).min / b[j] - 1), L * (lim(j).max / b[j] - 1)));
+  if (lo > hi) return [b[k], b[k]];
+  return k === 'torso' ? [b.torso - hi, b.torso - lo] : [b[k] + lo, b[k] + hi];
+}
 // Hamley's 109% rule: pedal axle at the bottom of the stroke to saddle top = 1.09 x inseam.
 function syncSaddle() { if (bike.autoSaddle) bike.saddleH = clamp(Math.round(1.09 * body.inseam - bike.crank), 550, 950); }
 function setHeight(mm) {
@@ -653,8 +804,8 @@ function buildPanel() {
   shows.push(() => { $('b-auto').checked = bike.autoSaddle; });
 
   $('body-fields').innerHTML = BODY.map(f => fieldHTML('p-' + f.k, { ...f, step: .5 }, '')).join('');
-  BODY.forEach(f => bind($('p-' + f.k), { d: 1, min: () => f.min / fac(), max: () => f.max / fac(), get: () => body[f.k] / fac(),
-    set: v => { body[f.k] = v * fac(); body.custom = true; if (f.k === 'inseam') { syncSaddle(); refresh(); } update(); } }));
+  BODY.forEach(f => bind($('p-' + f.k), { d: 1, min: () => partRange(f.k)[0] / fac(), max: () => partRange(f.k)[1] / fac(), get: () => body[f.k] / fac(),
+    set: v => { setPart(f.k, v * fac()); body.custom = true; syncSaddle(); refresh(); update(); } }));
   bind($('h-cm'), { d: 1, min: () => HMIN / 10, max: () => HMAX / 10, get: () => body.height / 10, set: v => setHeight(v * 10) });
 
   const hFt = $('h-ft'), hIn = $('h-in'), ftWrap = [hFt.closest('.inp'), hIn.closest('.inp')];
@@ -691,8 +842,8 @@ function buildPanel() {
     el.addEventListener('input', () => { opt[k] = +el.value; put(); update(); });
     shows.push(() => { el.value = opt[k]; put(); }); };
   range('cadence', v => v + ' rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
-  ['frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'wheelGray', 'compGray'].forEach(k => range(k));
-  range('tread', v => v === 0 ? 'None' : v < 34 ? 'Light' : v < 67 ? 'Medium' : 'Aggressive'); range('rimDepth', v => v + ' mm');
+  ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'wheelGray', 'compGray'].forEach(k => range(k));
+  range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart range('rimDepth', v => v + ' mm');
   ['ring', 'cog'].forEach(k => { const el = $('o-' + k);
     bind(el, { d: 0, min: () => +el.min, max: () => +el.max, get: () => opt[k], set: v => { opt[k] = Math.round(v); update(); } }); });
   $('o-angles').addEventListener('change', e => { opt.angles = e.target.checked; update(); });
@@ -1069,8 +1220,9 @@ function readouts() {
   $('sum-bike').textContent = `${Math.round(b.seatTube)} mm · ${{ 622: '700c', 584: '650b', 559: '26 in' }[b.rim]} × ${b.tire}`;
   $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + ' cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
   $('sum-options').textContent = `${opt.cadence} rpm · Hands on ${{ tops: 'bar tops', hoods: 'shifters', drops: 'drops' }[opt.hands]}`;
-  $('body-hint').textContent = body.custom ? 'You have changed some measurements from the averages for this height.'
-    : 'The other measurements are averages for this height. Change any of them to match your own.';
+  $('body-hint').textContent = (body.custom ? 'You have changed some measurements from the averages for this height.'
+    : 'The other measurements are averages for this height. Change any of them to match your own.') +
+    ' Legs and torso have to fit within your height, so lengthening one shortens the other.';
   $('body-reset').hidden = !body.custom;
 }
 // Appearance: frame colour from hue / saturation / brightness; wheels and components on a black-to-light-gray scale.
@@ -1078,17 +1230,27 @@ function hsb(h, s, v) { s /= 100; v /= 100;
   const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
   return '#' + [f(5), f(3), f(1)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const gray = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 217).toString(16).padStart(2, '0'); return '#' + x + x + x; };
-function applyColors() { const st = document.documentElement.style;
-  // The edge line fades in as the frame nears white: it starts at 15% saturation and 85% brightness and is solid by 5% and 95%.
-  const fade = (g, S, B) => { const pale = clamp((15 - S) / 10, 0, 1) * clamp((B - 85) / 10, 0, 1);
-    g.setAttribute('visibility', pale > 0 ? 'visible' : 'hidden'); g.setAttribute('opacity', Math.round(pale * 100) / 100); };
+// Night mode shows each chosen colour with its lightness mirrored and its hue kept: black becomes white, a dark blue a light
+// blue, and a pure red stays the same red. Moving all three channels by one amount does exactly that.
+const mirror = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), d = 255 - Math.max(...c) - Math.min(...c);
+  return '#' + c.map(x => (x + d).toString(16).padStart(2, '0')).join(''); };
+function applyColors() { const st = document.documentElement.style, tone = document.documentElement.classList.contains('night') ? mirror : c => c;
+  // The edge line fades in as the frame nears white (in night mode that same colour is drawn near black, on a black page):
+  // it starts at 15% saturation and 85% brightness and is solid by 5% and 95%.
+  const paleness = (S, B) => Math.round(clamp((15 - S) / 10, 0, 1) * clamp((B - 85) / 10, 0, 1) * 100) / 100;
+  const fade = (g, S, B) => { const pale = paleness(S, B);
+    g.setAttribute('visibility', pale > 0 ? 'visible' : 'hidden'); g.setAttribute('opacity', pale); };
   fade(E.olG, opt.frameS, opt.frameB); fade(E.barOL, opt.tapeS, opt.tapeB);
-  st.setProperty('--frame', hsb(opt.frameH, opt.frameS, opt.frameB));
-  st.setProperty('--tape', hsb(opt.tapeH, opt.tapeS, opt.tapeB));
+  // The rider gets the same edge line, by the same measure; the far-side limbs take their colour from the rider's in the style sheet.
+  const riderPale = paleness(opt.riderS, opt.riderB);
+  st.setProperty('--rider-edge', riderPale); st.setProperty('--rider-edge-pct', riderPale * 100 + '%');
+  st.setProperty('--rider', tone(hsb(opt.riderH, opt.riderS, opt.riderB)));
+  st.setProperty('--frame', tone(hsb(opt.frameH, opt.frameS, opt.frameB)));
+  st.setProperty('--tape', tone(hsb(opt.tapeH, opt.tapeS, opt.tapeB)));
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
-  [['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS]].forEach(([id, h, sat]) => {
-    $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
-  st.setProperty('--wheel', gray(opt.wheelGray)); st.setProperty('--comp', gray(opt.compGray)); }
+  [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS]].forEach(([id, h, sat]) => {
+    $(id).style.setProperty('--pure', tone(hsb(h, 100, 100))); $(id).style.setProperty('--full', tone(hsb(h, sat, 100))); });
+  st.setProperty('--wheel', tone(gray(opt.wheelGray))); st.setProperty('--comp', tone(gray(opt.compGray))); }
 function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); save(); }
 
 /* ---------- boot ---------- */
@@ -1099,6 +1261,7 @@ function start(d) {
   buildPanel(); buildScene(); unitUI(); refresh(true);
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { playing = false; $('play').textContent = 'Play'; }
   update();
+  document.addEventListener('nightchange', applyColors);   // the NIGHT MODE switch
   if (window.ResizeObserver) new ResizeObserver(fit).observe(svg);
   requestAnimationFrame(t => { last = t; document.body.classList.add('ready'); requestAnimationFrame(tick); });   // 'ready' turns on control transitions after the first paint
 }
