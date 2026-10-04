@@ -25,6 +25,7 @@ img{max-width:100%}
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --ok:#1c7f46; --warn:#a15f00; --bad:#bd3526;
   --crank:var(--comp);                          /* crank arms and pedals */
+  --rule:#000000;                               /* the line under the title bar: black, white in night mode */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff; --gray-hi:#d9d9d9;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
@@ -43,6 +44,7 @@ img{max-width:100%}
   --rider:#ffffff;
   --ok:#4cc27e; --warn:#e0992e; --bad:#ff6a5a;
   --lo:#ffffff; --hi:#000000; --gray-hi:#262626;
+  --rule:#ffffff;
 }
 
 html{box-sizing:border-box;height:100%}
@@ -56,7 +58,7 @@ h1,h2,h3,p,dl,dd{margin:0}
    the window's size or shape. The script just after the header repeats the home page's own sums and sets the size and
    position; the letters are SVG text, as they are there, with an unseen link laid over them. The font size given here
    is only a stand-in until that script has run. The bar is as tall as before: 32px plus .89 of the font size. */
-.site{position:relative;flex:none;background:var(--panel);border-bottom:1px solid var(--line);
+.site{position:relative;flex:none;background:var(--panel);border-bottom:1px solid var(--rule);
   height:calc(env(safe-area-inset-top,0px) + 32px + .89em);
   font:400 clamp(9px,calc(.0694*min(33.333vh,100vw - 2*max(24px,6vw))),40px)/1 var(--font)}
 .site svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;user-select:none;-webkit-user-select:none}
@@ -239,6 +241,15 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 
 /* ---------- drawing ---------- */
 svg .ground{stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+/* The angle of the hill, drawn between the level line and the sloping ground: a thin arc with an arrowhead at each end. */
+svg .incarc{fill:none;stroke:var(--ink);stroke-width:1.25;vector-effect:non-scaling-stroke}
+svg .inchead{fill:var(--ink);stroke:none}
+/* The ground line is the Incline control. Its handle looks like the other sliders' (a ringed dot on a thin line) and rides along
+   the line; an unseen band along the line makes the line itself easy to grab. */
+svg .inchit{stroke:transparent;stroke-width:90;stroke-linecap:round;pointer-events:stroke;cursor:pointer;touch-action:none}
+svg .incdot{fill:var(--field);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;cursor:grab;touch-action:none;outline:none}
+svg.keys .incdot:focus{stroke-width:3}   /* a heavier ring while it is being worked from the keyboard */
+svg.tilting .incdot,svg.tilting .inchit{cursor:grabbing}
 svg .tube{stroke:var(--frame);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tube.butt,svg .comp.butt{stroke-linecap:butt}
 svg .tubefill{fill:var(--frame);stroke:none}
@@ -279,6 +290,11 @@ svg .limbfill{fill:var(--rider)}
 svg .limbfill.far{fill:var(--rider-far);stroke:color-mix(in srgb,var(--ink) 30%,var(--stage))}
 svg .halo{stroke:var(--stage);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .flesh{fill:var(--rider)}
+/* The smiley: clicking the head puts a classic one on it, in black or white (--face), whichever stands out from the rider's colour. */
+svg .head{cursor:pointer}
+svg .face{pointer-events:none}
+svg .face .eye{fill:var(--face,#fff)}
+svg .face .smile{fill:none;stroke:var(--face,#fff);stroke-width:.1;stroke-linecap:round}
 svg .hand{stroke:color-mix(in srgb,var(--ink) var(--rider-edge-pct,0%),var(--stage));stroke-opacity:1;stroke-width:9;paint-order:stroke;cursor:pointer}
 svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
@@ -664,7 +680,7 @@ const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stands this far above the top tube centreline
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
-const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false,
+const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, incline: 0, smiley: false,
   riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off' };
 let bike, body, opt, units, bikeUnits, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 function defaults() {
@@ -693,12 +709,14 @@ function restore(d) {
   // Settings remembered from before a default changed: drop the old default so the new one shows (a colour the user chose is kept).
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
+  if (o.turbo === true && !Number.isFinite(o.incline)) o.incline = 15;   // saved with the old Turbo Mode button on: the same hill
   take(opt, o);
   if (d.units === 'cm' || d.units === 'in') units = d.units;
   if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
   if (body.sex !== 'm' && body.sex !== 'f') body.sex = 'm';
   if (!['tops', 'hoods', 'drops'].includes(opt.hands)) opt.hands = 'hoods';
+  opt.incline = clamp(opt.incline, 0, INCLINE_MAX);
   if (opt.ringStyle !== 'solid') opt.ringStyle = 'star';
   if (opt.disc !== 'on') opt.disc = 'off';
   opt.tread = Math.round(clamp(opt.tread, 0, 100) / 25) * 25;   // tread has five stops; a value saved between two takes the nearer
@@ -904,10 +922,10 @@ function buildPanel() {
   shows.push(() => { $('o-angles').checked = opt.angles; });
   $('o-scrub').addEventListener('input', e => { setPlaying(false); const t = rad(+e.target.value); wheelAng += deg(t - theta) * opt.ring / opt.cog; theta = t; drawFrame(); });
   // Any slider that shows a number takes a typed value: click the number, or press Enter with the slider in focus.
-  document.querySelectorAll('#panel .slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
+  document.querySelectorAll('.slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
     out.classList.add('typed'); out.title = 'Click to type a value'; });
-  $('panel').addEventListener('click', e => { const out = e.target.closest('output.typed'); if (out) typeValue($(out.getAttribute('for'))); });
-  $('panel').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input[type=range]') && $(e.target.id + '-out')?.classList.contains('typed')) { e.preventDefault(); typeValue(e.target); } });
+  document.addEventListener('click', e => { const out = e.target.closest('output.typed'); if (out) typeValue($(out.getAttribute('for'))); });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input[type=range]') && $(e.target.id + '-out')?.classList.contains('typed')) { e.preventDefault(); typeValue(e.target); } });
   $('play').addEventListener('click', () => setPlaying(!playing));
   // Reset to defaults asks first. Pressing it swaps it for Confirm and Cancel; Cancel, Escape, or going on to anything else on the
   // page puts it back. Confirm ignores presses for the first moment, so a double-click on Reset can't run straight through it.
@@ -972,6 +990,13 @@ function barGeom(b) {
     lever: [[hf[0] + 2, hf[1] - 10], [re + 28, -.72 * dr]].map(turn),
     grips: { tops: [0, 0], hoods: turn([body[0] - 10, body[1] + 6]), drops: turn(on(rad(-55))) } };
 }
+// Incline: the slope of the hill in degrees, from flat ground up to INCLINE_MAX, set by dragging the handle along the ground line.
+// The rider's stance follows it. Up to 15 degrees it moves evenly from seated to CLIMB, out of the saddle; from there to INCLINE_MAX it
+// moves on to STEEP, a lower crouch with the knees and elbows more bent. Each stance: how far ahead of the bottom bracket the hips
+// sit (a share of height), the least elbow bend, how far the neck is lifted from the line of the back, and the knee angle at the
+// bottom of the pedal stroke, which sets how high the hips ride.
+const INCLINE_MAX = 30, CLIMB = [.05, 105, 4, 150], STEEP = [.05, 115, -4, 137];
+const lerp = (a, b, t) => a + (b - a) * t;
 function solve() {
   const b = bike, H = body.height, sa = rad(b.sta), ha = rad(b.hta);
   const R = b.rim / 2 + b.tire, u = [-Math.cos(ha), Math.sin(ha)], su = [-Math.cos(sa), Math.sin(sa)];
@@ -991,24 +1016,38 @@ function solve() {
   const grip = [bar[0] + off[0], bar[1] + off[1]];
   const saddleY = b.saddleH * Math.sin(sa), ankleH = .039 * H;
   // The hip joint sits a little above the saddle, toward its back.
-  const hip = [-b.setback - 155, saddleY + clamp(.62 * (body.thigh + body.shank + ankleH - body.inseam), 20, 130)];
-  // Torso and arm: the shoulder is where the torso arc meets the arm arc at the chosen elbow bend.
-  const T = body.torso, U = body.upperArm, F = body.forearm, dHG = dist(hip, grip), dir = unit(sub(grip, hip));
-  let bend = opt.elbow, D;
-  for (;;) { D = Math.sqrt(U * U + F * F + 2 * U * F * Math.cos(rad(bend))); if (dHG < T + D - 2 || bend <= 0) break; bend = Math.max(0, bend - 1); }
-  let arm = 'ok', shoulder, elbow, wrist = grip, elbowAng = 180 - bend;
-  if (dHG >= T + D - 2) { arm = 'fail'; shoulder = along(hip, dir, T); elbow = along(shoulder, dir, U); wrist = along(elbow, dir, F); elbowAng = 180; }
-  else {
-    const a = clamp((T * T - D * D + dHG * dHG) / (2 * dHG), -T, T), h = Math.sqrt(Math.max(0, T * T - a * a));
-    shoulder = [hip[0] + a * dir[0] - h * dir[1], hip[1] + a * dir[1] + h * dir[0]];
-    elbow = ik(shoulder, grip, U, F, -1).j; if (bend < opt.elbow - .5) arm = 'straight';
+  const seat = [-b.setback - 155, saddleY + clamp(.62 * (body.thigh + body.shank + ankleH - body.inseam), 20, 130)];
+  const T = body.torso, U = body.upperArm, F = body.forearm, hr = .06 * H;
+  // Torso, arm and head from a hip position: the shoulder is where the torso arc meets the arm arc at the wanted elbow bend
+  // (less, if the hands would not reach). neck: how far the neck is lifted from the line of the back, in degrees.
+  const upper = (hip, bend0, neck) => {
+    const dHG = dist(hip, grip), dir = unit(sub(grip, hip));
+    let bend = bend0, D;
+    for (;;) { D = Math.sqrt(U * U + F * F + 2 * U * F * Math.cos(rad(bend))); if (dHG < T + D - 2 || bend <= 0) break; bend = Math.max(0, bend - 1); }
+    let arm = 'ok', shoulder, elbow, wrist = grip, elbowAng = 180 - bend;
+    if (dHG >= T + D - 2) { arm = 'fail'; shoulder = along(hip, dir, T); elbow = along(shoulder, dir, U); wrist = along(elbow, dir, F); elbowAng = 180; }
+    else {
+      const a = clamp((T * T - D * D + dHG * dHG) / (2 * dHG), -T, T), h = Math.sqrt(Math.max(0, T * T - a * a));
+      shoulder = [hip[0] + a * dir[0] - h * dir[1], hip[1] + a * dir[1] + h * dir[0]];
+      elbow = ik(shoulder, grip, U, F, -1).j; if (bend < Math.min(bend0, opt.elbow) - .5) arm = 'straight';   // straighter than the Elbow bend setting asks for
+    }
+    const tA = Math.atan2(shoulder[1] - hip[1], shoulder[0] - hip[0]), nA = clamp(tA + rad(neck), rad(35), rad(86));
+    return { hip, shoulder, elbow, wrist, arm, elbowAng, tA, headC: along(shoulder, [Math.cos(nA), Math.sin(nA)], .105 * H),
+      shoulderAng: angBetween(sub(hip, shoulder), sub(elbow, shoulder)) };
+  };
+  G = { R, u, su, stJ, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH,
+    hr, H, groundY: b.bbDrop - R, crank: b.crank, vx: .47 * body.foot, vy: -(ankleH + 25), ...upper(seat, opt.elbow, 26) };
+  G.seatedHead = G.headC[1];   // the seated rider's head height frames the flat view
+  if (opt.incline > 0) {
+    // On a hill the rider leaves the saddle by degrees: t runs from 0 (seated) to 1 (the climbing stance, at 15 degrees), and past that
+    // the stance itself moves on toward STEEP. The hips move forward and settle between the saddle height and the standing height, at
+    // which the knee reaches the stance's angle at the bottom of the stroke (found by trying heights). The elbows bend and the head
+    // comes down in step.
+    const t = Math.min(1, opt.incline / 15), st = CLIMB.map((c, i) => lerp(c, STEEP[i], clamp((opt.incline - 15) / (INCLINE_MAX - 15), 0, 1)));
+    const x = lerp(seat[0], st[0] * H, t); let lo = saddleY, hi = saddleY + 450;
+    for (let i = 0; i < 18; i++) { G.hip = [x, (lo + hi) / 2]; let k = 0; for (let d = 0; d < 360; d += 15) k = Math.max(k, leg(rad(d)).kneeAng); if (k > st[3]) hi = G.hip[1]; else lo = G.hip[1]; }
+    Object.assign(G, upper([x, lerp(seat[1], Math.max(lo, saddleY + 40), t)], lerp(opt.elbow, Math.max(opt.elbow, st[1]), t), lerp(26, st[2], t)));
   }
-  const tA = Math.atan2(shoulder[1] - hip[1], shoulder[0] - hip[0]), nA = clamp(tA + rad(26), rad(35), rad(86));
-  const hr = .06 * H, headC = along(shoulder, [Math.cos(nA), Math.sin(nA)], .105 * H);
-  G = { R, u, su, stJ, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH, hip,
-    shoulder, elbow, wrist, arm, elbowAng, tA, hr, headC, H, groundY: b.bbDrop - R, crank: b.crank,
-    vx: .47 * body.foot, vy: -(ankleH + 25),
-    shoulderAng: angBetween(sub(hip, shoulder), sub(elbow, shoulder)) };
 }
 // One leg at crank angle th (0 = pedal at the top, turning clockwise as drawn).
 function leg(th) {
@@ -1038,14 +1077,15 @@ function cycle() {
 
 /* ---------- drawing ---------- */
 const svg = $('view');
-const N = (tag, cls, parent = svg, attrs) => { const e = document.createElementNS(NS, tag); if (cls) e.setAttribute('class', cls);
+let root = svg;   // where new shapes go: the scene group, once buildScene() has made it
+const N = (tag, cls, parent = root, attrs) => { const e = document.createElementNS(NS, tag); if (cls) e.setAttribute('class', cls);
   if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
 const A = (e, o) => { for (const k in o) e.setAttribute(k, o[k]); };
 const pt = p => r1(p[0]) + ' ' + r1(-p[1]);
 const setLine = (e, a, b) => A(e, { x1: r1(a[0]), y1: r1(-a[1]), x2: r1(b[0]), y2: r1(-b[1]) });
 const setDot = (e, p, r) => A(e, r === undefined ? { cx: r1(p[0]), cy: r1(-p[1]) } : { cx: r1(p[0]), cy: r1(-p[1]), r: r1(r) });
 const E = {};
-let BND = null;
+let BND = null, GND = null;   // BND: what the view has to hold. GND: the ground line's left end and its length.
 
 function makeWheel() {
   const g = N('g'), o = { g };
@@ -1058,7 +1098,7 @@ function makeWheel() {
 // Disc brake rotor, 160 mm across: a 15 mm braking track carried on six swept arms from a centre carrier. The arms turn with the
 // wheel; at speed they fade into a haze, as the spokes do.
 function makeRotor() {
-  const g = N('g', 'rotor', svg, { display: 'none' }), o = { g };
+  const g = N('g', 'rotor', root, { display: 'none' }), o = { g };
   o.rot = N('g', '', g); o.haze = N('circle', 'haze', o.rot, { r: 66, opacity: 0 }); o.arms = N('g', '', o.rot);
   for (let k = 0; k < 6; k++) { const a = rad(k * 60), c = a + rad(32);
     N('line', 'arm', o.arms, { x1: r1(22 * Math.cos(a)), y1: r1(22 * Math.sin(a)), x2: r1(67 * Math.cos(c)), y2: r1(67 * Math.sin(c)) }); }
@@ -1067,53 +1107,91 @@ function makeRotor() {
 }
 function makeLeg(far) {
   const c = far ? ' far' : '', o = {};
-  o.pedal = N('rect', 'pedal' + c, svg, { x: -46, y: -9, width: 92, height: 18, rx: 6 });
-  if (!far) o.hT = N('path', 'halo', svg, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + c);
-  if (!far) o.hS = N('path', 'halo', svg, { 'stroke-width': 9 }); o.shank = N('path', 'limbfill' + c);
+  o.pedal = N('rect', 'pedal' + c, root, { x: -46, y: -9, width: 92, height: 18, rx: 6 });
+  if (!far) o.hT = N('path', 'halo', root, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + c);
+  if (!far) o.hS = N('path', 'halo', root, { 'stroke-width': 9 }); o.shank = N('path', 'limbfill' + c);
   o.shoeG = N('g'); if (!far) o.hF = N('path', 'halo', o.shoeG, { 'stroke-width': 9 }); o.shoe = N('path', 'limbfill' + c, o.shoeG);
   return o;
 }
 function buildScene() {
+  // The hill's angle: a level line from the ground line's left end, the arc between the two, and its label. These stay level, outside the tilted scene.
+  E.inc = N('g', '', svg, { display: 'none' });
+  E.level = N('line', 'ground', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
+  E.scene = root = N('g', '', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
   E.ground = N('line', 'ground');
   E.farCrank = N('path', 'crank far'); E.far = makeLeg(true);
   E.rotors = [makeRotor(), makeRotor()];   // on the far side of the wheels: in front of the far leg, behind every part of the bike
   E.wheels = [makeWheel(), makeWheel()];
-  const tube = (w, cls = 'tube') => N('line', cls, svg, { 'stroke-width': w });
+  const tube = (w, cls = 'tube') => N('line', cls, root, { 'stroke-width': w });
   // The rear cog and the full chain loop sit behind the frame, so the seat stay passes in front of the chain.
-  E.cog = N('circle', 'cog'); E.chainLoop = N('path', 'chain', svg, { 'stroke-width': 5 });
+  E.cog = N('circle', 'cog'); E.chainLoop = N('path', 'chain', root, { 'stroke-width': 5 });
   E.chainstay = tube(20); E.seatstay = tube(16.25); E.seatpost = tube(22, 'comp'); E.seattube = tube(30, 'tube butt'); E.toptube = tube(28); E.downtube = tube(32);
   E.fork = N('path', 'tubefill'); E.steerer = tube(30, 'comp butt'); E.headtube = tube(38, 'tube butt');
   // Edge line for pale frame colours, laid over the frame: the frame shapes in black, then the same shapes 3 mm smaller in the
   // frame colour. Only a 3 mm band just inside the frame's outer edge stays black, and the group's opacity fades it in.
-  E.olG = N('g', '', svg, { visibility: 'hidden' });
+  E.olG = N('g', '', root, { visibility: 'hidden' });
   const caps = ['', '', ' butt', '', '', ' butt'];
   E.ol = caps.map(c => N('line', 'ol' + c, E.olG)); E.olFork = N('path', 'olfill', E.olG);
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
   E.clamp = tube(16, 'comp'); E.rails = tube(6, 'comp'); E.saddle = N('path', 'saddle');
-  E.stem = tube(26, 'comp'); E.bar = N('path', 'tape', svg, { 'stroke-width': 22 });
+  E.stem = tube(26, 'comp'); E.bar = N('path', 'tape', root, { 'stroke-width': 22 });
   // Same fading inner edge line as the frame, for very pale bar tape.
-  E.barOL = N('g', '', svg, { visibility: 'hidden' }); N('path', 'ol', E.barOL, { 'stroke-width': 22 }); N('path', 'tape', E.barOL, { 'stroke-width': 16 }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', svg, { 'stroke-width': 24 });
+  E.barOL = N('g', '', root, { visibility: 'hidden' }); N('path', 'ol', E.barOL, { 'stroke-width': 22 }); N('path', 'tape', E.barOL, { 'stroke-width': 16 }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', root, { 'stroke-width': 24 });
   E.ring = N('circle', 'ring chainring'); E.spider = N('g');
   E.arms = Array.from({ length: 5 }, () => N('line', 'comp', E.spider, { 'stroke-width': 18 }));
-  E.chainTop = N('path', 'chain', svg, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
+  E.chainTop = N('path', 'chain', root, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
   E.crank = N('path', 'crank');
-  E.torso = N('path', 'limbfill'); E.neck = N('line', 'limb'); E.head = N('circle', 'flesh');
+  E.torso = N('path', 'limbfill'); E.neck = N('line', 'limb'); E.head = N('circle', 'flesh head');
+  // The smiley, drawn for a head of radius 1 and scaled to fit: two upright oval eyes and a wide smile. Clicking the head turns it on and off.
+  E.face = N('g', 'face', root, { display: 'none' });
+  [-.22, .22].forEach(x => N('ellipse', 'eye', E.face, { cx: x, cy: -.22, rx: .1, ry: .17 })); N('path', 'smile', E.face, { d: 'M -0.55 0.12 A 0.6 0.6 0 0 0 0.55 0.12' });
+  E.head.addEventListener('click', () => { opt.smiley = !opt.smiley; update(); });
   E.near = makeLeg(false);
-  E.hU = N('path', 'halo', svg, { 'stroke-width': 9 }); E.upper = N('path', 'limbfill'); E.hF = N('path', 'halo', svg, { 'stroke-width': 9 }); E.fore = N('path', 'limbfill'); E.hand = N('circle', 'flesh hand');
+  E.hU = N('path', 'halo', root, { 'stroke-width': 9 }); E.upper = N('path', 'limbfill'); E.hF = N('path', 'halo', root, { 'stroke-width': 9 }); E.fore = N('path', 'limbfill'); E.hand = N('circle', 'flesh hand');
   // Clicking the hand steps through the hand positions: bar tops, shifters, drops.
   N('title', '', E.hand).textContent = 'Click to change hand position';
   E.hand.addEventListener('click', () => { const order = ['tops', 'hoods', 'drops']; opt.hands = order[(order.indexOf(opt.hands) + 1) % 3]; refresh(); update(); });
   E.j = {}; ['hip', 'knee', 'ankle', 'shoulder', 'elbow', 'wrist'].forEach(k => E.j[k] = N('circle', 'joint'));
+  // The Incline control, on top of everything: the band along the ground line and the handle that rides it.
+  E.incHit = N('line', 'inchit'); E.incDot = N('circle', 'incdot', root, { tabindex: 0, role: 'slider', 'aria-label': 'Incline', 'aria-valuemin': 0, 'aria-valuemax': INCLINE_MAX });
+  N('title', '', E.incDot).textContent = 'Drag along the ground to change the incline';
+  // Pressing the line or the handle and dragging sets the incline from how far along the line the pointer is: at the left end the
+  // ground is flat, at the right end it is at its steepest, and the handle sits under the pointer. The view shifts and shrinks as the
+  // hill steepens, so the distance is read again after each redraw until the handle has settled.
+  const tiltTo = e => { for (let i = 0; i < 3; i++) { const m = svg.getScreenCTM().inverse(), x = m.a * e.clientX + m.c * e.clientY + m.e, y = -(m.b * e.clientX + m.d * e.clientY + m.f);
+      const f = x <= GND.a[0] ? 0 : clamp(Math.hypot(x - GND.a[0], y - GND.a[1]) / GND.len, 0, 1), v = Math.round(f * INCLINE_MAX * 10) / 10;
+      if (v === opt.incline) break; opt.incline = v; update(); } };
+  [E.incHit, E.incDot].forEach(el => {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); svg.classList.add('tilting'); E.incDot.focus({ preventScroll: true }); tiltTo(e); });
+    el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) tiltTo(e); });
+    ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => svg.classList.remove('tilting'))); });
+  // The handle takes the focus when it is grabbed, so the arrow keys can fine-tune afterwards; the heavier focus ring is kept for the keyboard.
+  document.addEventListener('keydown', e => { if (e.key === 'Tab') svg.classList.add('keys'); }); document.addEventListener('pointerdown', () => svg.classList.remove('keys'));
+  E.incDot.addEventListener('keydown', e => { const k = { ArrowRight: .5, ArrowUp: .5, ArrowLeft: -.5, ArrowDown: -.5, PageUp: 5, PageDown: -5 }[e.key], v = e.key === 'Home' ? 0 : e.key === 'End' ? INCLINE_MAX : k ? clamp(opt.incline + k, 0, INCLINE_MAX) : null;
+    if (v === null) return; e.preventDefault(); svg.classList.add('keys'); opt.incline = Math.round(v * 10) / 10; update(); });
   E.labG = N('g'); E.lab = {}; ['knee', 'hip', 'shoulder', 'elbow'].forEach(k => E.lab[k] = N('text', 'lab', E.labG));
 }
 // Frames the drawing so the ground line always lands the same distance above the bottom of the view, whatever the bike,
 // wheels or rider: the view is anchored to its bottom edge and the space under the ground is a fixed number of pixels.
 function fit() {
   const r = svg.getBoundingClientRect(); if (!r.width || !r.height || !BND) return;
-  const pad = clamp(r.height * .07, 26, 46), s = Math.max(.01, Math.min(r.width / BND.w, (r.height - pad) / (BND.top - BND.ground)));
-  A(svg, { viewBox: `${BND.x.toFixed(2)} ${(-BND.top).toFixed(2)} ${BND.w.toFixed(2)} ${(BND.top - BND.ground + pad / s).toFixed(2)}` });
+  const pad = clamp(r.height * .07, 26, 46);
+  let s = Math.max(.01, Math.min(r.width / BND.w, (r.height - pad) / (BND.top - BND.ground)));
+  let vb = [BND.x, -BND.top, BND.w, BND.top - BND.ground + pad / s];
+  if (BND.hill) {
+    // On a hill. The bike stays centred across the frame and the picture is scaled down until the sloping ground line (with the flat
+    // view's 80 mm margin beyond each end) and the rider (with the flat view's 150 mm above the head) fit. The ground line still starts
+    // pad above the bottom. At the faintest slope this is exactly the flat view, so the picture never jumps as the slope comes on.
+    // When there are alerts, room is kept for them above the rider (up to 45% of the frame's height); that room comes in over the first 5 degrees.
+    const hud = $('alerts').childElementCount ? Math.min(r.height * .45, $('alerts').parentElement.offsetHeight + 18) * clamp(opt.incline / 5, 0, 1) : 0;
+    const half = Math.max(BND.hill.mid - (BND.hill.x - 80), BND.hill.x + BND.hill.w - BND.hill.mid);   // from the bike's middle to the further side
+    s = Math.max(.01, Math.min(s, r.width / (2 * half), (r.height - pad) / (BND.hill.top + 150 - BND.ground), (r.height - pad - hud) / (BND.hill.top - BND.ground)));
+    vb = [BND.hill.mid - r.width / s / 2, -BND.ground - (r.height - pad) / s, r.width / s, r.height / s];
+  }
+  A(svg, { viewBox: vb.map(v => v.toFixed(2)).join(' ') });
+  E.incDot.setAttribute('r', r1(8 / s));   // the handle is 16px across, like the other sliders'
   const fs = r1(12.5 / s), sw = r1(4 / s);
-  Object.values(E.lab).forEach(t => A(t, { 'font-size': fs, 'stroke-width': sw }));
+  [...Object.values(E.lab), E.incLab].forEach(t => A(t, { 'font-size': fs, 'stroke-width': sw }));
 }
 // Knob and gap lengths around the tire. They vary, with no short repeat, so the spinning tread reads as motion rather than strobing.
 function treadDash(c) {
@@ -1121,10 +1199,39 @@ function treadDash(c) {
   while (sum < c - 40) { const k = 10 + rnd() * 12, gp = 8 + rnd() * 5; out.push(k, gp); sum += k + gp; }
   return out.map(v => r1(v * c / sum)).join(' ');
 }
+// A label is turned back about its own position, so it reads level when the picture is tilted for a hill.
+const upright = t => t.setAttribute('transform', opt.incline ? `rotate(${opt.incline} ${t.getAttribute('x')} ${t.getAttribute('y')})` : '');
 function drawStatic() {
   const g = G, b = bike, H = g.H, u = g.u;
-  BND = { x: g.rear[0] - g.R - 230, w: g.front[0] - g.rear[0] + 2 * g.R + 460, top: Math.max(g.headC[1] + g.hr + 150, g.saddleY + 220), ground: g.groundY };
-  setLine(E.ground, [g.rear[0] - g.R - 150, g.groundY - 3], [g.front[0] + g.R + 150, g.groundY - 3]);
+  BND = { x: g.rear[0] - g.R - 230, w: g.front[0] - g.rear[0] + 2 * g.R + 460, top: Math.max(g.seatedHead + g.hr + 150, g.saddleY + 220), ground: g.groundY };
+  const gL = [g.rear[0] - g.R - 150, g.groundY - 3], gR = [g.front[0] + g.R + 150, g.groundY - 3];
+  setLine(E.ground, gL, gR);
+  // The Incline handle: at the line's left end on the flat, at its right end at the steepest, and in proportion between.
+  GND = { a: gL, len: gR[0] - gL[0] };
+  setLine(E.incHit, gL, gR); setDot(E.incDot, [gL[0] + opt.incline / INCLINE_MAX * GND.len, gL[1]]);
+  A(E.incDot, { 'aria-valuenow': opt.incline, 'aria-valuetext': opt.incline + ' degrees' });
+  // On a hill the ground rises from its left end by the Incline, and the bike and rider with it. fit() then makes room for where
+  // the wheels, rider and ground line end up.
+  E.scene.setAttribute('transform', opt.incline ? `rotate(${-opt.incline} ${pt(gL)})` : ''); E.inc.setAttribute('display', opt.incline ? 'inline' : 'none');
+  if (opt.incline) {
+    const cs = Math.cos(rad(opt.incline)), sn = Math.sin(rad(opt.incline)), up = p => [gL[0] + (p[0] - gL[0]) * cs - (p[1] - gL[1]) * sn, gL[1] + (p[0] - gL[0]) * sn + (p[1] - gL[1]) * cs];
+    // The level line from the same point, as long as the ground line and drawn the same way. Toward their far ends an arc joins the
+    // two, with an arrowhead where it meets each (smaller on a slight slope, where the arc is short), and the angle is written to its
+    // right, level with its middle.
+    const ang = rad(opt.incline), rA = dist(gL, gR) - 270, on = a => [gL[0] + rA * Math.cos(a), gL[1] + rA * Math.sin(a)];
+    const hl = Math.min(40, rA * ang * .4), hw = hl * .55, da = hl / rA;   // arrowhead length and width, and the angle its length takes up on the arc
+    const head = (a, dir) => { const tip = on(a), base = on(a - dir * da), out = unit(sub(base, gL));   // tip on the line, base back along the arc
+      return `M ${pt(tip)} L ${pt(along(base, out, hw / 2))} L ${pt(along(base, out, -hw / 2))} Z`; };
+    setLine(E.level, gL, gR);
+    A(E.incArc, { d: `M ${pt(on(da * .8))} A ${r1(rA)} ${r1(rA)} 0 0 0 ${pt(on(ang - da * .8))}` });
+    A(E.incHeads, { d: head(0, -1) + ' ' + head(ang, 1) });
+    A(E.incLab, { x: r1(gL[0] + rA + 30), y: r1(-(gL[1] + rA * Math.sin(ang) / 2)) }); E.incLab.textContent = +opt.incline.toFixed(1) + '°';
+    let x1 = gR[0], y1 = -Infinity;   // the level line reaches furthest right
+    [[gR, 0], [g.rear, g.R], [g.front, g.R], [g.headC, g.hr], [g.shoulder, 90], [g.hip, 100], [g.elbow, 50], [g.grip, 70]].forEach(([p, r]) => {
+      const q = up(p); x1 = Math.max(x1, q[0] + r); y1 = Math.max(y1, q[1] + r); });
+    // From the ground line's left end: room needed to the right, how high the rider reaches, and the middle of the bike (halfway between the outer edges of its wheels).
+    BND.hill = { x: gL[0], w: x1 - gL[0] + 80, top: y1, mid: (up(g.rear)[0] - g.R + up(g.front)[0] + g.R) / 2 };
+  }
 
   // Rim depth sets how far the rim reaches in from the tire; tread is a ring of knobs cut into the outer edge of the tire.
   const rd = opt.rimDepth, rs = b.rim / 2 - rd, kd = opt.tread / 100 * Math.min(10, .4 * b.tire), rk = g.R - kd / 2;
@@ -1203,6 +1310,8 @@ function drawStatic() {
   A(E.torso, { d: `M ${tl.join(' L ')} A ${r1(w1 / 2)} ${r1(w1 / 2)} 0 0 1 ${tr.reverse().join(' L ')} A ${r1(tw / 2)} ${r1(tw / 2)} 0 0 1 ${tl[0]} Z` });
   setLine(E.neck, g.shoulder, g.headC); A(E.neck, { 'stroke-width': r1(.046 * H) });
   setDot(E.head, g.headC, g.hr);
+  // The face sits level on the head, also when the picture is tilted for a hill.
+  A(E.face, { display: opt.smiley ? 'inline' : 'none', transform: `translate(${pt(g.headC)}) rotate(${opt.incline}) scale(${r1(g.hr)})` });
   const uw = .036 * H, fw = .03 * H;
   // Upper arm: 1.5x the base arm width at the shoulder, tapering to 1.25x at the elbow.
   const ua = taper(g.shoulder, g.elbow, .75 * uw, .625 * uw); E.upper.setAttribute('d', ua); E.hU.setAttribute('d', ua);
@@ -1231,6 +1340,7 @@ function drawStatic() {
   A(E.lab.elbow, { x: r1(g.elbow[0] - 30), y: r1(-(g.elbow[1] - uw / 2 - 62)), 'text-anchor': 'middle' }); E.lab.elbow.textContent = Math.round(g.elbowAng) + '°';
   A(E.lab.hip, { x: r1(g.hip[0] - tw / 2 - 34), y: r1(-(g.hip[1] - 10)), 'text-anchor': 'end' });
   A(E.lab.knee, { 'text-anchor': 'start' });
+  Object.values(E.lab).forEach(upright);
   fit();
 }
 // Tapered limb outline between two joints (radius R0 at the first, R1 at the second). The thigh runs from torso
@@ -1257,7 +1367,7 @@ function drawFrame() {
   const wa = r1(wheelAng); E.wheels.forEach(w => w.rot.setAttribute('transform', `rotate(${wa})`)); E.rotors.forEach(o => o.rot.setAttribute('transform', `rotate(${wa})`));
   setDot(E.j.knee, n.knee); setDot(E.j.ankle, n.ankle);
   if (opt.angles) {
-    const kp = along(n.knee, n.out, .03 * G.H + 40); A(E.lab.knee, { x: r1(kp[0]), y: r1(-kp[1]) });
+    const kp = along(n.knee, n.out, .03 * G.H + 40); A(E.lab.knee, { x: r1(kp[0]), y: r1(-kp[1]) }); upright(E.lab.knee);
     const k = Math.round(n.kneeAng) + '°', h = Math.round(n.hipAng) + '°';
     if (k !== lastK) E.lab.knee.textContent = lastK = k; if (h !== lastH) E.lab.hip.textContent = lastH = h;
   }
@@ -1307,12 +1417,14 @@ function readouts() {
   const spare = body.inseam - standover;
   if (spare < 0) al.push(['bad', `The top tube is ${len(-spare)} above your inseam. You can’t stand over this frame.`]);
   else if (spare < 25) al.push(['warn', `Only ${len(spare)} of standover clearance. About ${inch() ? '1' + NB + 'in' : '25' + NB + 'mm'} or more is usual.`]);
-  if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
+  if (opt.incline > 0) ;   // leaving the saddle: the knee angles no longer say anything about saddle height
+  else if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
   else if (ks[1] === 'high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
   else if (ks[1] === 'low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
   if (g.arm === 'fail') al.push(['bad', 'The hands can’t reach this bar position. Shorten the reach or raise the bars.']);
   else if (g.arm === 'straight') al.push(['warn', 'The arms have to straighten to reach this hand position.']);
   $('alerts').innerHTML = al.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
+  if (opt.incline > 0) fit();   // on a hill the view makes room for the alerts, so it is fitted again now that they are known
 
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
@@ -1348,7 +1460,9 @@ function applyColors() { const st = document.documentElement.style, tone = docum
   // The rider gets the same edge line, by the same measure; the far-side limbs take their colour from the rider's in the style sheet.
   const riderPale = paleness(opt.riderS, opt.riderB);
   st.setProperty('--rider-edge', riderPale); st.setProperty('--rider-edge-pct', riderPale * 100 + '%');
-  st.setProperty('--rider', tone(hsb(opt.riderH, opt.riderS, opt.riderB)));
+  const rider = tone(hsb(opt.riderH, opt.riderS, opt.riderB)); st.setProperty('--rider', rider);
+  // The smiley is black on a light rider and white on a dark one (by how bright the colour looks).
+  const [rr, rg, rb] = [1, 3, 5].map(i => parseInt(rider.slice(i, i + 2), 16)); st.setProperty('--face', .299 * rr + .587 * rg + .114 * rb > 150 ? '#000000' : '#ffffff');
   st.setProperty('--frame', tone(hsb(opt.frameH, opt.frameS, opt.frameB)));
   st.setProperty('--tape', tone(hsb(opt.tapeH, opt.tapeS, opt.tapeB)));
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
