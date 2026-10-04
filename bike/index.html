@@ -20,10 +20,11 @@ img{max-width:100%}
   color-scheme:light;
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
   --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc; --scroll:#bdbdbd;
-  --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e2e2e2; --slot:#d6d6d6;
+  --accent:#0a0a0a; --accent-ink:#ffffff; --slot:#d6d6d6;
   --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --ok:#1c7f46; --warn:#a15f00; --bad:#bd3526;
+  --crank:var(--comp);                          /* crank arms and pedals */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff; --gray-hi:#d9d9d9;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
@@ -37,7 +38,7 @@ img{max-width:100%}
   color-scheme:dark;
   --bg:#000000; --stage:#000000; --panel:#000000; --field:#000000; --page:#000000;
   --ink:#ececec; --muted:#949494; --line:#2e2e2e; --scroll:#424242;   /* #ececec: the home page's night text, the colour under its dot at rest */
-  --accent:#ececec; --accent-ink:#000000; --accent-soft:#333333; --slot:#292929;
+  --accent:#ececec; --accent-ink:#000000; --slot:#292929;
   --metal:#717171; --part:#dddddd; --tire:#e3e3e3; --spin:#424242;
   --rider:#ffffff;
   --ok:#4cc27e; --warn:#e0992e; --bad:#ff6a5a;
@@ -127,19 +128,8 @@ h1,h2,h3,p,dl,dd{margin:0}
 
 .group{display:flex;flex-direction:column;gap:8px}
 .grp{font:600 11px/1.2 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
-.field{display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-width:0}
-.field.wide{grid-column:1/-1}
-.field label,.cap{font-size:13px;font-weight:500;line-height:1.2}
+.cap{font-size:13px;font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:12px}
-.inp{display:flex;align-items:center;background:var(--field);border:1px solid var(--line);border-radius:6px;padding-right:8px}
-.inp:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.inp.bad{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 22%,transparent)}
-.inp input,.inp select{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--ink);
-  font:500 14px/1.2 var(--font);font-variant-numeric:tabular-nums;height:32px;padding:0 4px 0 9px;outline:none}
-.inp select{padding-right:0}
-.unit{color:var(--muted);font:400 12px var(--font);padding-left:2px}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.3;cursor:pointer}
 .check input{accent-color:var(--accent);margin:2px 0 0;width:15px;height:15px;flex:none}
@@ -161,8 +151,16 @@ h1,h2,h3,p,dl,dd{margin:0}
 .seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
 
 .slider{display:flex;flex-direction:column;gap:5px}
+.stack{display:flex;flex-direction:column;gap:16px}   /* a run of sliders, spaced as the section's own children are */
 .slider .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.slider output{font:500 14px var(--font);font-variant-numeric:tabular-nums}
+.slider output{flex:none;white-space:nowrap;font:500 14px var(--font);font-variant-numeric:tabular-nums}   /* the value never breaks or shrinks; a long label wraps instead */
+/* A slider's value can be typed: click it (or press Enter on the slider) and a small box takes its place until Enter or Escape. */
+output.typed{cursor:text}
+output.typed:hover{text-decoration:underline dotted;text-underline-offset:3px}
+/* The box is laid over the value (which keeps its place, unseen), so nothing on the row moves when it opens. */
+.slider .top{position:relative}
+.typein{position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:9ch;padding:1px 5px;border:1px solid var(--accent);border-radius:4px;
+  background:var(--field);color:var(--ink);font:500 14px var(--font);font-variant-numeric:tabular-nums;text-align:right;outline:none}
 input[type=range]{width:100%;margin:0;accent-color:var(--accent);box-shadow:none;filter:none}
 /* No shadows on sliders. Safari gives a range thumb a built-in drop shadow that survives appearance:none, so it is switched off by name
    (one rule per engine: a selector the browser doesn't know would void the whole rule). */
@@ -178,8 +176,11 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .btn.link{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:500}
 :is(.btn,summary,input[type=range],.check input):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .group.sliders{gap:12px}
+/* Bike and Options: 28px above each all-caps subtitle that follows other controls, the same as between Appearance's subsections. */
+#sec-bike .sec-body>*+.group,#sec-options .sec-body>*+.group{margin-top:12px}
 /* Appearance: 28px between subsections (16px elsewhere), so each colour group reads as its own block. */
 #sec-appearance .sec-body{gap:28px}
+#sec-appearance .sec-body>.slider+.row2{margin-top:-12px}   /* tire tread and the two switches under it stay one cluster */
 .grphead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
 .sw-rider{background:var(--rider)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
@@ -205,8 +206,11 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
 .rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
 .rail input[type=range]:focus-visible{outline-offset:4px}
-.foot{padding-top:14px;display:flex}
+.foot{padding-top:14px;display:flex;gap:8px}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
+/* Reset asks first: the button gives way to Confirm (green) and Cancel (red), side by side across the same width. */
+.btn.confirm{background:var(--ok);border-color:var(--ok);color:var(--accent-ink)}
+.btn.cancel{background:var(--bad);border-color:var(--bad);color:var(--accent-ink)}
 
 /* ---------- stage ---------- */
 .stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:var(--stage)}
@@ -242,8 +246,8 @@ svg .ol{stroke:var(--ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tape{stroke:var(--tape);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .ol.butt{stroke-linecap:butt}
 svg .olfill{fill:var(--ink);stroke:none}
-svg .metal{stroke:var(--metal);fill:none;stroke-linecap:round}
 svg .part{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
+svg .saddle{fill:var(--part);stroke:none}
 svg .comp{stroke:var(--comp);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .chain{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tire,svg .tread{stroke:var(--tire);fill:none}
@@ -255,11 +259,17 @@ svg .valve{stroke:var(--wheel);stroke-width:7;stroke-linecap:round}
 svg .hub{fill:var(--wheel);stroke:none}
 svg .ring{fill:none;stroke:var(--part);stroke-width:7}
 svg .ring.chainring{stroke:var(--comp);stroke-width:14}
+svg .ring.chainring.solid{fill:var(--comp)}
+/* Disc brake rotors: steel, 160 mm across, on the far side of each wheel. */
+svg .rotor .track{fill:none;stroke:var(--metal);stroke-width:15}
+svg .rotor .arm{stroke:var(--metal);stroke-width:7;stroke-linecap:round}
+svg .rotor .carrier,svg .rotor .haze{fill:var(--metal);stroke:none}
 svg .cog{fill:var(--comp);stroke:none}
-svg .crank{stroke:var(--comp);stroke-width:20;stroke-linecap:round}
-svg .crank.far{stroke:color-mix(in srgb,var(--comp) 55%,var(--stage))}
-svg .pedal{fill:var(--comp)}
-svg .pedal.far{fill:color-mix(in srgb,var(--comp) 55%,var(--stage))}
+/* Crank arms and pedals: the script sets --crank a shade apart from the components colour, so they stand out from the chainring. */
+svg .crank{fill:var(--crank);stroke:none}
+svg .crank.far{fill:color-mix(in srgb,var(--crank) 55%,var(--stage))}
+svg .pedal{fill:var(--crank)}
+svg .pedal.far{fill:color-mix(in srgb,var(--crank) 55%,var(--stage))}
 svg .limb{stroke:var(--rider);fill:none;stroke-linecap:round}
 svg .limb.far{stroke:var(--rider-far)}
 /* Rider edge line: a 3 mm outline that fades in (--rider-edge, 0 to 1, set by the script) as the rider's colour nears the page's,
@@ -445,20 +455,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             </div>
           </div>
         </div>
-        <div class="group">
-          <div class="field" id="height-cm-field">
-            <label for="h-cm">Height</label>
-            <div class="inp"><input id="h-cm" type="number" inputmode="decimal" min="140" max="210" step="0.5"><span class="unit">cm</span></div>
-          </div>
-          <div class="field" id="height-in-field">
-            <span class="cap" id="cap-height">Height</span>
-            <div class="pair">
-              <div class="inp"><input id="h-ft" type="number" inputmode="numeric" min="4" max="6" step="1" aria-label="Height, feet"><span class="unit">ft</span></div>
-              <div class="inp"><input id="h-in" type="number" inputmode="decimal" min="-0.5" max="12" step="0.5" aria-label="Height, inches"><span class="unit">in</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="grid" id="body-fields"></div>
+        <div class="stack" id="body-fields"></div>
         <p class="hint"><span id="body-hint"></span> <button class="btn link" id="body-reset" type="button" hidden>Reset to averages</button></p>
       </div>
     </details>
@@ -484,9 +481,15 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         </div>
         <div class="group">
           <h3 class="grp">Gear</h3>
-          <div class="grid">
-            <div class="field"><label for="o-ring">Chainring</label><div class="inp"><input id="o-ring" type="number" inputmode="numeric" min="22" max="60" step="1"><span class="unit">t</span></div></div>
-            <div class="field"><label for="o-cog">Rear cog</label><div class="inp"><input id="o-cog" type="number" inputmode="numeric" min="9" max="52" step="1"><span class="unit">t</span></div></div>
+          <div class="stack">
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-ring">Chainring</label><output id="o-ring-out" for="o-ring"></output></div>
+              <div class="rail"><input id="o-ring" type="range" min="22" max="60" step="1"></div>
+            </div>
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-cog">Rear cog</label><output id="o-cog-out" for="o-cog"></output></div>
+              <div class="rail"><input id="o-cog" type="range" min="9" max="52" step="1"></div>
+            </div>
           </div>
           <p class="hint" id="gear-hint"></p>
         </div>
@@ -561,7 +564,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
           <div class="slider">
             <div class="top"><label class="cap" for="o-rimDepth">Wheel depth</label><output id="o-rimDepth-out" for="o-rimDepth"></output></div>
-            <div class="rail"><input id="o-rimDepth" type="range" min="15" max="90" step="1"></div>
+            <div class="rail"><input id="o-rimDepth" type="range"></div>
           </div>
         </div>
         <div class="group sliders">
@@ -574,10 +577,28 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <div class="top"><label class="cap" for="o-tread">Tire tread</label><output id="o-tread-out" for="o-tread"></output></div>
           <div class="rail"><input id="o-tread" type="range" min="0" max="100" step="25"></div>
         </div>
+        <div class="row2">
+          <div class="ctl"><span class="cap" id="cap-ringStyle">Chainring style</span>
+            <div class="seg" role="radiogroup" aria-labelledby="cap-ringStyle">
+              <input type="radio" name="ringStyle" id="ringStyle-star" value="star"><label for="ringStyle-star">Star</label>
+              <input type="radio" name="ringStyle" id="ringStyle-solid" value="solid"><label for="ringStyle-solid">Solid</label>
+            </div>
+          </div>
+          <div class="ctl"><span class="cap" id="cap-disc">Disc brakes</span>
+            <div class="seg" role="radiogroup" aria-labelledby="cap-disc">
+              <input type="radio" name="disc" id="disc-on" value="on"><label for="disc-on">On</label>
+              <input type="radio" name="disc" id="disc-off" value="off"><label for="disc-off">Off</label>
+            </div>
+          </div>
+        </div>
       </div>
     </details>
 
-    <div class="foot"><button class="btn primary" id="reset-all" type="button">Reset to defaults</button></div>
+    <div class="foot" id="reset-foot">
+      <button class="btn primary" id="reset-all" type="button">Reset to defaults</button>
+      <button class="btn confirm" id="reset-yes" type="button" hidden>Confirm</button>
+      <button class="btn cancel" id="reset-no" type="button" hidden>Cancel</button>
+    </div>
   </aside>
   <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the control panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
 
@@ -642,12 +663,12 @@ const averages = (h, sex) => { const o = {}; for (const k in RATIO[sex]) o[k] = 
 const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stands this far above the top tube centreline
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
-  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130 };
+  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false,
-  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18 };
-let bike, body, opt, units, panelW = 384;
+  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off' };
+let bike, body, opt, units, bikeUnits, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 function defaults() {
-  bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in';
+  bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
   body = { sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') };
   syncSaddle();
 }
@@ -674,9 +695,12 @@ function restore(d) {
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
   take(opt, o);
   if (d.units === 'cm' || d.units === 'in') units = d.units;
+  if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
   if (body.sex !== 'm' && body.sex !== 'f') body.sex = 'm';
   if (!['tops', 'hoods', 'drops'].includes(opt.hands)) opt.hands = 'hoods';
+  if (opt.ringStyle !== 'solid') opt.ringStyle = 'star';
+  if (opt.disc !== 'on') opt.disc = 'off';
   opt.tread = Math.round(clamp(opt.tread, 0, 100) / 25) * 25;   // tread has five stops; a value saved between two takes the nearer
   if (![622, 584, 559].includes(bike.rim)) bike.rim = 622;
 }
@@ -695,7 +719,7 @@ function link(k) {
   else b.fork = Math.hypot(Math.max(1, axis - b.headLen), b.rake);
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, panelW })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, bikeUnits, panelW })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
@@ -713,20 +737,21 @@ const BIKE = [
   ['Fork and wheels', [
     { k: 'fork', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 420, step: 1, d: 0 },
     { k: 'rake', l: 'Fork rake', u: 'mm', s: 1, min: 30, max: 65, step: 1, d: 0 },
-    { k: 'rim', sel: [[622, '700c'], [584, '650b'], [559, '26 inch']], l: 'Wheel size' },
+    { k: 'rim', sel: [[559, '26 inch'], [584, '650b'], [622, '700c']], l: 'Wheel size' },   // three stops, smallest first
     { k: 'tire', l: 'Tire width', u: 'mm', s: 1, min: 20, max: 60, step: 1, d: 0 }
   ]],
   ['Saddle and cranks', [
-    { k: 'saddleH', l: 'Saddle height', n: 'BB to saddle top', u: 'cm', s: 10, min: 55, max: 95, step: .1, d: 1 },
+    { k: 'saddleH', l: 'Saddle height', n: 'BB to saddle top', u: 'mm', s: 1, min: 550, max: 950, step: 1, d: 0 },
     { k: 'setback', l: 'Saddle setback', n: 'nose behind BB', u: 'mm', s: 1, min: 0, max: 140, step: 1, d: 0 },
     { k: 'crank', l: 'Crank length', u: 'mm', s: 1, min: 150, max: 185, step: 2.5, d: 1 }
   ]],
   ['Cockpit', [
     { k: 'stem', l: 'Stem length', u: 'mm', s: 1, min: 50, max: 150, step: 5, d: 0 },
     { k: 'stemAngle', l: 'Stem angle', u: '°', s: 1, min: -25, max: 25, step: 1, d: 0 },
-    { k: 'spacers', l: 'Spacers under stem', u: 'mm', s: 1, min: 0, max: 60, step: 5, d: 0 },
+    { k: 'spacers', l: 'Spacers under stem', u: 'mm', s: 1, min: 0, max: 100, step: 5, d: 0 },
     { k: 'barReach', l: 'Bar reach', u: 'mm', s: 1, min: 60, max: 110, step: 1, d: 0 },
-    { k: 'barDrop', l: 'Bar drop', u: 'mm', s: 1, min: 100, max: 160, step: 1, d: 0 }
+    { k: 'barDrop', l: 'Bar drop', u: 'mm', s: 1, min: 100, max: 160, step: 1, d: 0 },
+    { k: 'barAngle', l: 'Bar angle', n: 'hoods up', u: '°', s: 1, min: -30, max: 30, step: 1, d: 0 }
   ]]
 ];
 const BODY = [
@@ -738,23 +763,41 @@ const BODY = [
   { k: 'forearm', l: 'Forearm', n: 'elbow to grip', min: 200, max: 450 },
   { k: 'foot', l: 'Foot length', min: 180, max: 340 }
 ];
-const fac = () => units === 'in' ? 25.4 : 10;
-const fieldHTML = (id, f, unit) => `<div class="field"><label for="${id}">${f.l}${f.n ? ` <span class="note">${f.n}</span>` : ''}</label>` +
-  (f.sel ? `<div class="inp"><select id="${id}">${f.sel.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div>`
-         : `<div class="inp"><input id="${id}" type="number" inputmode="decimal" min="${f.min}" max="${f.max}" step="${f.step}"><span class="unit">${unit}</span></div>`) + `</div>`;
+const NB = '\u00a0';   // a space that never breaks: it keeps a number and its unit on one line wherever the text wraps
+const fac = () => units === 'in' ? 25.4 : 10;   // mm per unit for the body measurements: inches or cm
+// Two Units switches, set independently. The one under Your Body puts the body measurements in inches or cm. The one under Bike puts
+// every other length (the bike, wheel depth, the readouts and the alerts) in inches or mm.
+// The bike, body and options themselves are always kept in mm, so switching either one changes nothing.
+const inch = () => bikeUnits === 'in';
+const len = (v, d = 1) => inch() ? (v / 25.4).toFixed(d) + NB + 'in' : Math.round(v) + NB + 'mm';   // a length in the readouts and alerts
+// How one bike field is shown and stepped: mm per unit shown (k), slider step, decimals and unit. Angles are the same either way.
+const scaleOf = f => f.u !== '°' && inch() ? { k: 25.4, step: .05, d: 2, u: 'in' } : { k: f.s, step: f.step, d: f.d, u: f.u };
+// A slider's ends: the whole steps lying inside its allowed range (given in mm).
+const ends = (el, lo, hi, k, step) => A(el, { step, min: +(Math.ceil(lo / k / step - 1e-6) * step).toFixed(2), max: +(Math.floor(hi / k / step + 1e-6) * step).toFixed(2) });
+// One slider in the Pedal cadence design: label (with its note) on the left, the value on the right, the line and handle underneath.
+const sliderHTML = (id, f) => `<div class="slider"><div class="top"><label class="cap" for="${id}">${f.l}${f.n ? ` <span class="note">${f.n}</span>` : ''}</label>` +
+  `<output id="${id}-out" for="${id}"></output></div><div class="rail"><input id="${id}" type="range"></div></div>`;
 
 const shows = [];
-const refresh = force => shows.forEach(s => s(force));
-function bind(inp, o) {
-  const wrap = inp.closest('.inp');
-  const show = force => { if (!force && document.activeElement === inp) return; inp.value = o.get().toFixed(o.d); wrap.classList.remove('bad'); };
-  inp.addEventListener('input', () => {
-    const v = parseFloat(inp.value), ok = Number.isFinite(v) && v >= o.min() - 1e-9 && v <= o.max() + 1e-9;
-    wrap.classList.toggle('bad', !ok); if (ok) o.set(v);
-  });
-  inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (Number.isFinite(v)) o.set(clamp(v, o.min(), o.max())); show(true); });
-  shows.push(show);
+// Typed entry. A slider listed here takes a typed value through its own set() (exactly as typed, in the units shown) and may read
+// and write it in a form of its own (feet and inches for height); any other slider is simply moved to the typed value.
+const typers = {};
+function typeValue(el) {
+  const out = $(el.id + '-out'), t = typers[el.id] || {}; if (!out || out.style.visibility) return;
+  const box = document.createElement('input'); box.type = 'text'; box.className = 'typein';
+  box.inputMode = t.parse || +el.min < 0 ? 'text' : 'decimal';   // a number pad where there is no minus sign or foot mark to type
+  box.setAttribute('aria-label', (document.querySelector(`label[for="${el.id}"]`)?.textContent.trim() || 'Value') + ', type a value');
+  box.value = t.text ? t.text() : (out.textContent.match(/-?\d+(\.\d+)?/) || [''])[0];
+  out.style.visibility = 'hidden'; out.after(box); box.focus(); box.select();
+  let done = false;
+  const close = keep => { if (done) return; done = true; const typed = box.value.trim().replace(',', '.'); box.remove(); out.style.visibility = '';
+    const v = keep ? (t.parse ? t.parse(typed) : parseFloat(typed)) : NaN; if (!Number.isFinite(v)) return;
+    const w = clamp(v, +el.min, +el.max);   // out of range: the nearest end
+    if (t.set) t.set(w); else { el.value = w; el.dispatchEvent(new Event('input', { bubbles: true })); } };
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); close(e.key === 'Enter'); el.focus(); } });
+  box.addEventListener('blur', () => close(true));
 }
+const refresh = () => shows.forEach(s => s());
 // Fit a saved body to its height: legs and torso are scaled together, keeping their proportions.
 function fitBody() {
   const L = body.thigh + body.shank, sum = L + body.torso; if (!(sum > 0)) return;
@@ -789,41 +832,48 @@ function setHeight(mm) {
   syncSaddle(); refresh(); update();
 }
 function buildPanel() {
-  $('bike-fields').innerHTML = BIKE.map(([name, fs]) =>
-    `<div class="group"><h3 class="grp">${name}</h3><div class="grid">${fs.map(f => fieldHTML('b-' + f.k, f, f.u)).join('')}</div>` +
+  $('bike-fields').innerHTML = `<div class="row2"><div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
+    `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
+    `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div></div>` + BIKE.map(([name, fs]) =>
+    `<div class="group"><h3 class="grp">${name}</h3><div class="stack">${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
     (name.startsWith('Saddle') ? `<label class="check" for="b-auto"><input id="b-auto" type="checkbox"><span>Set saddle height from inseam <span class="note">pedal to saddle top = 109% of inseam</span></span></label>` : '') +
     `</div>`).join('');
   BIKE.forEach(([, fs]) => fs.forEach(f => {
-    const el = $('b-' + f.k);
-    if (f.sel) { el.addEventListener('change', () => { bike[f.k] = +el.value; update(); }); shows.push(() => { el.value = bike[f.k]; }); return; }
-    bind(el, { d: f.d, min: () => f.min, max: () => f.max, get: () => bike[f.k] / f.s,
-      set: v => { bike[f.k] = v * f.s; if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); } });
+    // Each runs from its smallest allowed value to its largest. The value beside the label is read from the bike itself, so one that
+    // follows from the others (top tube, fork length) shows its true figure even when that lies beyond the slider's ends.
+    const el = $('b-' + f.k), out = $('b-' + f.k + '-out');
+    if (f.sel) {   // a choice of sizes: one stop for each
+      A(el, { min: 0, max: f.sel.length - 1, step: 1 });
+      el.addEventListener('input', () => { bike[f.k] = f.sel[+el.value][0]; refresh(); update(); });
+      shows.push(() => { const i = Math.max(0, f.sel.findIndex(o => o[0] === bike[f.k])); el.value = i; out.textContent = f.sel[i][1]; });
+      return;
+    }
+    const apply = v => { bike[f.k] = v * scaleOf(f).k;   // v is in the units shown; unitUI() gives the slider its scale in them
+      if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); };
+    el.addEventListener('input', () => apply(+el.value));
+    shows.push(() => { const sc = scaleOf(f), v = bike[f.k] / sc.k; el.value = v; out.textContent = v.toFixed(sc.d) + (sc.u === '°' ? '°' : NB + sc.u); });
+    typers['b-' + f.k] = { set: apply };   // a typed value is taken as typed, not rounded to the slider's step
   }));
-  $('b-auto').addEventListener('change', e => { bike.autoSaddle = e.target.checked; syncSaddle(); refresh(true); update(); });
+  $('b-auto').addEventListener('change', e => { bike.autoSaddle = e.target.checked; syncSaddle(); refresh(); update(); });
   shows.push(() => { $('b-auto').checked = bike.autoSaddle; });
 
-  $('body-fields').innerHTML = BODY.map(f => fieldHTML('p-' + f.k, { ...f, step: .5 }, '')).join('');
-  BODY.forEach(f => bind($('p-' + f.k), { d: 1, min: () => partRange(f.k)[0] / fac(), max: () => partRange(f.k)[1] / fac(), get: () => body[f.k] / fac(),
-    set: v => { setPart(f.k, v * fac()); body.custom = true; syncSaddle(); refresh(); update(); } }));
-  bind($('h-cm'), { d: 1, min: () => HMIN / 10, max: () => HMAX / 10, get: () => body.height / 10, set: v => setHeight(v * 10) });
-
-  const hFt = $('h-ft'), hIn = $('h-in'), ftWrap = [hFt.closest('.inp'), hIn.closest('.inp')];
-  const showFt = force => {
-    if (!force && (document.activeElement === hFt || document.activeElement === hIn)) return;
-    const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9);
-    hFt.value = ft; hIn.value = String(r1(t - ft * 12)); ftWrap.forEach(w => w.classList.remove('bad'));
-  };
-  const readFt = commit => {
-    const ft = parseFloat(hFt.value), inch = parseFloat(hIn.value), mm = (ft * 12 + inch) * 25.4, fin = Number.isFinite(mm);
-    // Inches below 0 or at 12 and above carry into the feet field straight away (6 ft 0 in, one step down, becomes 5 ft 11.5 in).
-    const carry = fin && (inch < 0 || inch >= 12), ok = fin && mm >= HMIN && mm <= HMAX && (inch >= 0 || carry);
-    ftWrap.forEach(w => w.classList.toggle('bad', !ok));
-    if (ok) setHeight(mm); else if ((commit || carry) && fin) setHeight(mm);
-    if (commit || carry) showFt(true);
-  };
-  [hFt, hIn].forEach(el => { el.addEventListener('input', () => readFt(false)); el.addEventListener('change', () => readFt(true)); });
-  shows.push(showFt);
+  // Height and the body measurements: sliders in the Pedal cadence design, each running from its smallest allowed value to its largest.
+  // unitUI() gives them their scale in the chosen units; the value beside the label is always read from the body itself.
+  $('body-fields').innerHTML = [{ k: 'height', l: 'Height' }, ...BODY].map(f => sliderHTML('p-' + f.k, f)).join('');
+  const bodySlider = (k, get, set, fmt) => { const el = $('p-' + k), out = $('p-' + k + '-out');
+    el.addEventListener('input', () => set(+el.value * fac()));
+    shows.push(() => { el.value = get() / fac(); out.textContent = fmt(); });
+    typers['p-' + k] = { set: v => set(v * fac()) }; };
+  bodySlider('height', () => body.height, mm => setHeight(mm), () => units === 'in' ? ftin() : (body.height / 10).toFixed(1) + NB + 'cm');
+  // Height in inches is typed as feet and inches (5'11, 5 11.5, 6') or as inches alone (71); a lone number under 10 is feet.
+  typers['p-height'].text = () => units === 'in' ? ftin().replace('′', "'").replace('″', '"') : (body.height / 10).toFixed(1);
+  typers['p-height'].parse = t => { if (units !== 'in') return parseFloat(t);
+    const m = t.match(/^(\d+(?:\.\d+)?)\s*(?:'|′|ft|feet)\s*(\d+(?:\.\d+)?)?/i) || t.match(/^(\d+)\s+(\d+(?:\.\d+)?)/);
+    if (m) return +m[1] * 12 + (+m[2] || 0); const v = parseFloat(t); return v < 10 ? v * 12 : v; };
+  // A measurement that would push itself or the ones tied to it past their limits stops at the furthest value that fits.
+  BODY.forEach(f => bodySlider(f.k, () => body[f.k], mm => { const lim = partRange(f.k); setPart(f.k, clamp(mm, lim[0], lim[1])); body.custom = true; syncSaddle(); refresh(); update(); },
+    () => (body[f.k] / fac()).toFixed(1) + NB + (units === 'in' ? 'in' : 'cm')));
 
   const radios = (name, get, set) => {
     const rs = [...document.querySelectorAll(`input[name="${name}"]`)], seg = rs[0].parentElement;
@@ -832,25 +882,46 @@ function buildPanel() {
     rs.forEach(r => { r.addEventListener('change', () => { if (r.checked) { set(r.value); slide(); } }); shows.push(() => { r.checked = r.value === get(); }); });
     shows.push(slide);
   };
-  radios('units', () => units, v => { units = v; unitUI(); refresh(true); update(); });
+  radios('units', () => units, v => { units = v; unitUI(); refresh(); update(); });
+  radios('bikeUnits', () => bikeUnits, v => { bikeUnits = v; unitUI(); refresh(); update(); });
   radios('sex', () => body.sex, v => { body.sex = v; setHeight(body.height); });
   radios('hands', () => opt.hands, v => { opt.hands = v; update(); });
+  radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
+  radios('disc', () => opt.disc, v => { opt.disc = v; update(); });
   $('body-reset').addEventListener('click', () => setHeight(body.height));
 
-  const range = (k, fmt) => { const el = $('o-' + k), out = $('o-' + k + '-out');
+  // length: the option is a length in mm, shown and stepped in inches when those are chosen (unitUI() sets its scale).
+  const range = (k, fmt, length) => { const el = $('o-' + k), out = $('o-' + k + '-out'), per = () => length && inch() ? 25.4 : 1;
     const put = () => { if (out) out.textContent = fmt(opt[k]); };
-    el.addEventListener('input', () => { opt[k] = +el.value; put(); update(); });
-    shows.push(() => { el.value = opt[k]; put(); }); };
-  range('cadence', v => v + ' rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
+    el.addEventListener('input', () => { opt[k] = +el.value * per(); put(); update(); });
+    shows.push(() => { el.value = opt[k] / per(); put(); }); };
+  range('cadence', v => v + NB + 'rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
   ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'wheelGray', 'compGray'].forEach(k => range(k));
-  range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart range('rimDepth', v => v + ' mm');
-  ['ring', 'cog'].forEach(k => { const el = $('o-' + k);
-    bind(el, { d: 0, min: () => +el.min, max: () => +el.max, get: () => opt[k], set: v => { opt[k] = Math.round(v); update(); } }); });
+  range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart
+  range('rimDepth', v => len(v, 2), true);
+  range('ring', v => v + NB + 't'); range('cog', v => v + NB + 't');
   $('o-angles').addEventListener('change', e => { opt.angles = e.target.checked; update(); });
   shows.push(() => { $('o-angles').checked = opt.angles; });
   $('o-scrub').addEventListener('input', e => { setPlaying(false); const t = rad(+e.target.value); wheelAng += deg(t - theta) * opt.ring / opt.cog; theta = t; drawFrame(); });
+  // Any slider that shows a number takes a typed value: click the number, or press Enter with the slider in focus.
+  document.querySelectorAll('#panel .slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
+    out.classList.add('typed'); out.title = 'Click to type a value'; });
+  $('panel').addEventListener('click', e => { const out = e.target.closest('output.typed'); if (out) typeValue($(out.getAttribute('for'))); });
+  $('panel').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input[type=range]') && $(e.target.id + '-out')?.classList.contains('typed')) { e.preventDefault(); typeValue(e.target); } });
   $('play').addEventListener('click', () => setPlaying(!playing));
-  $('reset-all').addEventListener('click', () => { defaults(); unitUI(); refresh(true); update(); });
+  // Reset to defaults asks first. Pressing it swaps it for Confirm and Cancel; Cancel, Escape, or going on to anything else on the
+  // page puts it back. Confirm ignores presses for the first moment, so a double-click on Reset can't run straight through it.
+  // The buttons change hands in an order that never hides the one holding the focus, and 'asking' is only on once they have.
+  const foot = $('reset-foot'); let asking = false, resetAt = 0;
+  const resetAsk = (on, focus) => { asking = false;
+    if (on) { $('reset-yes').hidden = $('reset-no').hidden = false; $('reset-no').focus(); $('reset-all').hidden = true; }
+    else { $('reset-all').hidden = false; if (focus) $('reset-all').focus(); $('reset-yes').hidden = $('reset-no').hidden = true; }
+    asking = on; };
+  $('reset-all').addEventListener('click', () => { resetAsk(true); resetAt = performance.now(); });
+  $('reset-yes').addEventListener('click', () => { if (performance.now() - resetAt < 400) return; resetAsk(false, true); defaults(); unitUI(); refresh(); update(); });
+  $('reset-no').addEventListener('click', () => resetAsk(false, true));
+  foot.addEventListener('keydown', e => { if (e.key === 'Escape' && asking) resetAsk(false, true); });
+  ['pointerdown', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (asking && !foot.contains(e.target)) resetAsk(false); }));
 
   // Panel width: drag the edge, use the arrow keys on it, or double-click it to go back to the default.
   const rz = $('resizer'), app = rz.parentElement;
@@ -865,11 +936,13 @@ function setPanelW(w) {
   panelW = clamp(Math.round(w), 280, Math.max(280, window.innerWidth - 340));
   document.documentElement.style.setProperty('--panel-w', panelW + 'px'); $('resizer').setAttribute('aria-valuenow', panelW);
 }
+// The sliders' scales in the chosen units. Body (its own switch): 0.5 in for height and 0.1 in for the measurements, or 0.5 cm for both.
+// Bike lengths and wheel depth (the bike's switch): 0.05 in, or each field's own step in mm.
 function unitUI() {
-  const inch = units === 'in';
-  $('height-cm-field').hidden = inch; $('height-in-field').hidden = !inch;
-  BODY.forEach(f => { const el = $('p-' + f.k); el.min = r1(f.min / fac()); el.max = r1(f.max / fac()); el.step = inch ? .25 : .5;
-    el.nextElementSibling.textContent = inch ? 'in' : 'cm'; });
+  ends($('p-height'), HMIN, HMAX, fac(), .5);
+  BODY.forEach(b => ends($('p-' + b.k), b.min, b.max, fac(), units === 'in' ? .1 : .5));
+  BIKE.forEach(([, fs]) => fs.forEach(f => { if (!f.sel) { const sc = scaleOf(f); ends($('b-' + f.k), f.min * f.s, f.max * f.s, sc.k, sc.step); } }));
+  ends($('o-rimDepth'), 15, 90, inch() ? 25.4 : 1, inch() ? .05 : 1);
 }
 
 /* ---------- geometry: origin at the bottom bracket, x forward, y up ---------- */
@@ -891,10 +964,13 @@ function barGeom(b) {
   const n = [Math.cos(rad(38)), Math.sin(rad(38))], m = on(rad(38)), body = along(m, n, 22);
   // The shifter body clamps to the upper front of the hook and reaches forward; the lever blade hangs from its front end, clear of the bar.
   const hf = [m[0] + 46 * Math.cos(rad(25)), m[1] + 46 * Math.sin(rad(25))];
-  return { r, start: on(a0), bottom: [c[0], -dr], end: [c[0] - .45 * dr + 10, -dr],
-    hood: [on(rad(58)), hf, [hf[0] + 4, hf[1] + 26]],
-    lever: [[hf[0] + 2, hf[1] - 10], [re + 28, -.72 * dr]],
-    grips: { tops: [0, 0], hoods: [body[0] - 10, body[1] + 6], drops: on(rad(-55)) } };
+  // Bar angle turns the whole bar, shifters included, about the clamp: positive lifts the hoods. The bar tops sit on that axis, so
+  // the tops hand position stays where it is while the shifters and drops positions move with the bar.
+  const ba = rad(b.barAngle), cs = Math.cos(ba), sn = Math.sin(ba), turn = p => [p[0] * cs - p[1] * sn, p[0] * sn + p[1] * cs];
+  return { r, start: turn(on(a0)), bottom: turn([c[0], -dr]), end: turn([c[0] - .45 * dr + 10, -dr]),
+    hood: [on(rad(58)), hf, [hf[0] + 4, hf[1] + 26]].map(turn),
+    lever: [[hf[0] + 2, hf[1] - 10], [re + 28, -.72 * dr]].map(turn),
+    grips: { tops: [0, 0], hoods: turn([body[0] - 10, body[1] + 6]), drops: turn(on(rad(-55))) } };
 }
 function solve() {
   const b = bike, H = body.height, sa = rad(b.sta), ha = rad(b.hta);
@@ -979,6 +1055,16 @@ function makeWheel() {
   o.valve = N('line', 'valve', o.rot); o.tread = N('circle', 'tread', o.rot); o.hub = N('circle', 'hub', g, { r: 17 });
   return o;
 }
+// Disc brake rotor, 160 mm across: a 15 mm braking track carried on six swept arms from a centre carrier. The arms turn with the
+// wheel; at speed they fade into a haze, as the spokes do.
+function makeRotor() {
+  const g = N('g', 'rotor', svg, { display: 'none' }), o = { g };
+  o.rot = N('g', '', g); o.haze = N('circle', 'haze', o.rot, { r: 66, opacity: 0 }); o.arms = N('g', '', o.rot);
+  for (let k = 0; k < 6; k++) { const a = rad(k * 60), c = a + rad(32);
+    N('line', 'arm', o.arms, { x1: r1(22 * Math.cos(a)), y1: r1(22 * Math.sin(a)), x2: r1(67 * Math.cos(c)), y2: r1(67 * Math.sin(c)) }); }
+  N('circle', 'track', g, { r: 72.5 }); N('circle', 'carrier', g, { r: 25 });
+  return o;
+}
 function makeLeg(far) {
   const c = far ? ' far' : '', o = {};
   o.pedal = N('rect', 'pedal' + c, svg, { x: -46, y: -9, width: 92, height: 18, rx: 6 });
@@ -989,7 +1075,8 @@ function makeLeg(far) {
 }
 function buildScene() {
   E.ground = N('line', 'ground');
-  E.farCrank = N('line', 'crank far'); E.far = makeLeg(true);
+  E.farCrank = N('path', 'crank far'); E.far = makeLeg(true);
+  E.rotors = [makeRotor(), makeRotor()];   // on the far side of the wheels: in front of the far leg, behind every part of the bike
   E.wheels = [makeWheel(), makeWheel()];
   const tube = (w, cls = 'tube') => N('line', cls, svg, { 'stroke-width': w });
   // The rear cog and the full chain loop sit behind the frame, so the seat stay passes in front of the chain.
@@ -1002,20 +1089,20 @@ function buildScene() {
   const caps = ['', '', ' butt', '', '', ' butt'];
   E.ol = caps.map(c => N('line', 'ol' + c, E.olG)); E.olFork = N('path', 'olfill', E.olG);
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
-  E.clamp = tube(16, 'comp'); E.rails = tube(6, 'comp'); E.saddle = N('path', 'part', svg, { 'stroke-width': 20 });
+  E.clamp = tube(16, 'comp'); E.rails = tube(6, 'comp'); E.saddle = N('path', 'saddle');
   E.stem = tube(26, 'comp'); E.bar = N('path', 'tape', svg, { 'stroke-width': 22 });
   // Same fading inner edge line as the frame, for very pale bar tape.
   E.barOL = N('g', '', svg, { visibility: 'hidden' }); N('path', 'ol', E.barOL, { 'stroke-width': 22 }); N('path', 'tape', E.barOL, { 'stroke-width': 16 }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', svg, { 'stroke-width': 24 });
   E.ring = N('circle', 'ring chainring'); E.spider = N('g');
   E.arms = Array.from({ length: 5 }, () => N('line', 'comp', E.spider, { 'stroke-width': 18 }));
   E.chainTop = N('path', 'chain', svg, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
-  E.crank = N('line', 'crank');
+  E.crank = N('path', 'crank');
   E.torso = N('path', 'limbfill'); E.neck = N('line', 'limb'); E.head = N('circle', 'flesh');
   E.near = makeLeg(false);
   E.hU = N('path', 'halo', svg, { 'stroke-width': 9 }); E.upper = N('path', 'limbfill'); E.hF = N('path', 'halo', svg, { 'stroke-width': 9 }); E.fore = N('path', 'limbfill'); E.hand = N('circle', 'flesh hand');
   // Clicking the hand steps through the hand positions: bar tops, shifters, drops.
   N('title', '', E.hand).textContent = 'Click to change hand position';
-  E.hand.addEventListener('click', () => { const order = ['tops', 'hoods', 'drops']; opt.hands = order[(order.indexOf(opt.hands) + 1) % 3]; refresh(true); update(); });
+  E.hand.addEventListener('click', () => { const order = ['tops', 'hoods', 'drops']; opt.hands = order[(order.indexOf(opt.hands) + 1) % 3]; refresh(); update(); });
   E.j = {}; ['hip', 'knee', 'ankle', 'shoulder', 'elbow', 'wrist'].forEach(k => E.j[k] = N('circle', 'joint'));
   E.labG = N('g'); E.lab = {}; ['knee', 'hip', 'shoulder', 'elbow'].forEach(k => E.lab[k] = N('text', 'lab', E.labG));
 }
@@ -1044,6 +1131,7 @@ function drawStatic() {
   const knobs = kd > 0 ? treadDash(2 * Math.PI * rk) : 'none';
   [g.rear, g.front].forEach((ax, i) => {
     const w = E.wheels[i]; A(w.g, { transform: `translate(${pt(ax)})` });
+    A(E.rotors[i].g, { transform: `translate(${pt(ax)})`, display: opt.disc === 'on' ? 'inline' : 'none' });
     A(w.tire, { r: r1(b.rim / 2 + (b.tire - kd + 1) / 2), 'stroke-width': r1(b.tire - kd + 1) }); A(w.tread, { r: r1(rk), 'stroke-width': r1(kd), 'stroke-dasharray': knobs });
     A(w.rim, { r: r1(b.rim / 2 - rd / 2), 'stroke-width': rd }); A(w.blur, { r: r1(rs) });
     w.lines.forEach((l, k) => { const ra = rad(k * 18), hb = ra + rad(k % 2 ? 50 : -50);
@@ -1078,7 +1166,12 @@ function drawStatic() {
   // Saddle: 0.8 of its earlier length, shortened from the tail so the nose stays at the entered setback.
   const nose = -b.setback, sc = nose - 108, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
   setLine(E.clamp, postTop, [cx, sy - 32]); setLine(E.rails, [sc - 48, sy - 32], [sc + 48, sy - 32]);
-  A(E.saddle, { d: `M ${pt([nose - 4, sy - 12])} L ${pt([nose - 140, sy - 10])} L ${pt([nose - 213, sy - 4])}` });
+  // The saddle is 30 mm thick at the tail (left), tapering evenly along its length to 20 mm at the nose, with rounded ends. Its top
+  // edge keeps the line it had at an even 20 mm, so saddle height still measures to the same surface; the extra thickness hangs below.
+  const sN = [nose - 4, sy - 12], sM0 = [nose - 140, sy - 10], sT0 = [nose - 213, sy - 4];
+  const sK = dist(sM0, sN) / (dist(sT0, sM0) + dist(sM0, sN)), rT = 15, rN = 10, rM = rN + (rT - rN) * sK;
+  const sT = [sT0[0], sT0[1] - (rT - rN)], sM = [sM0[0], sM0[1] - (rM - rN)];
+  A(E.saddle, { d: taper(sT, sM, rT, rM) + ' ' + taper(sM, sN, rM, rN) });
   const bg = g.bg, q = pp => pt([g.bar[0] + pp[0], g.bar[1] + pp[1]]), br = r1(bg.r);
   const bd = `M ${q([0, 0])} L ${q(bg.start)} A ${br} ${br} 0 0 1 ${q(bg.bottom)} L ${q(bg.end)}`;
   [E.bar, ...E.barOL.children].forEach(e => e.setAttribute('d', bd));
@@ -1088,6 +1181,8 @@ function drawStatic() {
   const rc = opt.ring * 12.7 / (2 * Math.PI), rg = opt.cog * 12.7 / (2 * Math.PI);
   // The chain is 5 mm wide on each sprocket's pitch circle; both sprockets end flush with the chain's outer edge.
   setDot(E.ring, [0, 0], rc - 4.5); setDot(E.cog, g.rear, rg + 2.5);
+  // Solid chainring: the ring's circle filled in, in place of the five arms.
+  const solid = opt.ringStyle === 'solid'; E.ring.classList.toggle('solid', solid); E.spider.setAttribute('display', solid ? 'none' : 'inline');
   E.arms.forEach((l, k) => { const a = rad(k * 72 + 36); A(l, { x1: 0, y1: 0, x2: r1((rc - 8) * Math.cos(a)), y2: r1((rc - 8) * Math.sin(a)) }); });
   const base = Math.atan2(g.rear[1], g.rear[0]), ph = Math.acos(clamp((rc - rg) / Math.hypot(g.rear[0], g.rear[1]), -1, 1));
   // Chain: one closed loop. Upper and lower runs are tangent to both sprockets; it wraps the back of the cog and the front of the chainring.
@@ -1156,9 +1251,10 @@ function putLeg(o, L) {
 let theta = rad(115), wheelAng = 0, playing = true, last = 0, lastK = '', lastH = '';
 function drawFrame() {
   const n = leg(theta), f = leg(theta + Math.PI), d = r1(deg(theta));
-  setLine(E.crank, [0, 0], n.s); setLine(E.farCrank, [0, 0], f.s); E.spider.setAttribute('transform', `rotate(${d})`);
+  // Crank arms taper from 40 mm wide at the bottom bracket to 30 mm at the pedal, with rounded ends.
+  E.crank.setAttribute('d', taper([0, 0], n.s, 20, 15)); E.farCrank.setAttribute('d', taper([0, 0], f.s, 20, 15)); E.spider.setAttribute('transform', `rotate(${d})`);
   putLeg(E.near, n); putLeg(E.far, f);
-  const wa = r1(wheelAng); E.wheels.forEach(w => w.rot.setAttribute('transform', `rotate(${wa})`));
+  const wa = r1(wheelAng); E.wheels.forEach(w => w.rot.setAttribute('transform', `rotate(${wa})`)); E.rotors.forEach(o => o.rot.setAttribute('transform', `rotate(${wa})`));
   setDot(E.j.knee, n.knee); setDot(E.j.ankle, n.ankle);
   if (opt.angles) {
     const kp = along(n.knee, n.out, .03 * G.H + 40); A(E.lab.knee, { x: r1(kp[0]), y: r1(-kp[1]) });
@@ -1183,30 +1279,34 @@ function wheelBlur() {
   // and the valve carries the rotation instead.
   const dpf = playing ? opt.cadence / 60 * opt.ring / opt.cog * 6 : 0, so = clamp(1 - (dpf - 3) / 6, 0, 1);
   E.wheels.forEach(w => { w.spokes.setAttribute('opacity', r1(so)); w.blur.setAttribute('opacity', (1 - so) * .14); });
+  E.rotors.forEach(o => { o.arms.setAttribute('opacity', r1(so)); o.haze.setAttribute('opacity', r1((1 - so) * .35)); });
   svg.classList.toggle('playing', playing);   // while spinning, the spoke area stays one light gray whatever the wheel colour
 }
 
 /* ---------- readouts ---------- */
-const mm = v => Math.round(v) + ' mm';
-const ftin = () => { const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9); return `${ft}′ ${r1(t - ft * 12)}″`; };
+const ftin = () => { const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9); return `${ft}′${NB}${r1(t - ft * 12)}″`; };
 function readouts() {
   const g = G, b = bike, ha = rad(b.hta);
   $('r-ratio').textContent = (b.stack / b.reach).toFixed(2) + ':1';
   // Standover: halfway along the top tube, from the ground under the tires to the tube's upper surface (14 mm above its centreline, square to the tube).
-  $('r-standover').textContent = mm((g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY);
+  const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY; $('r-standover').textContent = len(standover);
   const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl) < .3 ? 'level' : Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');
-  $('r-wb').textContent = mm(g.front[0] - g.rear[0]); $('r-trail').textContent = mm((g.R * Math.cos(ha) - b.rake) / Math.sin(ha));
-  const drop = Math.round(g.saddleY - (g.bar[1] + 12)); $('r-drop').textContent = drop >= 0 ? drop + ' mm' : Math.abs(drop) + ' mm rise';
+  $('r-wb').textContent = len(g.front[0] - g.rear[0]); $('r-trail').textContent = len((g.R * Math.cos(ha) - b.rake) / Math.sin(ha));
+  const drop = Math.round(g.saddleY - (g.bar[1] + 12)); $('r-drop').textContent = drop >= 0 ? len(drop) : len(-drop) + NB + 'rise';
   const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'high'] : C.kmax < 135 ? ['warn', 'low'] : ['ok', 'typical'];
   $('r-kmax').innerHTML = `${Math.round(C.kmax)}°<span class="tag ${ks[0]}">${ks[1]}</span>`;
   $('r-kmin').textContent = Math.round(C.kmin) + '°'; $('r-hip').textContent = Math.round(C.hmin) + '°';
   $('r-back').textContent = Math.round(deg(g.tA)) + '°'; $('r-sh').textContent = Math.round(g.shoulderAng) + '°';
-  const k = Math.round(C.kops); $('r-kops').textContent = Math.abs(k) < 3 ? 'level' : Math.abs(k) + ' mm ' + (k > 0 ? 'ahead' : 'behind');
+  const k = Math.round(C.kops); $('r-kops').textContent = Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind');
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
-  else if (b.fork < 339.5 || b.fork > 420.5) al.push(['warn', `This stack and head tube length need a ${Math.round(b.fork)} mm fork. Road forks are usually 340 to 420 mm.`]);
+  else if (b.fork < 339.5 || b.fork > 420.5) al.push(['warn', `This stack and head tube length need a ${len(b.fork)} fork. Road forks are usually ${inch() ? '13.4 to 16.5' + NB + 'in' : '340 to 420' + NB + 'mm'}.`]);
   if (g.slope < -2) al.push(['warn', 'The top tube rises toward the saddle. The seat tube is long for this stack.']);
+  // Standover: the top tube against the rider's inseam (floor to crotch). Less than about 25 mm to spare is tight.
+  const spare = body.inseam - standover;
+  if (spare < 0) al.push(['bad', `The top tube is ${len(-spare)} above your inseam. You can’t stand over this frame.`]);
+  else if (spare < 25) al.push(['warn', `Only ${len(spare)} of standover clearance. About ${inch() ? '1' + NB + 'in' : '25' + NB + 'mm'} or more is usual.`]);
   if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
   else if (ks[1] === 'high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
   else if (ks[1] === 'low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
@@ -1214,12 +1314,12 @@ function readouts() {
   else if (g.arm === 'straight') al.push(['warn', 'The arms have to straighten to reach this hand position.']);
   $('alerts').innerHTML = al.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
 
-  const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)} mph · ${kmh.toFixed(1)} km/h`;
+  const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
-  $('gear-hint').textContent = `${opt.ring} × ${opt.cog} at ${opt.cadence} rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}.`;
-  $('sum-bike').textContent = `${Math.round(b.seatTube)} mm · ${{ 622: '700c', 584: '650b', 559: '26 in' }[b.rim]} × ${b.tire}`;
-  $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + ' cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
-  $('sum-options').textContent = `${opt.cadence} rpm · Hands on ${{ tops: 'bar tops', hoods: 'shifters', drops: 'drops' }[opt.hands]}`;
+  $('gear-hint').textContent = `${opt.ring}${NB}×${NB}${opt.cog} at ${opt.cadence}${NB}rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}.`;
+  $('sum-bike').textContent = `${len(b.seatTube)} · ${{ 622: '700c', 584: '650b', 559: '26' + NB + 'in' }[b.rim]}${NB}×${NB}${Math.round(b.tire)}`;
+  $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
+  $('sum-options').textContent = `${opt.cadence}${NB}rpm · Hands on ${{ tops: 'bar tops', hoods: 'shifters', drops: 'drops' }[opt.hands]}`;
   $('body-hint').textContent = (body.custom ? 'You have changed some measurements from the averages for this height.'
     : 'The other measurements are averages for this height. Change any of them to match your own.') +
     ' Legs and torso have to fit within your height, so lengthening one shortens the other.';
@@ -1234,6 +1334,10 @@ const gray = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 217).toString(
 // blue, and a pure red stays the same red. Moving all three channels by one amount does exactly that.
 const mirror = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), d = 255 - Math.max(...c) - Math.min(...c);
   return '#' + c.map(x => (x + d).toString(16).padStart(2, '0')).join(''); };
+// The crank arms and pedals are drawn 25% darker than the components colour, so they stand apart from the chainring, star or solid.
+// A colour in the darker half (black, by day) has no room to darken, so there it goes 25% lighter instead.
+const shade = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), dark = Math.max(...c) + Math.min(...c) < 255;
+  return '#' + c.map(x => Math.round(dark ? x + (255 - x) * .25 : x * .75).toString(16).padStart(2, '0')).join(''); };
 function applyColors() { const st = document.documentElement.style, tone = document.documentElement.classList.contains('night') ? mirror : c => c;
   // The edge line fades in as the frame nears white (in night mode that same colour is drawn near black, on a black page):
   // it starts at 15% saturation and 85% brightness and is solid by 5% and 95%.
@@ -1250,23 +1354,23 @@ function applyColors() { const st = document.documentElement.style, tone = docum
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
   [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS]].forEach(([id, h, sat]) => {
     $(id).style.setProperty('--pure', tone(hsb(h, 100, 100))); $(id).style.setProperty('--full', tone(hsb(h, sat, 100))); });
-  st.setProperty('--wheel', tone(gray(opt.wheelGray))); st.setProperty('--comp', tone(gray(opt.compGray))); }
+  st.setProperty('--wheel', tone(gray(opt.wheelGray))); st.setProperty('--comp', tone(gray(opt.compGray)));
+  st.setProperty('--crank', shade(tone(gray(opt.compGray)))); }
 function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); save(); }
 
 /* ---------- boot ---------- */
-function start(d) {
+function start() {
   defaults();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
-  restore(saved); restore(d); setPanelW(panelW);
-  buildPanel(); buildScene(); unitUI(); refresh(true);
+  restore(saved); setPanelW(panelW);
+  buildPanel(); buildScene(); unitUI(); refresh();
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { playing = false; $('play').textContent = 'Play'; }
   update();
   document.addEventListener('nightchange', applyColors);   // the NIGHT MODE switch
   if (window.ResizeObserver) new ResizeObserver(fit).observe(svg);
   requestAnimationFrame(t => { last = t; document.body.classList.add('ready'); requestAnimationFrame(tick); });   // 'ready' turns on control transitions after the first paint
 }
-try { window.claude?.hot?.snapshot?.(() => ({ v: 6, bike, body, opt, units, panelW })); } catch (e) {}
-if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
+start();
 })();
 </script>
 </body>
