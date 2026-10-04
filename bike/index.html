@@ -141,10 +141,14 @@ h1,h2,h3,p,dl,dd{margin:0}
 .cap{font-size:13px;font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:12px}
 
+/* A one-line text box, outlined like the switches and buttons. */
+.textin{display:block;box-sizing:border-box;width:100%;min-width:0;font:400 13.5px/1.3 var(--font);color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:7px;padding:7px 10px}
+.textin::placeholder{color:var(--muted);opacity:1;font-weight:400;font-style:normal}
+.textin:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* On/off buttons: an outlined box when off, filled when on. Each is a checkbox underneath, so it works from the keyboard and is
    announced as checked or not. They sit two to a row; a wide one takes the whole row. */
 .togs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
-.tog{display:block;min-width:0;cursor:pointer}
+.tog{position:relative;display:block;min-width:0;cursor:pointer}   /* relative: the unseen checkbox must stay inside its button, or it stretches the page */
 .tog.wide{grid-column:1 / -1}
 .tog input{position:absolute;opacity:0;pointer-events:none}
 .tog span{display:block;padding:7px 8px;border:1px solid var(--rule);border-radius:7px;background:var(--field);color:var(--ink);
@@ -218,7 +222,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 #sec-appearance .sec-body>.slider+.row2{margin-top:-12px}   /* tire tread and the two switches under it stay one cluster */
 .grphead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
-.sw-rider{background:var(--rider)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
+.sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
    Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen. */
 .slot{display:flex;padding:3px;border-radius:999px;background:var(--slot)}
@@ -276,6 +280,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--muted)}   /* plain: a description, not a verdict */
 
 /* ---------- drawing ---------- */
+svg .ftext{fill:var(--ftext);font-family:var(--font);white-space:pre;pointer-events:none}   /* the lettering on the downtube */
 svg.norider .is-rider,svg.nobike .is-bike{display:none}   /* the Hide rider and Hide bike options */
 /* The ground line and the level line under a hill are as thin as the lines of the sliders in the panel: 1px, whatever the drawing's scale. */
 svg .ground{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
@@ -650,6 +655,26 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             </div>
           </div>
         </div>
+        <div class="group sliders" id="grp-text">
+          <div class="grphead"><h3 class="grp">Frame text</h3><i class="sw sw-text" aria-hidden="true"></i></div>
+          <input class="textin" id="o-frameText" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Frame text" placeholder="Text for the downtube">
+          <div class="togs">
+            <label class="tog" for="o-textBold"><input id="o-textBold" type="checkbox"><span>Bold</span></label>
+            <label class="tog" for="o-textItalic"><input id="o-textItalic" type="checkbox"><span>Italic</span></label>
+          </div>
+          <div class="slider">
+            <label class="cap" for="o-textH">Hue</label>
+            <div class="slot slot-hue"><input id="o-textH" type="range" min="0" max="359" step="1"></div>
+          </div>
+          <div class="slider">
+            <label class="cap" for="o-textS">Saturation</label>
+            <div class="slot slot-sat"><input id="o-textS" type="range" min="0" max="100" step="1"></div>
+          </div>
+          <div class="slider">
+            <label class="cap" for="o-textB">Brightness</label>
+            <div class="slot slot-bri"><input id="o-textB" type="range" min="0" max="100" step="1"></div>
+          </div>
+        </div>
       </div>
     </details>
 
@@ -725,7 +750,8 @@ const TT_DROP = 10;  // the top tube joins this much further down the head tube,
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, hideRider: false, hideBike: false, incline: 0, smiley: false,
-  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off' };
+  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
+  frameText: '', textBold: false, textItalic: false, textH: 0, textS: 0, textB: 100 };   // lettering on the downtube: none to begin with, and white
 let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
 function defaults() {
@@ -756,7 +782,7 @@ function restore(d) {
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
   if (o.turbo === true && !Number.isFinite(o.incline)) o.incline = 15;   // saved with the old Turbo Mode button on: the same hill
-  take(opt, o);
+  take(opt, o); opt.frameText = opt.frameText.slice(0, 30);
   if (d.units === 'cm' || d.units === 'in') units = d.units;
   // The rider's own measurements, kept while "Use average measurements" is selected.
   if (d.own && typeof d.own === 'object' && PARTS.every(k => Number.isFinite(d.own[k]))) ownBody = Object.fromEntries(PARTS.map(k => [k, d.own[k]]));
@@ -979,13 +1005,16 @@ function buildPanel() {
     el.addEventListener('input', () => { opt[k] = +el.value * per(); put(); update(); });
     shows.push(() => { el.value = opt[k] / per(); put(); }); };
   range('cadence', v => v + NB + 'rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
-  ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'wheelGray', 'compGray'].forEach(k => range(k));
+  ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'textH', 'textS', 'textB', 'wheelGray', 'compGray'].forEach(k => range(k));
   range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart
   range('rimDepth', v => len(v, 2), true);
   range('ring', v => v + NB + 't'); range('cog', v => v + NB + 't');
   $('o-angles').addEventListener('change', e => { opt.angles = e.target.checked; update(); });
   shows.push(() => { $('o-angles').checked = opt.angles; });
-  ['hideRider', 'hideBike'].forEach(k => { $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; update(); }); shows.push(() => { $('o-' + k).checked = opt[k]; }); });
+  // Frame text: what is typed goes onto the downtube as it is typed. Bold and Italic style it there and in the box.
+  $('o-frameText').addEventListener('input', e => { opt.frameText = e.target.value; update(); });
+  shows.push(() => { const el = $('o-frameText'); if (el.value !== opt.frameText) el.value = opt.frameText; });
+  ['hideRider', 'hideBike', 'textBold', 'textItalic'].forEach(k => { $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; update(); }); shows.push(() => { $('o-' + k).checked = opt[k]; }); });
   $('o-scrub').addEventListener('input', e => { setPlaying(false); const t = rad(+e.target.value); wheelAng += deg(t - theta) * opt.ring / opt.cog; theta = t; drawFrame(); });
   // Any slider that shows a number takes a typed value: click the number, or press Enter with the slider in focus.
   document.querySelectorAll('.slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
@@ -1206,6 +1235,8 @@ function buildScene() {
   const caps = ['', '', ' butt', '', '', ' butt'];
   E.ol = caps.map(c => N('line', 'ol' + c, E.olG)); E.olFork = N('path', 'olfill', E.olG);
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
+  // Frame text: lettering along the downtube, on top of the frame and its edge line. It is clipped to the tube, so it never runs past the ends.
+  E.textG = N('g'); E.textClip = N('rect', '', N('clipPath', '', E.textG, { id: 'dt-clip' })); E.text = N('text', 'ftext', E.textG, { 'clip-path': 'url(#dt-clip)', 'text-anchor': 'middle' });
   E.clamp = tube(16, 'comp'); E.rails = tube(6, 'comp'); E.saddle = N('path', 'saddle');
   E.stem = tube(26, 'comp'); E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
   // Same fading inner edge line as the frame, for very pale bar tape. Each line comes with a round dot for its end at the stem.
@@ -1330,6 +1361,15 @@ function drawStatic() {
   setLine(E.chainstay, [0, 0], g.rear); setLine(E.seatstay, g.rear, ssTop);
   setLine(E.seatpost, seatTop, postTop); setLine(E.seattube, [0, 0], seatTop); setLine(E.toptube, g.stJ, g.htJ);
   setLine(E.downtube, [0, 0], dtTop);
+  // The lettering runs up the downtube, centred two thirds of the way from the bottom bracket to the head tube. Its type size is the
+  // tube's thickness, and it sits with capitals centred across the tube. It stops 60 mm short of the bottom bracket and 24 mm short
+  // of the head tube.
+  const dtL = dist([0, 0], dtTop), dtW = +E.downtube.getAttribute('stroke-width'), tAt = along([0, 0], unit(dtTop), dtL * 2 / 3);
+  A(E.textG, { transform: `translate(${pt(tAt)}) rotate(${r1(-deg(Math.atan2(dtTop[1], dtTop[0])))})`, display: opt.frameText.trim() ? 'inline' : 'none' });
+  A(E.textClip, { x: r1(60 - dtL * 2 / 3), y: -dtW / 2, width: r1(Math.max(0, dtL - 84)), height: dtW });
+  A(E.text, { 'font-size': dtW, y: r1(.32 * dtW), 'font-weight': opt.textBold ? 700 : 400, 'font-style': opt.textItalic ? 'italic' : 'normal' });
+  if (E.text.textContent !== opt.frameText) E.text.textContent = opt.frameText;
+  $('o-frameText').style.fontWeight = opt.textBold ? 700 : 400; $('o-frameText').style.fontStyle = opt.textItalic ? 'italic' : 'normal';
   setLine(E.headtube, g.headBot, g.headTop);
   // Edge line: tubes at full size in black, then 6 mm narrower (and 3 mm shorter at the square-cut ends) in the frame colour.
   [[[0, 0], g.rear, 20], [g.rear, ssTop, 16.25], [[0, 0], seatTop, 30, 0, 3], [g.stJ, g.htJ, 28], [[0, 0], dtTop, 32], [g.headBot, g.headTop, 38, 3, 3]].forEach(([a, c, w, ea = 0, ec = 0], i) => {
@@ -1573,8 +1613,9 @@ function applyColors() { const st = document.documentElement.style, tone = docum
   const [rr, rg, rb] = [1, 3, 5].map(i => parseInt(rider.slice(i, i + 2), 16)); st.setProperty('--face', .299 * rr + .587 * rg + .114 * rb > 150 ? '#000000' : '#ffffff');
   st.setProperty('--frame', tone(hsb(opt.frameH, opt.frameS, opt.frameB)));
   st.setProperty('--tape', tone(hsb(opt.tapeH, opt.tapeS, opt.tapeB)));
+  st.setProperty('--ftext', tone(hsb(opt.textH, opt.textS, opt.textB)));
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
-  [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS]].forEach(([id, h, sat]) => {
+  [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS], ['grp-text', opt.textH, opt.textS]].forEach(([id, h, sat]) => {
     $(id).style.setProperty('--pure', tone(hsb(h, 100, 100))); $(id).style.setProperty('--full', tone(hsb(h, sat, 100))); });
   st.setProperty('--wheel', tone(gray(opt.wheelGray))); st.setProperty('--comp', tone(gray(opt.compGray)));
   st.setProperty('--crank', shade(tone(gray(opt.compGray)))); }
