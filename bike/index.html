@@ -325,19 +325,14 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 <div class="app">
   <aside class="panel" id="panel" aria-label="Fit controls">
 
-    <details class="sec" id="sec-bike" open>
-      <summary><h2>Bike</h2><span class="sum" id="sum-bike"></span></summary>
-      <div class="sec-body" id="bike-fields"></div>
-    </details>
-
     <details class="sec" id="sec-body" open>
       <summary><h2>Body</h2><span class="sum" id="sum-body"></span></summary>
       <div class="sec-body">
         <div class="row2">
           <div class="ctl"><span class="cap" id="cap-units">Units</span>
             <div class="seg" role="radiogroup" aria-labelledby="cap-units">
-              <input type="radio" name="units" id="units-cm" value="cm"><label for="units-cm">cm</label>
               <input type="radio" name="units" id="units-in" value="in"><label for="units-in">inches</label>
+              <input type="radio" name="units" id="units-cm" value="cm"><label for="units-cm">cm</label>
             </div>
           </div>
           <div class="ctl"><span class="cap" id="cap-sex">Sex</span>
@@ -363,6 +358,11 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         <div class="grid" id="body-fields"></div>
         <p class="hint"><span id="body-hint"></span> <button class="btn link" id="body-reset" type="button" hidden>Reset to averages</button></p>
       </div>
+    </details>
+
+    <details class="sec" id="sec-bike" open>
+      <summary><h2>Bike</h2><span class="sum" id="sum-bike"></span></summary>
+      <div class="sec-body" id="bike-fields"></div>
     </details>
 
     <details class="sec" id="sec-options" open>
@@ -476,12 +476,12 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </div>
     <div class="readouts">
       <section class="rogroup"><h3>Bike</h3><dl>
-        <div class="ro"><dt>Stack</dt><dd id="r-stack"></dd></div>
-        <div class="ro"><dt>Reach</dt><dd id="r-reach"></dd></div>
-        <div class="ro"><dt>Head tube</dt><dd id="r-head"></dd></div>
-        <div class="ro"><dt>Wheelbase</dt><dd id="r-wb"></dd></div>
-        <div class="ro"><dt>Trail</dt><dd id="r-trail"></dd></div>
+        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it">Standover height</dt><dd id="r-standover"></dd></div>
         <div class="ro"><dt>Saddle-to-bar drop</dt><dd id="r-drop"></dd></div>
+        <div class="ro"><dt title="Worked out from the seat tube, stack and reach">Top tube slope</dt><dd id="r-slope"></dd></div>
+        <div class="ro"><dt>Stack to reach ratio</dt><dd id="r-ratio"></dd></div>
+        <div class="ro"><dt>Trail</dt><dd id="r-trail"></dd></div>
+        <div class="ro"><dt>Wheelbase</dt><dd id="r-wb"></dd></div>
       </dl></section>
       <section class="rogroup"><h3>Rider</h3><dl>
         <div class="ro"><dt>Knee, leg extended</dt><dd id="r-kmax"></dd></div>
@@ -517,13 +517,14 @@ const RATIO = {
 };
 const averages = (h, sex) => { const o = {}; for (const k in RATIO[sex]) o[k] = Math.round(h * RATIO[sex][k]); return o; };
 const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
-const DEF_BIKE = { seatTube: 580, topTube: 575, slope: 0, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, fork: 370, rake: 43,
+const ST_TOP = 22;   // the seat tube stands this far above the top tube centreline
+const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130 };
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false,
   frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18 };
 let bike, body, opt, units, panelW = 384;
 function defaults() {
-  bike = { ...DEF_BIKE }; opt = { ...DEF_OPT }; units = 'in';
+  bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in';
   body = { sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') };
   syncSaddle();
 }
@@ -532,6 +533,19 @@ function restore(d) {
   const take = (dst, src) => { if (!src || typeof src !== 'object') return;
     for (const k in dst) { const v = src[k]; if (typeof dst[k] === 'number' ? Number.isFinite(v) : typeof v === typeof dst[k]) dst[k] = v; } };
   take(bike, d.bike); take(body, d.body);
+  // A bike saved before stack and reach were controls: place the head tube top where its top tube and slope put it, and keep its fork.
+  if (!(d.v >= 5) && d.bike && Number.isFinite(d.bike.topTube)) {
+    const sa = rad(bike.sta), ha = rad(bike.hta), sl = rad(Number.isFinite(d.bike.slope) ? d.bike.slope : 0);
+    const L = bike.topTube / (Math.cos(sl) + Math.sin(sl) / Math.tan(sa));
+    bike.reach = -bike.seatTube * Math.cos(sa) + L * Math.cos(sl) - 20 * Math.cos(ha);
+    bike.stack = bike.seatTube * Math.sin(sa) + L * Math.sin(sl) + 20 * Math.sin(ha);
+    bike.pinTT = 'reach'; bike.pinHT = 'fork';
+  }
+  // Seat tube used to be stored center to center; it is now center to top, so an older bike keeps its shape.
+  if (!(d.v >= 6) && d.bike && Number.isFinite(d.bike.seatTube)) bike.seatTube += ST_TOP;
+  if (bike.pinTT !== 'topTube') bike.pinTT = 'reach';
+  if (bike.pinHT !== 'headLen') bike.pinHT = 'fork';
+  link();
   // Settings remembered from before a default changed: drop the old default so the new one shows (a colour the user chose is kept).
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
@@ -542,19 +556,35 @@ function restore(d) {
   if (!['tops', 'hoods', 'drops'].includes(opt.hands)) opt.hands = 'hoods';
   if (![622, 584, 559].includes(bike.rim)) bike.rim = 622;
 }
+// Nine frame numbers describe eight things, and the fork adds one more, so two pairs are tied together:
+//   top tube = reach + stack / tan(seat tube angle)   (the effective top tube, measured level from the top of the head tube)
+//   stack = BB drop + the steering axis from the fork's dropout line up through the fork, a 12 mm lower headset and the head tube
+// In each pair the one set last (pinTT, pinHT) is kept and the other is worked out from it.
+function link(k) {
+  const b = bike, sa = rad(b.sta), ha = rad(b.hta);
+  if (k === 'topTube' || k === 'reach') b.pinTT = k;
+  if (k === 'headLen' || k === 'fork') b.pinHT = k;
+  const back = b.stack / Math.tan(sa);
+  if (b.pinTT === 'topTube') b.reach = b.topTube - back; else b.topTube = b.reach + back;
+  const axis = (b.stack - b.bbDrop + b.rake * Math.cos(ha)) / Math.sin(ha) - 12;
+  if (b.pinHT === 'fork') b.headLen = axis - Math.sqrt(Math.max(1, b.fork ** 2 - b.rake ** 2));
+  else b.fork = Math.hypot(Math.max(1, axis - b.headLen), b.rake);
+}
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 4, bike, body, opt, units, panelW })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, panelW })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
   ['Frame', [
-    { k: 'seatTube', l: 'Seat tube', n: 'center to center', u: 'cm', s: 10, min: 40, max: 70, step: .5, d: 1 },
-    { k: 'topTube', l: 'Top tube', n: 'effective', u: 'cm', s: 10, min: 45, max: 66, step: .5, d: 1 },
+    { k: 'stack', l: 'Stack', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
+    { k: 'reach', l: 'Reach', u: 'mm', s: 1, min: 330, max: 480, step: 1, d: 0 },
+    { k: 'seatTube', l: 'Seat tube', n: 'center to top', u: 'mm', s: 1, min: 420, max: 720, step: 1, d: 0 },
+    { k: 'topTube', l: 'Top tube', n: 'effective', u: 'mm', s: 1, min: 450, max: 660, step: 1, d: 0 },
+    { k: 'chainstay', l: 'Chainstay length', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
     { k: 'sta', l: 'Seat tube angle', u: '°', s: 1, min: 68, max: 80, step: .1, d: 1 },
-    { k: 'hta', l: 'Head tube angle', u: '°', s: 1, min: 64, max: 76, step: .1, d: 1 },
-    { k: 'slope', l: 'Top tube slope', n: '0 is level', u: '°', s: 1, min: 0, max: 20, step: .5, d: 1 },
-    { k: 'chainstay', l: 'Chainstay', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
-    { k: 'bbDrop', l: 'BB drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 }
+    { k: 'bbDrop', l: 'Bottom bracket drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 },
+    { k: 'headLen', l: 'Head tube length', u: 'mm', s: 1, min: 80, max: 260, step: 1, d: 0 },
+    { k: 'hta', l: 'Head tube angle', u: '°', s: 1, min: 64, max: 76, step: .1, d: 1 }
   ]],
   ['Fork and wheels', [
     { k: 'fork', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 420, step: 1, d: 0 },
@@ -610,13 +640,14 @@ function setHeight(mm) {
 function buildPanel() {
   $('bike-fields').innerHTML = BIKE.map(([name, fs]) =>
     `<div class="group"><h3 class="grp">${name}</h3><div class="grid">${fs.map(f => fieldHTML('b-' + f.k, f, f.u)).join('')}</div>` +
+    (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
     (name.startsWith('Saddle') ? `<label class="check" for="b-auto"><input id="b-auto" type="checkbox"><span>Set saddle height from inseam <span class="note">pedal to saddle top = 109% of inseam</span></span></label>` : '') +
     `</div>`).join('');
   BIKE.forEach(([, fs]) => fs.forEach(f => {
     const el = $('b-' + f.k);
     if (f.sel) { el.addEventListener('change', () => { bike[f.k] = +el.value; update(); }); shows.push(() => { el.value = bike[f.k]; }); return; }
     bind(el, { d: f.d, min: () => f.min, max: () => f.max, get: () => bike[f.k] / f.s,
-      set: v => { bike[f.k] = v * f.s; if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') { syncSaddle(); refresh(); } update(); } });
+      set: v => { bike[f.k] = v * f.s; if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); } });
   }));
   $('b-auto').addEventListener('change', e => { bike.autoSaddle = e.target.checked; syncSaddle(); refresh(true); update(); });
   shows.push(() => { $('b-auto').checked = bike.autoSaddle; });
@@ -715,18 +746,17 @@ function barGeom(b) {
     grips: { tops: [0, 0], hoods: [body[0] - 10, body[1] + 6], drops: on(rad(-55)) } };
 }
 function solve() {
-  const b = bike, H = body.height, sa = rad(b.sta), ha = rad(b.hta), sl = rad(b.slope);
+  const b = bike, H = body.height, sa = rad(b.sta), ha = rad(b.hta);
   const R = b.rim / 2 + b.tire, u = [-Math.cos(ha), Math.sin(ha)], su = [-Math.cos(sa), Math.sin(sa)];
-  const stJ = along([0, 0], su, b.seatTube);
-  const L = b.topTube / (Math.cos(sl) + Math.sin(sl) / Math.tan(sa));
-  const htJ = [stJ[0] + L * Math.cos(sl), stJ[1] + L * Math.sin(sl)];
-  const headTop = along(htJ, u, 20);
+  const stJ = along([0, 0], su, b.seatTube - ST_TOP);
+  // Stack and reach place the top of the head tube. The top tube leaves it 20 mm down and runs to the top of the seat tube at whatever slope that takes.
+  const headTop = [b.reach, b.stack], htJ = along(headTop, u, -20);
   const rear = [-Math.sqrt(Math.max(1, b.chainstay ** 2 - b.bbDrop ** 2)), b.bbDrop];
-  const footY = b.bbDrop - b.rake * Math.cos(ha), foot = [htJ[0] + (htJ[1] - footY) / Math.tan(ha), footY];
+  const headLen = b.headLen, headBot = along(headTop, u, -Math.max(headLen, 50));
+  // Fork crown 12 mm below the head tube; the steering axis carries on down to the dropout line, and the rake sets the axle ahead of it.
+  const crown = along(headTop, u, -(headLen + 12));
+  const footY = b.bbDrop - b.rake * Math.cos(ha), foot = along(crown, u, -(crown[1] - footY) / Math.sin(ha));
   const front = [foot[0] + b.rake * Math.sin(ha), b.bbDrop];
-  const crown = along(foot, u, Math.sqrt(Math.max(1, b.fork ** 2 - b.rake ** 2)));
-  const headLen = (headTop[1] - crown[1]) / Math.sin(ha) - 12;
-  const headBot = along(headTop, u, -Math.max(headLen, 50));
   const stemBase = along(headTop, u, 32 + b.spacers), steerTop = along(headTop, u, 52 + b.spacers);
   const stA = rad(90 - b.hta + b.stemAngle);
   const bar = [stemBase[0] + b.stem * Math.cos(stA), stemBase[1] + b.stem * Math.sin(stA)];
@@ -748,7 +778,7 @@ function solve() {
   }
   const tA = Math.atan2(shoulder[1] - hip[1], shoulder[0] - hip[0]), nA = clamp(tA + rad(26), rad(35), rad(86));
   const hr = .06 * H, headC = along(shoulder, [Math.cos(nA), Math.sin(nA)], .105 * H);
-  G = { R, u, su, stJ, htJ, headTop, headBot, headLen, rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH, hip,
+  G = { R, u, su, stJ, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH, hip,
     shoulder, elbow, wrist, arm, elbowAng, tA, hr, headC, H, groundY: b.bbDrop - R, crank: b.crank,
     vx: .47 * body.foot, vy: -(ankleH + 25),
     shoulderAng: angBetween(sub(hip, shoulder), sub(elbow, shoulder)) };
@@ -871,8 +901,8 @@ function drawStatic() {
     const va = rad(189); A(w.valve, { x1: r1(rs * Math.cos(va)), y1: r1(rs * Math.sin(va)), x2: r1((rs - 42) * Math.cos(va)), y2: r1((rs - 42) * Math.sin(va)) });
   });
 
-  const seatTop = along([0, 0], g.su, b.seatTube + 22), postTop = along([0, 0], g.su, Math.max(b.seatTube + 22, (g.saddleY - 40) / g.su[1]));
-  const ssTop = along([0, 0], g.su, b.seatTube - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
+  const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 40) / g.su[1]));
+  const ssTop = along([0, 0], g.su, b.seatTube - ST_TOP - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
   setLine(E.chainstay, [0, 0], g.rear); setLine(E.seatstay, g.rear, ssTop);
   setLine(E.seatpost, seatTop, postTop); setLine(E.seattube, [0, 0], seatTop); setLine(E.toptube, g.stJ, g.htJ);
   setLine(E.downtube, [0, 0], dtTop);
@@ -1010,7 +1040,10 @@ const mm = v => Math.round(v) + ' mm';
 const ftin = () => { const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9); return `${ft}′ ${r1(t - ft * 12)}″`; };
 function readouts() {
   const g = G, b = bike, ha = rad(b.hta);
-  $('r-stack').textContent = mm(g.headTop[1]); $('r-reach').textContent = mm(g.headTop[0]); $('r-head').textContent = mm(g.headLen);
+  $('r-ratio').textContent = (b.stack / b.reach).toFixed(2) + ':1';
+  // Standover: halfway along the top tube, from the ground under the tires to the tube's upper surface (14 mm above its centreline, square to the tube).
+  $('r-standover').textContent = mm((g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY);
+  const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl) < .3 ? 'level' : Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');
   $('r-wb').textContent = mm(g.front[0] - g.rear[0]); $('r-trail').textContent = mm((g.R * Math.cos(ha) - b.rake) / Math.sin(ha));
   const drop = Math.round(g.saddleY - (g.bar[1] + 12)); $('r-drop').textContent = drop >= 0 ? drop + ' mm' : Math.abs(drop) + ' mm rise';
   const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'high'] : C.kmax < 135 ? ['warn', 'low'] : ['ok', 'typical'];
@@ -1021,6 +1054,8 @@ function readouts() {
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
+  else if (b.fork < 339.5 || b.fork > 420.5) al.push(['warn', `This stack and head tube length need a ${Math.round(b.fork)} mm fork. Road forks are usually 340 to 420 mm.`]);
+  if (g.slope < -2) al.push(['warn', 'The top tube rises toward the saddle. The seat tube is long for this stack.']);
   if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
   else if (ks[1] === 'high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
   else if (ks[1] === 'low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
@@ -1031,7 +1066,7 @@ function readouts() {
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)} mph · ${kmh.toFixed(1)} km/h`;
   $('speed').textContent = sp;
   $('gear-hint').textContent = `${opt.ring} × ${opt.cog} at ${opt.cadence} rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}.`;
-  $('sum-bike').textContent = `${r1(b.seatTube / 10)} cm · ${{ 622: '700c', 584: '650b', 559: '26 in' }[b.rim]} × ${b.tire}`;
+  $('sum-bike').textContent = `${Math.round(b.seatTube)} mm · ${{ 622: '700c', 584: '650b', 559: '26 in' }[b.rim]} × ${b.tire}`;
   $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + ' cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
   $('sum-options').textContent = `${opt.cadence} rpm · Hands on ${{ tops: 'bar tops', hoods: 'shifters', drops: 'drops' }[opt.hands]}`;
   $('body-hint').textContent = body.custom ? 'You have changed some measurements from the averages for this height.'
@@ -1067,7 +1102,7 @@ function start(d) {
   if (window.ResizeObserver) new ResizeObserver(fit).observe(svg);
   requestAnimationFrame(t => { last = t; document.body.classList.add('ready'); requestAnimationFrame(tick); });   // 'ready' turns on control transitions after the first paint
 }
-try { window.claude?.hot?.snapshot?.(() => ({ v: 4, bike, body, opt, units, panelW })); } catch (e) {}
+try { window.claude?.hot?.snapshot?.(() => ({ v: 6, bike, body, opt, units, panelW })); } catch (e) {}
 if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
 })();
 </script>
