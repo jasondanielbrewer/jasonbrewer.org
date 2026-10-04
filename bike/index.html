@@ -141,6 +141,19 @@ h1,h2,h3,p,dl,dd{margin:0}
 .cap{font-size:13px;font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:12px}
 
+/* On/off buttons: an outlined box when off, filled when on. Each is a checkbox underneath, so it works from the keyboard and is
+   announced as checked or not. They sit two to a row; a wide one takes the whole row. */
+.togs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.tog{display:block;min-width:0;cursor:pointer}
+.tog.wide{grid-column:1 / -1}
+.tog input{position:absolute;opacity:0;pointer-events:none}
+.tog span{display:block;padding:7px 8px;border:1px solid var(--rule);border-radius:7px;background:var(--field);color:var(--ink);
+  font-size:13px;font-weight:500;text-align:center;transition:background .16s,color .16s}
+.tog input:checked+span{background:var(--rule);color:var(--accent-ink)}
+/* The first word says what pressing the button will do next, so it swaps when the button is on: Show becomes Hide, and Hide becomes Show. */
+.tog i{font-style:normal} .tog .on,.tog input:checked+span .off{display:none} .tog input:checked+span .on{display:inline}
+.tog input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){ .tog span{transition:none} }
 .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.3;cursor:pointer}
 .check input{accent-color:var(--accent);margin:2px 0 0;width:15px;height:15px;flex:none}
 .hint{color:var(--muted);font-size:12.5px;line-height:1.35}
@@ -263,6 +276,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--muted)}   /* plain: a description, not a verdict */
 
 /* ---------- drawing ---------- */
+svg.norider .is-rider,svg.nobike .is-bike{display:none}   /* the Hide rider and Hide bike options */
 /* The ground line and the level line under a hill are as thin as the lines of the sliders in the panel: 1px, whatever the drawing's scale. */
 svg .ground{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
 svg .ground.level{shape-rendering:crispEdges}   /* a level line is drawn on whole pixels, sharp like the sliders' lines; a sloping one is smoothed */
@@ -546,7 +560,11 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <div class="top"><label class="cap" for="o-scrub">Crank position <span class="note">drag to pause and inspect</span></label><output id="o-scrub-out" for="o-scrub"></output></div>
           <div class="rail"><input id="o-scrub" type="range" min="0" max="359" step="1"></div>
         </div>
-        <label class="check" for="o-angles"><input id="o-angles" type="checkbox"><span>Show joint angles on the rider</span></label>
+        <div class="togs">
+          <label class="tog wide" for="o-angles"><input id="o-angles" type="checkbox"><span><i class="off">Show</i><i class="on">Hide</i> joint angles on the rider</span></label>
+          <label class="tog" for="o-hideRider"><input id="o-hideRider" type="checkbox"><span><i class="off">Hide</i><i class="on">Show</i> rider</span></label>
+          <label class="tog" for="o-hideBike"><input id="o-hideBike" type="checkbox"><span><i class="off">Hide</i><i class="on">Show</i> bike</span></label>
+        </div>
       </div>
     </details>
 
@@ -656,7 +674,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </div>
     <div class="readouts">
       <section class="rogroup"><h3>Bike</h3><dl>
-        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it. The label compares it with your inseam.">Standover height</dt><dd id="r-standover"></dd></div>
+        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it. Against your inseam: 26 mm or more to spare is clear, 1 to 25 mm is snug, none is too tall.">Standover height</dt><dd id="r-standover"></dd></div>
         <div class="ro"><dt id="t-drop">Saddle-to-bar drop</dt><dd id="r-drop"></dd></div>
         <div class="ro"><dt title="Worked out from the seat tube, stack and reach">Top tube slope</dt><dd id="r-slope"></dd></div>
         <div class="ro"><dt title="Stack divided by reach. Under 1.45 is race geometry, 1.45 to 1.55 is endurance, over 1.55 is relaxed.">Stack to reach ratio</dt><dd id="r-ratio"></dd></div>
@@ -664,7 +682,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         <div class="ro"><dt>Wheelbase</dt><dd id="r-wb"></dd></div>
       </dl></section>
       <section class="rogroup"><h3>Rider</h3><dl>
-        <div class="ro"><dt>Knee, leg extended</dt><dd id="r-kmax"></dd></div>
+        <div class="ro"><dt title="The knee’s angle where the leg is straightest. 135° to 155° is typical; more means the saddle is high, less means it is low.">Knee, leg extended</dt><dd id="r-kmax"></dd></div>
         <div class="ro"><dt title="The knee’s angle where it is most bent. 65° to 72° is typical, under 65° is tight, over 72° is open.">Knee, top of stroke</dt><dd id="r-kmin"></dd></div>
         <div class="ro"><dt title="Shoulder to hip to knee, where the thigh comes closest to the torso. 45° to 65° is typical, under 45° is tight, over 65° is open.">Hip, most closed</dt><dd id="r-hip"></dd></div>
         <div class="ro"><dt title="Hip to shoulder, measured from level. 50° or more is casual, 40° to 49° is balanced, under 40° is aggressive.">Back angle</dt><dd id="r-back"></dd></div>
@@ -706,7 +724,7 @@ const ST_TOP = 22;   // the seat tube stood this far above the top tube centreli
 const TT_DROP = 10;  // the top tube joins this much further down the head tube, so more head tube shows above it; it is moved parallel to itself, which keeps its slope
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
-const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, incline: 0, smiley: false,
+const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, hideRider: false, hideBike: false, incline: 0, smiley: false,
   riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off' };
 let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
@@ -967,6 +985,7 @@ function buildPanel() {
   range('ring', v => v + NB + 't'); range('cog', v => v + NB + 't');
   $('o-angles').addEventListener('change', e => { opt.angles = e.target.checked; update(); });
   shows.push(() => { $('o-angles').checked = opt.angles; });
+  ['hideRider', 'hideBike'].forEach(k => { $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; update(); }); shows.push(() => { $('o-' + k).checked = opt[k]; }); });
   $('o-scrub').addEventListener('input', e => { setPlaying(false); const t = rad(+e.target.value); wheelAng += deg(t - theta) * opt.ring / opt.cog; theta = t; drawFrame(); });
   // Any slider that shows a number takes a typed value: click the number, or press Enter with the slider in focus.
   document.querySelectorAll('.slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
@@ -1224,6 +1243,11 @@ function buildScene() {
   E.incDot.addEventListener('keydown', e => { const k = { ArrowRight: .5, ArrowUp: .5, ArrowLeft: -.5, ArrowDown: -.5, PageUp: 5, PageDown: -5 }[e.key], v = e.key === 'Home' ? 0 : e.key === 'End' ? INCLINE_MAX : k ? clamp(opt.incline + k, 0, INCLINE_MAX) : null;
     if (v === null) return; e.preventDefault(); svg.classList.add('keys'); opt.incline = Math.round(v * 10) / 10; update(); });
   E.labG = N('g'); E.lab = {}; ['knee', 'hip', 'shoulder', 'elbow'].forEach(k => E.lab[k] = N('text', 'lab', E.labG));
+  // Every shape in the scene is marked as part of the rider or part of the bike, so that either can be hidden. The ground line and
+  // the Incline control belong to neither and always show.
+  const rider = new Set([E.torso, E.neck, E.head, E.face, E.hU, E.upper, E.hF, E.fore, E.hand, E.labG, ...Object.values(E.j),
+    ...[E.far, E.near].flatMap(l => [l.hT, l.thigh, l.hS, l.shank, l.shoeG])]), neither = new Set([E.ground, E.incHit, E.incDot]);
+  [...E.scene.children].forEach(e => { if (!neither.has(e)) e.classList.add(rider.has(e) ? 'is-rider' : 'is-bike'); });
 }
 // Frames the drawing so the ground line always lands the same distance above the bottom of the view, whatever the bike,
 // wheels or rider: the view is anchored to its bottom edge and the space under the ground is a fixed number of pixels.
@@ -1324,15 +1348,16 @@ function drawStatic() {
     return `M ${fl.join(' L ')} A ${W1 / 2} ${W1 / 2} 0 0 1 ${fr.reverse().join(' L ')} Z`; };
   const fd = forkD(0); E.fork.setAttribute('d', fd); E.olFork.setAttribute('d', fd); E.inFork.setAttribute('d', forkD(3));
   setLine(E.steerer, along(g.headTop, u, -6), g.steerTop); setLine(E.stem, g.stemBase, g.bar);
-  // Saddle: 0.8 of its earlier length, shortened from the tail so the nose stays at the entered setback.
-  const nose = -b.setback, sc = nose - 108, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
+  // Saddle: 280 mm from tip to tip, the length of a traditional road saddle. The nose stays at the entered setback and the length runs
+  // back from there; the rails and clamp sit under its middle.
+  const nose = -b.setback, sc = nose - 130, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
   setLine(E.clamp, postTop, [cx, sy - 32]); setLine(E.rails, [sc - 48, sy - 32], [sc + 48, sy - 32]);
-  // The saddle is 30 mm thick at the tail (left), tapering evenly along its length to 20 mm at the nose, with rounded ends. Its top
-  // edge keeps the line it had at an even 20 mm, so saddle height still measures to the same surface; the extra thickness hangs below.
-  const sN = [nose - 4, sy - 12], sM0 = [nose - 140, sy - 10], sT0 = [nose - 213, sy - 4];
-  const sK = dist(sM0, sN) / (dist(sT0, sM0) + dist(sM0, sN)), rT = 15, rN = 10, rM = rN + (rT - rN) * sK;
-  const sT = [sT0[0], sT0[1] - (rT - rN)], sM = [sM0[0], sM0[1] - (rM - rN)];
-  A(E.saddle, { d: taper(sT, sM, rT, rM) + ' ' + taper(sM, sN, rM, rN) });
+  // The saddle's outline, a plain road-saddle profile drawn as one solid shape: a slim nose, a top that runs nearly level and lifts a
+  // little toward the tail, and sides that are deepest behind the middle. Points are given as [distance back from the nose tip, height
+  // against the saddle-height line], so the top stays where saddle height is measured and the tip stays at the entered setback.
+  const sP = (dx, dy) => pt([nose + 6 - dx, sy + dy]), sC = (...c) => 'C ' + c.map(([dx, dy]) => sP(dx, dy)).join(' ');
+  A(E.saddle, { d: `M ${sP(0, -9)} ${sC([0, -4], [4, -2], [12, -2])} ${sC([70, -2], [120, -1], [170, 0])} ${sC([215, 1], [245, 5], [266, 7])} ${sC([274, 8], [280, 5], [280, 1])} ` +
+    `${sC([280, -4], [276, -10], [268, -14])} ${sC([250, -24], [232, -32], [205, -32])} ${sC([170, -32], [140, -22], [100, -19])} ${sC([60, -17], [30, -17], [10, -16])} ${sC([4, -15.5], [0, -13], [0, -9])} Z` });
   const bg = g.bg, q = pp => pt([g.bar[0] + pp[0], g.bar[1] + pp[1]]), br = r1(bg.r);
   // The bar is cut square at the end of the drops, where its rounded tip used to reach. The end at the stem stays round: the line has
   // flat ends, and a dot of the same width sits on that one. The pale-tape edge line closes across the square end as well.
@@ -1392,6 +1417,7 @@ function drawStatic() {
   ['knee', 'ankle'].forEach(k => A(E.j[k], { r: r1(jr) })); Object.values(E.j).forEach(c => A(c, { 'stroke-width': jw }));
 
   E.labG.setAttribute('visibility', opt.angles ? 'visible' : 'hidden');
+  svg.classList.toggle('norider', !!opt.hideRider); svg.classList.toggle('nobike', !!opt.hideBike);
   const back = [-dir[1], dir[0]], sp = along(g.shoulder, back, tw / 2 + 60);
   A(E.lab.shoulder, { x: r1(sp[0]), y: r1(-sp[1]), 'text-anchor': 'middle' }); E.lab.shoulder.textContent = Math.round(g.shoulderAng) + '°';
   A(E.lab.elbow, { x: r1(g.elbow[0] - 30), y: r1(-(g.elbow[1] - uw / 2 - 62)), 'text-anchor': 'middle' }); E.lab.elbow.textContent = Math.round(g.elbowAng) + '°';
@@ -1459,9 +1485,9 @@ function readouts() {
   const ratio = +(b.stack / b.reach).toFixed(2);
   $('r-ratio').innerHTML = tag(ratio.toFixed(2) + ':1', ratio < 1.45 ? ['bad', 'race'] : ratio <= 1.55 ? ['warn', 'endurance'] : ['ok', 'relaxed']);
   // Standover: halfway along the top tube, from the ground under the tires to the tube's upper surface (14 mm above its centreline, square to the tube).
-  // It is labelled against the rider's inseam (floor to crotch), in whole millimetres: 26 or more to spare is good, 1 to 25 is snug, none is too tall.
+  // It is labelled against the rider's inseam (floor to crotch), in whole millimetres: 26 or more to spare is clear, 1 to 25 is snug, none is too tall.
   const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY, spare = Math.round(body.inseam) - Math.round(standover);
-  const so = spare >= 26 ? ['ok', 'good'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
+  const so = spare >= 26 ? ['ok', 'clear'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
   $('r-standover').innerHTML = `${len(standover)}<span class="tag ${so[0]}">${so[1]}</span>`;
   const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');   // always a number, 0.0° included
   $('r-wb').textContent = len(g.front[0] - g.rear[0]);
@@ -1475,7 +1501,7 @@ function readouts() {
   const drop = Math.round(g.saddleY - (g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
   $('r-drop').innerHTML = tag(drop >= 0 ? len(drop) : len(-drop) + NB + 'rise', drop < dLo ? ['ok', 'upright'] : drop <= dHi ? ['warn', 'moderate'] : ['bad', 'deep']);
   $('t-drop').title = `Top of the saddle down to the top of the bars. For this saddle height, under ${len(dLo)} is upright, up to ${len(dHi)} is moderate, more is deep.`;
-  const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'high'] : C.kmax < 135 ? ['warn', 'low'] : ['ok', 'typical'];
+  const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'saddle high'] : C.kmax < 135 ? ['warn', 'saddle low'] : ['ok', 'typical'];
   $('r-kmax').innerHTML = `${Math.round(C.kmax)}°<span class="tag ${ks[0]}">${ks[1]}</span>`;
   // Knee at the top of the stroke: fitters aim for about 65 to 70 degrees (110 to 115 of bend). Tighter than that the knee is over-bent,
   // the usual sign that the cranks are long or the saddle low. Closed hip: 45 to 65 covers the published road ranges; under 45 the thigh
@@ -1490,10 +1516,11 @@ function readouts() {
   // Shoulder angle, torso to upper arm: 75 to 100 degrees is the span fitters see as normal (their targets, 80 to 95, sit inside it).
   // Less is a short reach to the bars, more a long one.
   const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = tag(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
-  // Knee against the pedal axle: the classic starting point puts the knee over the axle or up to 20 mm behind it. The label only says
-  // which side of that the rider sits; fitters differ on whether it should be a target, so it is not coloured as good or bad.
-  const k = Math.round(C.kops);
-  $('r-kops').innerHTML = tag(Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind'), ['plain', k > 10 ? 'forward' : k < -20 ? 'rearward' : 'neutral']);
+  // Knee against the pedal axle: the classic starting point puts the knee over the axle or up to 20 mm behind it. Within that band (with
+  // 10 mm of leeway ahead) the value is labelled neutral; outside it the value already says which way, so there is no label. Fitters
+  // differ on whether this should be a target, so the label is not coloured as good or bad.
+  const k = Math.round(C.kops), kv = Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind');
+  $('r-kops').innerHTML = k > 10 || k < -20 ? kv : tag(kv, ['plain', 'neutral']);
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
@@ -1501,8 +1528,8 @@ function readouts() {
   if (g.slope < -2) al.push(['warn', 'The top tube rises toward the saddle. The seat tube is long for this stack.']);
   if (opt.incline > SEATED) ;   // out of the saddle: the knee angles no longer say anything about saddle height
   else if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
-  else if (ks[1] === 'high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
-  else if (ks[1] === 'low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
+  else if (ks[1] === 'saddle high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
+  else if (ks[1] === 'saddle low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
   if (g.arm === 'fail') al.push(['bad', 'The hands can’t reach this bar position. Shorten the reach or raise the bars.']);
   else if (g.arm === 'straight') al.push(['warn', 'The arms have to straighten to reach this hand position.']);
   $('alerts').innerHTML = al.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
