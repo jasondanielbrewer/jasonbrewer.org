@@ -19,13 +19,13 @@ img{max-width:100%}
 :root{
   color-scheme:light;
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
-  --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc; --scroll:#bdbdbd;
+  --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc;
   --accent:#0a0a0a; --accent-ink:#ffffff; --slot:#d6d6d6;
   --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
-  --ok:#1c7f46; --warn:#a15f00; --bad:#bd3526;
+  --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dots on the warnings */
   --crank:var(--comp);                          /* crank arms and pedals */
-  --rule:#000000;                               /* the line under the title bar: black, white in night mode */
+  --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff; --gray-hi:#d9d9d9;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
@@ -38,11 +38,10 @@ img{max-width:100%}
 :root.night{
   color-scheme:dark;
   --bg:#000000; --stage:#000000; --panel:#000000; --field:#000000; --page:#000000;
-  --ink:#ececec; --muted:#949494; --line:#2e2e2e; --scroll:#424242;   /* #ececec: the home page's night text, the colour under its dot at rest */
+  --ink:#ececec; --muted:#949494; --line:#2e2e2e;   /* #ececec: the home page's night text, the colour under its dot at rest */
   --accent:#ececec; --accent-ink:#000000; --slot:#292929;
   --metal:#717171; --part:#dddddd; --tire:#e3e3e3; --spin:#424242;
   --rider:#ffffff;
-  --ok:#4cc27e; --warn:#e0992e; --bad:#ff6a5a;
   --lo:#ffffff; --hi:#000000; --gray-hi:#262626;
   --rule:#ffffff;
 }
@@ -105,15 +104,24 @@ h1,h2,h3,p,dl,dd{margin:0}
 /* Drag handle on the edge between the panel and the drawing. */
 .resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - 1px);width:11px;cursor:col-resize;touch-action:none;z-index:5}
 .resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;background:transparent;transition:background .12s}
-.resizer::after{content:"";position:absolute;top:50%;left:4px;width:3px;height:36px;margin-top:-18px;border-radius:2px;background:var(--scroll);transition:background .12s}
-.resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{background:var(--ink);width:2px}
-.resizer:hover::after,.resizer.drag::after,.resizer:focus-visible::after{background:var(--ink)}
+/* The grip: a short 1px line beside the panel's edge, which grows into a 3px rounded bar when the edge is hovered, dragged or focused. */
+.resizer::after{content:"";position:absolute;top:50%;left:5px;width:1px;height:36px;margin-top:-18px;border-radius:0;background:var(--rule);transition:left .12s,width .12s,border-radius .12s}
+.resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{background:var(--rule);width:2px}   /* the panel's 1px edge line thickens to 2px */
+.resizer:hover::after,.resizer.drag::after,.resizer:focus-visible::after{left:4px;width:3px;border-radius:1.5px}
+@media (prefers-reduced-motion:reduce){ .resizer::after{transition:none} }
 .resizer:focus-visible{outline:none}
 
 /* ---------- control panel ---------- */
-.panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border-right:1px solid var(--line);
-  padding-inline:16px;padding-block:6px 28px;display:flex;flex-direction:column;
-  scrollbar-width:thin;scrollbar-color:var(--scroll) transparent}
+.panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border-right:1px solid var(--rule);
+  padding-inline:16px;padding-block:6px 28px;display:flex;flex-direction:column}
+/* The panel's scroll bar is a thin black handle (white in night mode) with nothing behind it: no filled track and no edge lines, just the panel showing
+   through. Browsers that take the standard properties use those; the others (Safari, older Chrome) get the same look from the
+   -webkit- rules, which only apply while the standard properties are left unset. */
+@supports (scrollbar-color:auto){ .panel{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+.panel::-webkit-scrollbar{width:10px;height:10px;background:transparent}
+.panel::-webkit-scrollbar-track,.panel::-webkit-scrollbar-track-piece,.panel::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
+.panel::-webkit-scrollbar-button{display:none;width:0;height:0}
+.panel::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
 .panel>*{flex:none}
 
 /* Space between sections: 45px from the end of one to the next heading (36px when the one above is collapsed). */
@@ -121,7 +129,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec:not([open]) + .sec{margin-top:12px}
 .sec summary{display:flex;align-items:baseline;gap:10px;padding:12px 0;cursor:pointer;list-style:none;border-radius:4px}
 .sec summary::-webkit-details-marker{display:none}
-.sec summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+.sec summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--rule);border-bottom:2px solid var(--rule);
   transform:translateY(-4px) rotate(-45deg);transition:transform .15s}
 .sec[open] summary::before{transform:translateY(-5px) rotate(45deg)}
 .sec summary h2{font:600 20px/1.1 var(--font);letter-spacing:-.01em}
@@ -139,18 +147,30 @@ h1,h2,h3,p,dl,dd{margin:0}
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ctl{display:flex;flex-direction:column;gap:5px;min-width:0}
-.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:2px;
-  background:var(--field);border:1px solid var(--line);border-radius:7px}
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid var(--rule);border-radius:7px;
+  background:var(--field) linear-gradient(var(--rule),var(--rule)) calc(var(--i,0)/(var(--n,2) - 1)*100%) 0/calc(100%/var(--n,2)) 100% no-repeat}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-/* The black highlight is one block that slides to the chosen option (--i of --n). */
-.seg::before{content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px - (var(--n,2) - 1)*2px)/var(--n,2));
-  border-radius:5px;background:var(--accent);transform:translateX(calc(var(--i,0)*(100% + 2px)))}
-.ready .seg::before{transition:transform .18s cubic-bezier(.3,.7,.3,1)}
-@media (prefers-reduced-motion:reduce){ .ready .seg::before{transition:none} }
-.seg label{position:relative;padding:5px 6px;border-radius:5px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .16s}
+/* The black highlight is one block that slides to the chosen option (--i of --n). It is painted as the switch's own background, in
+   the border's colour, so it runs right out to the border and takes the switch's rounded corners with no gap. */
+.ready .seg{transition:background-position .18s cubic-bezier(.3,.7,.3,1)}
+.seg label{position:relative;padding:7px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .16s}
 .seg label:hover{color:var(--ink)}
 .seg input:checked+label{color:var(--accent-ink)}
-.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.seg:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* A switch whose first option is much the longer: it gets the wider share (--a of the width), and the highlight changes width as it
+   slides. Where the panel is too narrow for one line, the words wrap inside their part. */
+.seg.long{--a:.61;grid-auto-columns:auto;grid-template-columns:61fr 39fr;background-size:calc((var(--a) + (1 - 2*var(--a))*var(--i,0))*100%) 100%}
+.ready .seg.long{transition:background-position .18s cubic-bezier(.3,.7,.3,1),background-size .18s cubic-bezier(.3,.7,.3,1)}
+@media (prefers-reduced-motion:reduce){ .ready .seg,.ready .seg.long{transition:none} }
+.seg.long label{display:flex;align-items:center;justify-content:center;white-space:normal}
+/* A block that opens and closes by sliding. It is pulled up over the gap above it, and carries that gap inside itself, so that
+   closed it takes no room at all. The inner box is a little larger than its contents so focus rings are not clipped. */
+.fold{display:grid;grid-template-rows:0fr;margin:-16px -8px 0}
+.fold.open{grid-template-rows:1fr;margin-bottom:-8px}
+.fold>*{min-height:0;overflow:hidden;padding:0 8px}
+.fold>*>*{padding:16px 0 8px}
+.ready .fold{transition:grid-template-rows .24s cubic-bezier(.3,.7,.3,1),margin-bottom .24s cubic-bezier(.3,.7,.3,1)}
+@media (prefers-reduced-motion:reduce){ .ready .fold{transition:none} }
 
 .slider{display:flex;flex-direction:column;gap:5px}
 .stack{display:flex;flex-direction:column;gap:16px}   /* a run of sliders, spaced as the section's own children are */
@@ -211,8 +231,9 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .foot{padding-top:14px;display:flex;gap:8px}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
 /* Reset asks first: the button gives way to Confirm (green) and Cancel (red), side by side across the same width. */
-.btn.confirm{background:var(--ok);border-color:var(--ok);color:var(--accent-ink)}
-.btn.cancel{background:var(--bad);border-color:var(--bad);color:var(--accent-ink)}
+/* The two colours are fixed, the same in both modes; the lettering is white in normal mode and black in Night Mode. */
+.btn.confirm{background:var(--go);border-color:var(--go);color:var(--accent-ink)}
+.btn.cancel{background:var(--stop);border-color:var(--stop);color:var(--accent-ink)}
 
 /* ---------- stage ---------- */
 .stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:var(--stage)}
@@ -221,28 +242,32 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .hud{position:absolute;top:12px;left:16px;right:16px;display:flex;flex-wrap:wrap-reverse;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .alerts{display:flex;flex-direction:column;gap:6px;max-width:440px;min-width:0}
-.alert{display:flex;gap:8px;align-items:baseline;background:var(--panel);border:1px solid var(--line);border-radius:6px;
+.alert{display:flex;gap:8px;align-items:baseline;background:var(--panel);border:1px solid var(--rule);border-radius:6px;
   padding:6px 10px;font-size:13px;line-height:1.3}
-.alert::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--warn);transform:translateY(-1px)}
-.alert.bad::before{background:var(--bad)}
+.alert::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--caution);transform:translateY(-1px)}
+.alert.bad::before{background:var(--stop)}
 .transport{display:flex;align-items:center;gap:10px;margin-left:auto}
 .speed{font:500 12.5px var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);
-  border:1px solid var(--line);border-radius:6px;padding:6px 10px;white-space:nowrap}
+  border:1px solid var(--rule);border-radius:6px;padding:6px 10px;white-space:nowrap}
 
-.readouts{border-top:1px solid var(--line);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
+.readouts{border-top:1px solid var(--rule);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
 .rogroup{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start}
 .rogroup h3{font:600 11px/1.5 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.rogroup dl{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 16px}
+/* Six readouts across; the last column is a little wider, for "18 mm ahead" with its label. */
+.rogroup dl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.3fr);gap:8px 12px}
 .ro{display:flex;flex-direction:column;gap:1px;min-width:0}
 .ro dt{font-size:12px;color:var(--muted);line-height:1.2}
-.ro dd{font:500 15px/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap}
-.tag{font:500 11px var(--font);letter-spacing:.04em;text-transform:uppercase;margin-left:4px}
-.tag.ok{color:var(--ok)} .tag.warn{color:var(--warn)} .tag.bad{color:var(--bad)}
+/* A value and its label sit on one line; where a column is too narrow for both, the label drops under the value (the value itself never breaks). */
+.ro dd{font:500 15px/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px}
+.tag{font:500 11px var(--font);letter-spacing:.04em;text-transform:uppercase}
+.tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--muted)}   /* plain: a description, not a verdict */
 
 /* ---------- drawing ---------- */
-svg .ground{stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+/* The ground line and the level line under a hill are as thin as the lines of the sliders in the panel: 1px, whatever the drawing's scale. */
+svg .ground{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+svg .ground.level{shape-rendering:crispEdges}   /* a level line is drawn on whole pixels, sharp like the sliders' lines; a sloping one is smoothed */
 /* The angle of the hill, drawn between the level line and the sloping ground: a thin arc with an arrowhead at each end. */
-svg .incarc{fill:none;stroke:var(--ink);stroke-width:1.25;vector-effect:non-scaling-stroke}
+svg .incarc{fill:none;stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
 svg .inchead{fill:var(--ink);stroke:none}
 /* The ground line is the Incline control. Its handle looks like the other sliders' (a ringed dot on a thin line) and rides along
    the line; an unseen band along the line makes the line itself easy to grab. */
@@ -255,7 +280,7 @@ svg .tube.butt,svg .comp.butt{stroke-linecap:butt}
 svg .tubefill{fill:var(--frame);stroke:none}
 svg .ol{stroke:var(--ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tape{stroke:var(--tape);fill:none;stroke-linecap:round;stroke-linejoin:round}
-svg .ol.butt{stroke-linecap:butt}
+svg .ol.butt,svg .tape.butt{stroke-linecap:butt}
 svg .olfill{fill:var(--ink);stroke:none}
 svg .part{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .saddle{fill:var(--part);stroke:none}
@@ -299,12 +324,12 @@ svg .hand{stroke:color-mix(in srgb,var(--ink) var(--rider-edge-pct,0%),var(--sta
 svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
 
-@container (max-width:936px){ .rogroup dl{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@container (max-width:975px){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr)) minmax(0,1.3fr)} }
 @container (max-width:520px){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:760px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(250px,47%) minmax(0,1fr)}
   .stage{grid-row:1}
-  .panel{grid-row:2;border-right:0;border-top:1px solid var(--line)}
+  .panel{grid-row:2;border-right:0;border-top:1px solid var(--rule)}
   .readouts{flex-direction:row;gap:22px;overflow-x:auto;padding-block:8px 10px}
   .rogroup{display:flex;gap:14px;flex:none}
   .rogroup dl{display:flex;gap:16px}
@@ -477,7 +502,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </details>
 
     <details class="sec" id="sec-bike" open>
-      <summary><h2>Bike</h2><span class="sum" id="sum-bike"></span></summary>
+      <summary><h2>Your Bike</h2><span class="sum" id="sum-bike"></span></summary>
       <div class="sec-body" id="bike-fields"></div>
     </details>
 
@@ -631,20 +656,20 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </div>
     <div class="readouts">
       <section class="rogroup"><h3>Bike</h3><dl>
-        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it">Standover height</dt><dd id="r-standover"></dd></div>
-        <div class="ro"><dt>Saddle-to-bar drop</dt><dd id="r-drop"></dd></div>
+        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it. The label compares it with your inseam.">Standover height</dt><dd id="r-standover"></dd></div>
+        <div class="ro"><dt id="t-drop">Saddle-to-bar drop</dt><dd id="r-drop"></dd></div>
         <div class="ro"><dt title="Worked out from the seat tube, stack and reach">Top tube slope</dt><dd id="r-slope"></dd></div>
-        <div class="ro"><dt>Stack to reach ratio</dt><dd id="r-ratio"></dd></div>
-        <div class="ro"><dt>Trail</dt><dd id="r-trail"></dd></div>
+        <div class="ro"><dt title="Stack divided by reach. Under 1.45 is race geometry, 1.45 to 1.55 is endurance, over 1.55 is relaxed.">Stack to reach ratio</dt><dd id="r-ratio"></dd></div>
+        <div class="ro"><dt title="How far the tire’s contact point sits behind the steering axis. 57 mm or more is stable, 50 to 56 mm is responsive, under 50 mm is twitchy.">Trail</dt><dd id="r-trail"></dd></div>
         <div class="ro"><dt>Wheelbase</dt><dd id="r-wb"></dd></div>
       </dl></section>
       <section class="rogroup"><h3>Rider</h3><dl>
         <div class="ro"><dt>Knee, leg extended</dt><dd id="r-kmax"></dd></div>
-        <div class="ro"><dt>Knee, top of stroke</dt><dd id="r-kmin"></dd></div>
-        <div class="ro"><dt>Hip, most closed</dt><dd id="r-hip"></dd></div>
-        <div class="ro"><dt>Back angle</dt><dd id="r-back"></dd></div>
-        <div class="ro"><dt>Shoulder angle</dt><dd id="r-sh"></dd></div>
-        <div class="ro"><dt title="Measured with the crank level and forward, at 3 o’clock">Knee vs pedal axle</dt><dd id="r-kops"></dd></div>
+        <div class="ro"><dt title="The knee’s angle where it is most bent. 65° to 72° is typical, under 65° is tight, over 72° is open.">Knee, top of stroke</dt><dd id="r-kmin"></dd></div>
+        <div class="ro"><dt title="Shoulder to hip to knee, where the thigh comes closest to the torso. 45° to 65° is typical, under 45° is tight, over 65° is open.">Hip, most closed</dt><dd id="r-hip"></dd></div>
+        <div class="ro"><dt title="Hip to shoulder, measured from level. 50° or more is casual, 40° to 49° is balanced, under 40° is aggressive.">Back angle</dt><dd id="r-back"></dd></div>
+        <div class="ro"><dt title="Between the torso and the upper arm. 75° to 100° is typical, under 75° is compact, over 100° is stretched.">Shoulder angle</dt><dd id="r-sh"></dd></div>
+        <div class="ro"><dt title="Measured with the crank level and forward, at 3 o’clock. From 20 mm behind the axle to 10 mm ahead is neutral.">Knee vs pedal axle</dt><dd id="r-kops"></dd></div>
       </dl></section>
     </div>
   </main>
@@ -677,13 +702,16 @@ const STACK = .779;
 // Averages are whole millimetres; the torso takes up the rounding (under 2 mm) so the stack comes out exact.
 const averages = (h, sex) => { const o = {}; for (const k in RATIO[sex]) o[k] = Math.round(h * RATIO[sex][k]); o.torso = STACK * h - o.thigh - o.shank; return o; };
 const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
-const ST_TOP = 22;   // the seat tube stands this far above the top tube centreline
+const ST_TOP = 22;   // the seat tube stood this far above the top tube centreline when it was first measured to its top (older saved bikes are carried over by it)
+const TT_DROP = 10;  // the top tube joins this much further down the head tube, so more head tube shows above it; it is moved parallel to itself, which keeps its slope
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, incline: 0, smiley: false,
   riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off' };
-let bike, body, opt, units, bikeUnits, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
+let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
+const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
 function defaults() {
+  ownBody = null;
   bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
   body = { sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') };
   syncSaddle();
@@ -712,6 +740,8 @@ function restore(d) {
   if (o.turbo === true && !Number.isFinite(o.incline)) o.incline = 15;   // saved with the old Turbo Mode button on: the same hill
   take(opt, o);
   if (d.units === 'cm' || d.units === 'in') units = d.units;
+  // The rider's own measurements, kept while "Use average measurements" is selected.
+  if (d.own && typeof d.own === 'object' && PARTS.every(k => Number.isFinite(d.own[k]))) ownBody = Object.fromEntries(PARTS.map(k => [k, d.own[k]]));
   if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
   if (body.sex !== 'm' && body.sex !== 'f') body.sex = 'm';
@@ -737,15 +767,15 @@ function link(k) {
   else b.fork = Math.hypot(Math.max(1, axis - b.headLen), b.rake);
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, bikeUnits, panelW })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, bikeUnits, own: ownBody, panelW })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
   ['Frame', [
     { k: 'stack', l: 'Stack', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
     { k: 'reach', l: 'Reach', u: 'mm', s: 1, min: 330, max: 480, step: 1, d: 0 },
-    { k: 'seatTube', l: 'Seat tube', n: 'center to top', u: 'mm', s: 1, min: 420, max: 720, step: 1, d: 0 },
-    { k: 'topTube', l: 'Top tube', n: 'effective', u: 'mm', s: 1, min: 450, max: 660, step: 1, d: 0 },
+    { k: 'seatTube', l: 'Seat tube length', n: 'center to top', u: 'mm', s: 1, min: 420, max: 720, step: 1, d: 0 },
+    { k: 'topTube', l: 'Top tube length', n: 'effective', u: 'mm', s: 1, min: 450, max: 660, step: 1, d: 0 },
     { k: 'chainstay', l: 'Chainstay length', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
     { k: 'sta', l: 'Seat tube angle', u: '°', s: 1, min: 68, max: 80, step: .1, d: 1 },
     { k: 'bbDrop', l: 'Bottom bracket drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 },
@@ -783,7 +813,7 @@ const BODY = [
 ];
 const NB = '\u00a0';   // a space that never breaks: it keeps a number and its unit on one line wherever the text wraps
 const fac = () => units === 'in' ? 25.4 : 10;   // mm per unit for the body measurements: inches or cm
-// Two Units switches, set independently. The one under Your Body puts the body measurements in inches or cm. The one under Bike puts
+// Two Units switches, set independently. The one under Your Body puts the body measurements in inches or cm. The one under Your Bike puts
 // every other length (the bike, wheel depth, the readouts and the alerts) in inches or mm.
 // The bike, body and options themselves are always kept in mm, so switching either one changes nothing.
 const inch = () => bikeUnits === 'in';
@@ -845,14 +875,24 @@ function partRange(k) {
 }
 // Hamley's 109% rule: pedal axle at the bottom of the stroke to saddle top = 1.09 x inseam.
 function syncSaddle() { if (bike.autoSaddle) bike.saddleH = clamp(Math.round(1.09 * body.inseam - bike.crank), 550, 950); }
+// A new height. With average measurements they are worked out again for it. With the rider's own, those are kept: legs and torso are
+// scaled together to fit the new height, and the arms and feet stay as entered.
 function setHeight(mm) {
-  body.height = clamp(mm, HMIN, HMAX); Object.assign(body, averages(body.height, body.sex)); body.custom = false;
+  body.height = clamp(mm, HMIN, HMAX); if (body.custom) fitBody(); else Object.assign(body, averages(body.height, body.sex));
   syncSaddle(); refresh(); update();
 }
+// "Use average measurements" or "Enter my own". Going to averages sets the rider's own aside; coming back brings them out again,
+// fitted to the height as it is now.
+function setBodyMode(own) {
+  if (own === body.custom) return;
+  if (own) { if (ownBody) { Object.assign(body, ownBody); fitBody(); } }
+  else { ownBody = Object.fromEntries(PARTS.map(k => [k, body[k]])); Object.assign(body, averages(body.height, body.sex)); }
+  body.custom = own; syncSaddle(); refresh(); update();
+}
 function buildPanel() {
-  $('bike-fields').innerHTML = `<div class="row2"><div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
+  $('bike-fields').innerHTML = `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
     `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
-    `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div></div>` + BIKE.map(([name, fs]) =>
+    `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div>` + BIKE.map(([name, fs]) =>
     `<div class="group"><h3 class="grp">${name}</h3><div class="stack">${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
     (name.startsWith('Saddle') ? `<label class="check" for="b-auto"><input id="b-auto" type="checkbox"><span>Set saddle height from inseam <span class="note">pedal to saddle top = 109% of inseam</span></span></label>` : '') +
@@ -878,7 +918,12 @@ function buildPanel() {
 
   // Height and the body measurements: sliders in the Pedal cadence design, each running from its smallest allowed value to its largest.
   // unitUI() gives them their scale in the chosen units; the value beside the label is always read from the body itself.
-  $('body-fields').innerHTML = [{ k: 'height', l: 'Height' }, ...BODY].map(f => sliderHTML('p-' + f.k, f)).join('');
+  // Under Height, a switch between average measurements and the rider's own; the measurements open out below it for the second.
+  $('body-fields').innerHTML = sliderHTML('p-height', { l: 'Height' }) +
+    `<div class="seg long" role="radiogroup" aria-label="Body measurements"><input type="radio" name="bodyMode" id="bodyMode-avg" value="avg"><label for="bodyMode-avg">Use average measurements</label>` +
+    `<input type="radio" name="bodyMode" id="bodyMode-own" value="own"><label for="bodyMode-own">Enter my own</label></div>` +
+    `<div class="fold" id="body-own"><div><div class="stack">${BODY.map(f => sliderHTML('p-' + f.k, f)).join('')}</div></div></div>`;
+  shows.push(() => { $('body-own').classList.toggle('open', body.custom); $('body-own').firstElementChild.inert = !body.custom; });   // closed: out of reach of the keyboard too
   const bodySlider = (k, get, set, fmt) => { const el = $('p-' + k), out = $('p-' + k + '-out');
     el.addEventListener('input', () => set(+el.value * fac()));
     shows.push(() => { el.value = get() / fac(); out.textContent = fmt(); });
@@ -906,7 +951,9 @@ function buildPanel() {
   radios('hands', () => opt.hands, v => { opt.hands = v; update(); });
   radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
   radios('disc', () => opt.disc, v => { opt.disc = v; update(); });
-  $('body-reset').addEventListener('click', () => setHeight(body.height));
+  radios('bodyMode', () => body.custom ? 'own' : 'avg', v => setBodyMode(v === 'own'));
+  // In "Enter my own", this puts every measurement back to the average for the height.
+  $('body-reset').addEventListener('click', () => { Object.assign(body, averages(body.height, body.sex)); ownBody = null; syncSaddle(); refresh(); update(); });
 
   // length: the option is a length in mm, shown and stepped in inches when those are chosen (unitUI() sets its scale).
   const range = (k, fmt, length) => { const el = $('o-' + k), out = $('o-' + k + '-out'), per = () => length && inch() ? 25.4 : 1;
@@ -991,18 +1038,22 @@ function barGeom(b) {
     grips: { tops: [0, 0], hoods: turn([body[0] - 10, body[1] + 6]), drops: turn(on(rad(-55))) } };
 }
 // Incline: the slope of the hill in degrees, from flat ground up to INCLINE_MAX, set by dragging the handle along the ground line.
-// The rider's stance follows it. Up to 15 degrees it moves evenly from seated to CLIMB, out of the saddle; from there to INCLINE_MAX it
-// moves on to STEEP, a lower crouch with the knees and elbows more bent. Each stance: how far ahead of the bottom bracket the hips
-// sit (a share of height), the least elbow bend, how far the neck is lifted from the line of the back, and the knee angle at the
-// bottom of the pedal stroke, which sets how high the hips ride.
-const INCLINE_MAX = 30, CLIMB = [.05, 105, 4, 150], STEEP = [.05, 115, -4, 137];
+// The rider's stance follows it in two stages. Up to SEATED degrees the rider stays planted in the saddle and leans forward as the
+// elbows bend. From there to INCLINE_MAX the hips leave the saddle and move evenly on to STEEP, a low crouch over the bars. The elbows
+// bend and the head comes down evenly over the whole range. STEEP: how far ahead of the bottom bracket the hips sit (a share of
+// height), the least elbow bend, how far the neck is lifted from the line of the back, and the knee angle at the bottom of the pedal
+// stroke, which sets how high the hips ride.
+const INCLINE_MAX = 30, SEATED = 10, STEEP = [.05, 115, -4, 137];
 const lerp = (a, b, t) => a + (b - a) * t;
 function solve() {
   const b = bike, H = body.height, sa = rad(b.sta), ha = rad(b.hta);
   const R = b.rim / 2 + b.tire, u = [-Math.cos(ha), Math.sin(ha)], su = [-Math.cos(sa), Math.sin(sa)];
-  const stJ = along([0, 0], su, b.seatTube - ST_TOP);
-  // Stack and reach place the top of the head tube. The top tube leaves it 20 mm down and runs to the top of the seat tube at whatever slope that takes.
-  const headTop = [b.reach, b.stack], htJ = along(headTop, u, -20);
+  // Stack and reach place the top of the head tube. The top tube's slope is set by a line from 20 mm below that to ST_TOP mm below
+  // the top of the seat tube; the tube itself is drawn parallel to that line, TT_DROP mm further down the head tube, and meets the seat
+  // tube wherever that puts it. Stack, reach and both tube lengths are measured as before, and the slope is exactly what it was.
+  const headTop = [b.reach, b.stack], htJ = along(headTop, u, -(20 + TT_DROP));
+  const run = sub(along(headTop, u, -20), along([0, 0], su, b.seatTube - ST_TOP)), den = su[0] * run[1] - su[1] * run[0];
+  const stLen = Math.abs(den) > 1e-6 ? (htJ[0] * run[1] - htJ[1] * run[0]) / den : b.seatTube - ST_TOP - TT_DROP, stJ = along([0, 0], su, stLen);
   const rear = [-Math.sqrt(Math.max(1, b.chainstay ** 2 - b.bbDrop ** 2)), b.bbDrop];
   const headLen = b.headLen, headBot = along(headTop, u, -Math.max(headLen, 50));
   // Fork crown 12 mm below the head tube; the steering axis carries on down to the dropout line, and the rake sets the axle ahead of it.
@@ -1035,18 +1086,21 @@ function solve() {
     return { hip, shoulder, elbow, wrist, arm, elbowAng, tA, headC: along(shoulder, [Math.cos(nA), Math.sin(nA)], .105 * H),
       shoulderAng: angBetween(sub(hip, shoulder), sub(elbow, shoulder)) };
   };
-  G = { R, u, su, stJ, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH,
+  G = { R, u, su, stJ, stLen, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH,
     hr, H, groundY: b.bbDrop - R, crank: b.crank, vx: .47 * body.foot, vy: -(ankleH + 25), ...upper(seat, opt.elbow, 26) };
   G.seatedHead = G.headC[1];   // the seated rider's head height frames the flat view
   if (opt.incline > 0) {
-    // On a hill the rider leaves the saddle by degrees: t runs from 0 (seated) to 1 (the climbing stance, at 15 degrees), and past that
-    // the stance itself moves on toward STEEP. The hips move forward and settle between the saddle height and the standing height, at
-    // which the knee reaches the stance's angle at the bottom of the stroke (found by trying heights). The elbows bend and the head
-    // comes down in step.
-    const t = Math.min(1, opt.incline / 15), st = CLIMB.map((c, i) => lerp(c, STEEP[i], clamp((opt.incline - 15) / (INCLINE_MAX - 15), 0, 1)));
-    const x = lerp(seat[0], st[0] * H, t); let lo = saddleY, hi = saddleY + 450;
-    for (let i = 0; i < 18; i++) { G.hip = [x, (lo + hi) / 2]; let k = 0; for (let d = 0; d < 360; d += 15) k = Math.max(k, leg(rad(d)).kneeAng); if (k > st[3]) hi = G.hip[1]; else lo = G.hip[1]; }
-    Object.assign(G, upper([x, lerp(seat[1], Math.max(lo, saddleY + 40), t)], lerp(opt.elbow, Math.max(opt.elbow, st[1]), t), lerp(26, st[2], t)));
+    // a: how far along the whole range the hill is, which sets the elbows and the head. t: how far the hips are from the saddle (0, up
+    // to SEATED degrees) to the STEEP stance (1). There the hips are forward, at the height at which the knee reaches the stance's angle
+    // at the bottom of the stroke (found by trying heights); in between they lie on the straight line from the saddle to that point.
+    const a = opt.incline / INCLINE_MAX, t = clamp((opt.incline - SEATED) / (INCLINE_MAX - SEATED), 0, 1);
+    let hip = seat;
+    if (t > 0) {
+      const x = lerp(seat[0], STEEP[0] * H, t); let lo = saddleY, hi = saddleY + 450;
+      for (let i = 0; i < 18; i++) { G.hip = [x, (lo + hi) / 2]; let k = 0; for (let d = 0; d < 360; d += 15) k = Math.max(k, leg(rad(d)).kneeAng); if (k > STEEP[3]) hi = G.hip[1]; else lo = G.hip[1]; }
+      hip = [x, lerp(seat[1], Math.max(lo, saddleY + 40), t)];
+    }
+    Object.assign(G, upper(hip, lerp(opt.elbow, Math.max(opt.elbow, STEEP[1]), a), lerp(26, STEEP[2], a)));
   }
 }
 // One leg at crank angle th (0 = pedal at the top, turning clockwise as drawn).
@@ -1107,7 +1161,7 @@ function makeRotor() {
 }
 function makeLeg(far) {
   const c = far ? ' far' : '', o = {};
-  o.pedal = N('rect', 'pedal' + c, root, { x: -46, y: -9, width: 92, height: 18, rx: 6 });
+  o.pedal = N('rect', 'pedal' + c, root, { x: -46, y: -10, width: 92, height: 20, rx: 6 });
   if (!far) o.hT = N('path', 'halo', root, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + c);
   if (!far) o.hS = N('path', 'halo', root, { 'stroke-width': 9 }); o.shank = N('path', 'limbfill' + c);
   o.shoeG = N('g'); if (!far) o.hF = N('path', 'halo', o.shoeG, { 'stroke-width': 9 }); o.shoe = N('path', 'limbfill' + c, o.shoeG);
@@ -1116,7 +1170,7 @@ function makeLeg(far) {
 function buildScene() {
   // The hill's angle: a level line from the ground line's left end, the arc between the two, and its label. These stay level, outside the tilted scene.
   E.inc = N('g', '', svg, { display: 'none' });
-  E.level = N('line', 'ground', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
+  E.level = N('line', 'ground level', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
   E.scene = root = N('g', '', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
   E.ground = N('line', 'ground');
   E.farCrank = N('path', 'crank far'); E.far = makeLeg(true);
@@ -1134,9 +1188,9 @@ function buildScene() {
   E.ol = caps.map(c => N('line', 'ol' + c, E.olG)); E.olFork = N('path', 'olfill', E.olG);
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
   E.clamp = tube(16, 'comp'); E.rails = tube(6, 'comp'); E.saddle = N('path', 'saddle');
-  E.stem = tube(26, 'comp'); E.bar = N('path', 'tape', root, { 'stroke-width': 22 });
-  // Same fading inner edge line as the frame, for very pale bar tape.
-  E.barOL = N('g', '', root, { visibility: 'hidden' }); N('path', 'ol', E.barOL, { 'stroke-width': 22 }); N('path', 'tape', E.barOL, { 'stroke-width': 16 }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', root, { 'stroke-width': 24 });
+  E.stem = tube(26, 'comp'); E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
+  // Same fading inner edge line as the frame, for very pale bar tape. Each line comes with a round dot for its end at the stem.
+  E.barOL = N('g', '', root, { visibility: 'hidden' }); [['ol', 22], ['tape', 16]].forEach(([c, w]) => { N('path', c + ' butt', E.barOL, { 'stroke-width': w }); N('path', c, E.barOL, { 'stroke-width': w }); }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', root, { 'stroke-width': 24 });
   E.ring = N('circle', 'ring chainring'); E.spider = N('g');
   E.arms = Array.from({ length: 5 }, () => N('line', 'comp', E.spider, { 'stroke-width': 18 }));
   E.chainTop = N('path', 'chain', root, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
@@ -1205,7 +1259,7 @@ function drawStatic() {
   const g = G, b = bike, H = g.H, u = g.u;
   BND = { x: g.rear[0] - g.R - 230, w: g.front[0] - g.rear[0] + 2 * g.R + 460, top: Math.max(g.seatedHead + g.hr + 150, g.saddleY + 220), ground: g.groundY };
   const gL = [g.rear[0] - g.R - 150, g.groundY - 3], gR = [g.front[0] + g.R + 150, g.groundY - 3];
-  setLine(E.ground, gL, gR);
+  setLine(E.ground, gL, gR); E.ground.classList.toggle('level', !opt.incline);
   // The Incline handle: at the line's left end on the flat, at its right end at the steepest, and in proportion between.
   GND = { a: gL, len: gR[0] - gL[0] };
   setLine(E.incHit, gL, gR); setDot(E.incDot, [gL[0] + opt.incline / INCLINE_MAX * GND.len, gL[1]]);
@@ -1248,7 +1302,7 @@ function drawStatic() {
   });
 
   const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 40) / g.su[1]));
-  const ssTop = along([0, 0], g.su, b.seatTube - ST_TOP - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
+  const ssTop = along([0, 0], g.su, g.stLen - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
   setLine(E.chainstay, [0, 0], g.rear); setLine(E.seatstay, g.rear, ssTop);
   setLine(E.seatpost, seatTop, postTop); setLine(E.seattube, [0, 0], seatTop); setLine(E.toptube, g.stJ, g.htJ);
   setLine(E.downtube, [0, 0], dtTop);
@@ -1280,8 +1334,11 @@ function drawStatic() {
   const sT = [sT0[0], sT0[1] - (rT - rN)], sM = [sM0[0], sM0[1] - (rM - rN)];
   A(E.saddle, { d: taper(sT, sM, rT, rM) + ' ' + taper(sM, sN, rM, rN) });
   const bg = g.bg, q = pp => pt([g.bar[0] + pp[0], g.bar[1] + pp[1]]), br = r1(bg.r);
-  const bd = `M ${q([0, 0])} L ${q(bg.start)} A ${br} ${br} 0 0 1 ${q(bg.bottom)} L ${q(bg.end)}`;
-  [E.bar, ...E.barOL.children].forEach(e => e.setAttribute('d', bd));
+  // The bar is cut square at the end of the drops, where its rounded tip used to reach. The end at the stem stays round: the line has
+  // flat ends, and a dot of the same width sits on that one. The pale-tape edge line closes across the square end as well.
+  const bDir = unit(sub(bg.end, bg.bottom)), bEnd = along(bg.end, bDir, 11), bd = e => `M ${q([0, 0])} L ${q(bg.start)} A ${br} ${br} 0 0 1 ${q(bg.bottom)} L ${q(e)}`, bDot = `M ${q([0, 0])} h .01`;
+  const [olLine, olDot, inLine, inDot] = E.barOL.children;
+  [E.bar, olLine].forEach(e => e.setAttribute('d', bd(bEnd))); inLine.setAttribute('d', bd(along(bEnd, bDir, -3))); [E.barTop, olDot, inDot].forEach(e => e.setAttribute('d', bDot));
   A(E.hood, { d: `M ${bg.hood.map(q).join(' L ')}` });
   setLine(E.lever, [g.bar[0] + bg.lever[0][0], g.bar[1] + bg.lever[0][1]], [g.bar[0] + bg.lever[1][0], g.bar[1] + bg.lever[1][1]]);
 
@@ -1397,27 +1454,52 @@ function wheelBlur() {
 const ftin = () => { const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9); return `${ft}′${NB}${r1(t - ft * 12)}″`; };
 function readouts() {
   const g = G, b = bike, ha = rad(b.hta);
-  $('r-ratio').textContent = (b.stack / b.reach).toFixed(2) + ':1';
+  const tag = (v, t) => `${v}<span class="tag ${t[0]}">${t[1]}</span>`;   // a value with its coloured label
+  // Stack to reach: frames under 1.45 are race geometry (long and low), 1.45 to 1.55 sporty endurance, over 1.55 relaxed and upright.
+  const ratio = +(b.stack / b.reach).toFixed(2);
+  $('r-ratio').innerHTML = tag(ratio.toFixed(2) + ':1', ratio < 1.45 ? ['bad', 'race'] : ratio <= 1.55 ? ['warn', 'endurance'] : ['ok', 'relaxed']);
   // Standover: halfway along the top tube, from the ground under the tires to the tube's upper surface (14 mm above its centreline, square to the tube).
-  const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY; $('r-standover').textContent = len(standover);
-  const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl) < .3 ? 'level' : Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');
-  $('r-wb').textContent = len(g.front[0] - g.rear[0]); $('r-trail').textContent = len((g.R * Math.cos(ha) - b.rake) / Math.sin(ha));
-  const drop = Math.round(g.saddleY - (g.bar[1] + 12)); $('r-drop').textContent = drop >= 0 ? len(drop) : len(-drop) + NB + 'rise';
+  // It is labelled against the rider's inseam (floor to crotch), in whole millimetres: 26 or more to spare is good, 1 to 25 is snug, none is too tall.
+  const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY, spare = Math.round(body.inseam) - Math.round(standover);
+  const so = spare >= 26 ? ['ok', 'good'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
+  $('r-standover').innerHTML = `${len(standover)}<span class="tag ${so[0]}">${so[1]}</span>`;
+  const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');   // always a number, 0.0° included
+  $('r-wb').textContent = len(g.front[0] - g.rear[0]);
+  // Trail: how far the tire's contact point sits behind the steering axis. Road bikes run from about 50 to 63 mm, with 57 or 58 widely
+  // given as the point where steering is both steady and agile; race bikes sit below that for quicker steering, and under 50 is outside
+  // the usual road range. The label follows those bands, in whole millimetres.
+  const trail = (g.R * Math.cos(ha) - b.rake) / Math.sin(ha), tr = Math.round(trail) >= 57 ? ['ok', 'stable'] : Math.round(trail) >= 50 ? ['warn', 'responsive'] : ['bad', 'twitchy'];
+  $('r-trail').innerHTML = `${len(trail)}<span class="tag ${tr[0]}">${tr[1]}</span>`;
+  // Saddle-to-bar drop is judged against saddle height, so a tall rider is not marked down for a drop that suits the frame: under 4%
+  // of it (about 3 cm on a mid-size bike) is upright, the recreational range; over 12% (about 9 cm) is deep, the top of the racing range.
+  const drop = Math.round(g.saddleY - (g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
+  $('r-drop').innerHTML = tag(drop >= 0 ? len(drop) : len(-drop) + NB + 'rise', drop < dLo ? ['ok', 'upright'] : drop <= dHi ? ['warn', 'moderate'] : ['bad', 'deep']);
+  $('t-drop').title = `Top of the saddle down to the top of the bars. For this saddle height, under ${len(dLo)} is upright, up to ${len(dHi)} is moderate, more is deep.`;
   const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'high'] : C.kmax < 135 ? ['warn', 'low'] : ['ok', 'typical'];
   $('r-kmax').innerHTML = `${Math.round(C.kmax)}°<span class="tag ${ks[0]}">${ks[1]}</span>`;
-  $('r-kmin').textContent = Math.round(C.kmin) + '°'; $('r-hip').textContent = Math.round(C.hmin) + '°';
-  $('r-back').textContent = Math.round(deg(g.tA)) + '°'; $('r-sh').textContent = Math.round(g.shoulderAng) + '°';
-  const k = Math.round(C.kops); $('r-kops').textContent = Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind');
+  // Knee at the top of the stroke: fitters aim for about 65 to 70 degrees (110 to 115 of bend). Tighter than that the knee is over-bent,
+  // the usual sign that the cranks are long or the saddle low. Closed hip: 45 to 65 covers the published road ranges; under 45 the thigh
+  // crowds the torso. An open knee or hip is no fault, so those labels are green too.
+  const kt = Math.round(C.kmin), hp = Math.round(C.hmin);
+  $('r-kmin').innerHTML = tag(kt + '°', kt < 65 ? ['bad', 'tight'] : kt <= 72 ? ['ok', 'typical'] : ['ok', 'open']);
+  $('r-hip').innerHTML = tag(hp + '°', hp < 45 ? ['bad', 'tight'] : hp <= 65 ? ['ok', 'typical'] : ['ok', 'open']);
+  // Back angle is hip to shoulder against level. Fitting guides put relaxed, recreational riding at about 50 to 55 degrees with the
+  // hands on the hoods, experienced riders at 40 to 50, and racers from 40 down toward 30; the label follows those bands.
+  const back = Math.round(deg(g.tA)), bk = back >= 50 ? ['ok', 'casual'] : back >= 40 ? ['warn', 'balanced'] : ['bad', 'aggressive'];
+  $('r-back').innerHTML = `${back}°<span class="tag ${bk[0]}">${bk[1]}</span>`;
+  // Shoulder angle, torso to upper arm: 75 to 100 degrees is the span fitters see as normal (their targets, 80 to 95, sit inside it).
+  // Less is a short reach to the bars, more a long one.
+  const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = tag(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
+  // Knee against the pedal axle: the classic starting point puts the knee over the axle or up to 20 mm behind it. The label only says
+  // which side of that the rider sits; fitters differ on whether it should be a target, so it is not coloured as good or bad.
+  const k = Math.round(C.kops);
+  $('r-kops').innerHTML = tag(Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind'), ['plain', k > 10 ? 'forward' : k < -20 ? 'rearward' : 'neutral']);
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
   else if (b.fork < 339.5 || b.fork > 420.5) al.push(['warn', `This stack and head tube length need a ${len(b.fork)} fork. Road forks are usually ${inch() ? '13.4 to 16.5' + NB + 'in' : '340 to 420' + NB + 'mm'}.`]);
   if (g.slope < -2) al.push(['warn', 'The top tube rises toward the saddle. The seat tube is long for this stack.']);
-  // Standover: the top tube against the rider's inseam (floor to crotch). Less than about 25 mm to spare is tight.
-  const spare = body.inseam - standover;
-  if (spare < 0) al.push(['bad', `The top tube is ${len(-spare)} above your inseam. You can’t stand over this frame.`]);
-  else if (spare < 25) al.push(['warn', `Only ${len(spare)} of standover clearance. About ${inch() ? '1' + NB + 'in' : '25' + NB + 'mm'} or more is usual.`]);
-  if (opt.incline > 0) ;   // leaving the saddle: the knee angles no longer say anything about saddle height
+  if (opt.incline > SEATED) ;   // out of the saddle: the knee angles no longer say anything about saddle height
   else if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
   else if (ks[1] === 'high') al.push(['warn', 'The leg is close to locked out at the bottom of the stroke. The saddle is probably too high.']);
   else if (ks[1] === 'low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
@@ -1429,12 +1511,11 @@ function readouts() {
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
   $('gear-hint').textContent = `${opt.ring}${NB}×${NB}${opt.cog} at ${opt.cadence}${NB}rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}.`;
-  $('sum-bike').textContent = `${len(b.seatTube)} · ${{ 622: '700c', 584: '650b', 559: '26' + NB + 'in' }[b.rim]}${NB}×${NB}${Math.round(b.tire)}`;
+  $('sum-bike').textContent = `${inch() ? len(b.seatTube) : r1(b.seatTube / 10) + NB + 'cm'} · ${{ 622: '700c', 584: '650b', 559: '26' + NB + 'in' }[b.rim]}${NB}×${NB}${Math.round(b.tire)}`;
   $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
   $('sum-options').textContent = `${opt.cadence}${NB}rpm · Hands on ${{ tops: 'bar tops', hoods: 'shifters', drops: 'drops' }[opt.hands]}`;
-  $('body-hint').textContent = (body.custom ? 'You have changed some measurements from the averages for this height.'
-    : 'The other measurements are averages for this height. Change any of them to match your own.') +
-    ' Legs and torso have to fit within your height, so lengthening one shortens the other.';
+  $('body-hint').textContent = body.custom ? 'Legs and torso have to fit within your height, so lengthening one shortens the other.'
+    : 'The rider is drawn with the average proportions for this height.';
   $('body-reset').hidden = !body.custom;
 }
 // Appearance: frame colour from hue / saturation / brightness; wheels and components on a black-to-light-gray scale.
