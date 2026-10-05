@@ -14,8 +14,8 @@ try { if (localStorage.getItem('night-mode') === '0') document.documentElement.c
 img{max-width:100%}
 /* Layout: scrolling control rail on the left in plain white, black and gray; bike and rider drawn
    to scale on a clear stage on the right, with fit readouts along the bottom edge.
-   Two looks: by day a white page, black rider, red frame; in night mode (the NIGHT MODE switch, upper right) a black
-   page with every lightness mirrored, so black becomes white and gray keeps its distance from the page. */
+   Two looks: by day a white page; in night mode (the NIGHT MODE switch, upper right) a black one. Night mode changes the
+   page and its controls only. The colours chosen under Appearance are drawn exactly as chosen in both. */
 :root{
   color-scheme:light;
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
@@ -33,16 +33,15 @@ img{max-width:100%}
   --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
 }
 
-/* Night mode: black page, text in the home page's night ink. Each fixed drawing colour is its day colour with the lightness mirrored;
-   the colours chosen under Appearance are mirrored the same way by the script (see applyColors). */
+/* Night mode: black page, text in the home page's night ink. The colours chosen under Appearance stay as they are, and so do the
+   scales of their sliders. Only the parts of the drawing that have no colour control (saddle and chain, brake rotors, the blur of a
+   spinning wheel) take a light version here, so that they still show against a black page. */
 :root.night{
   color-scheme:dark;
   --bg:#000000; --stage:#000000; --panel:#000000; --field:#000000; --page:#000000;
   --ink:#ececec; --muted:#949494; --line:#2e2e2e;   /* #ececec: the home page's night text, the colour under its dot at rest */
   --accent:#ececec; --accent-ink:#000000; --slot:#292929;
-  --metal:#717171; --part:#dddddd; --tire:#e3e3e3; --spin:#424242;
-  --rider:#ffffff;
-  --lo:#ffffff; --hi:#000000; --gray-hi:#262626;
+  --metal:#717171; --part:#dddddd; --spin:#424242;
   --rule:#ffffff;
 }
 
@@ -157,6 +156,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .togs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .tog{position:relative;display:block;min-width:0;cursor:pointer}   /* relative: the unseen checkbox must stay inside its button, or it stretches the page */
 .tog.wide{grid-column:1 / -1}
+.togs.three{grid-template-columns:repeat(3,minmax(0,1fr))}   /* Bold, Italic and Wide share one row */
 .tog input{position:absolute;opacity:0;pointer-events:none}
 .tog span{display:block;padding:7px 8px;border:1px solid var(--rule);border-radius:7px;background:var(--field);color:var(--ink);
   font-size:13px;font-weight:500;text-align:center;transition:background .16s,color .16s}
@@ -164,6 +164,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 /* The first word says what pressing the button will do next, so it swaps when the button is on: Show becomes Hide, and Hide becomes Show. */
 .tog i{font-style:normal} .tog .on,.tog input:checked+span .off{display:none} .tog input:checked+span .on{display:inline}
 .tog input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.tog input:disabled+span{opacity:.35;cursor:default}
 @media (prefers-reduced-motion:reduce){ .tog span{transition:none} }
 .hint{color:var(--muted);font-size:12.5px;line-height:1.35}
 
@@ -174,6 +175,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 /* The black highlight is one block that slides to the chosen option (--i of --n). It is painted as the switch's own background, in
    the border's colour, so it runs right out to the border and takes the switch's rounded corners with no gap. */
+.seg.none{background-size:0 100%}   /* none of its options chosen: no highlight, just the outlined box and its words */
 .ready .seg{transition:background-position .18s cubic-bezier(.3,.7,.3,1)}
 .seg label{position:relative;padding:7px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .16s}
 .seg label:hover{color:var(--ink)}
@@ -235,7 +237,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .pick[open]>summary{margin-bottom:12px}
 @media (prefers-reduced-motion:reduce){ .pick>summary>:first-child::after{transition:none} }
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
-.sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
+.sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-hair{background:var(--hair)} .sw-tire{background:var(--tire)} .sw-wall{background:var(--tirewall,var(--tire))} .sw-tires{background:linear-gradient(to right,var(--tire) 50%,var(--tirewall,var(--tire)) 50%)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
    Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen. */
 .slot{display:flex;padding:3px;border-radius:999px;background:var(--slot)}
@@ -243,6 +245,8 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .slot-sat{background:linear-gradient(to right,var(--hi) 11px,var(--pure) calc(100% - 11px))}
 .slot-bri{background:linear-gradient(to right,var(--lo) 11px,var(--full) calc(100% - 11px))}
 .slot-gray{background:linear-gradient(to right,var(--lo) 11px,var(--gray-hi) calc(100% - 11px))}
+/* The test dummy has no hair: there the Hair color sliders wait, dimmed. */
+#grp-hair.off .group{opacity:.35}
 .slot input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .slot input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .slot input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
@@ -269,8 +273,13 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:var(--stage)}
 .canvas{position:relative;min-height:0;overflow:hidden}
 .canvas svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hud{position:absolute;top:12px;left:16px;right:16px;display:flex;flex-wrap:wrap-reverse;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
+/* Over the drawing: a row with Copy Link at the left and the speed and Play/Pause at the right, and any warnings beneath it. */
+.hud{position:absolute;top:12px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
 .hud>*{pointer-events:auto}
+.hud>.hudrow{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}   /* the gap between the buttons lets clicks through to the drawing */
+.hudrow>*{pointer-events:auto}
+#copy-link{border-color:var(--rule);white-space:nowrap;text-align:center}
+.said{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}   /* read out by screen readers, not shown */
 .alerts{display:flex;flex-direction:column;gap:6px;max-width:440px;min-width:0}
 .alert{display:flex;gap:8px;align-items:baseline;background:var(--panel);border:1px solid var(--rule);border-radius:6px;
   padding:6px 10px;font-size:13px;line-height:1.3}
@@ -278,7 +287,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .alert.bad::before{background:var(--stop)}
 .transport{display:flex;align-items:center;gap:10px;margin-left:auto}
 .speed{font:500 12.5px var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);
-  border:1px solid var(--rule);border-radius:6px;padding:6px 10px;white-space:nowrap}
+  border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}   /* no frame: it is a reading, not a button */
 
 .readouts{border-top:1px solid var(--rule);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
 .rogroup{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start}
@@ -294,7 +303,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 
 /* ---------- drawing ---------- */
 svg .ftext{fill:var(--ftext);font-family:var(--font);white-space:pre;pointer-events:none}   /* the lettering on the downtube */
-svg.norider .is-rider,svg.nobike .is-bike{display:none}   /* the Hide rider and Hide bike options */
+svg.norider .is-rider,svg.nobike .is-bike{display:none!important}   /* the Hide rider and Hide bike options. !important: they also win over the later rules that show a part for the Male and Female builds (.farol, .under) */
 /* The ground line and the level line under a hill are as thin as the lines of the sliders in the panel: 1px, whatever the drawing's scale. */
 svg .ground{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
 svg .ground.level{shape-rendering:crispEdges}   /* a level line is drawn on whole pixels, sharp like the sliders' lines; a sloping one is smoothed */
@@ -312,6 +321,7 @@ svg .tube.butt,svg .comp.butt{stroke-linecap:butt}
 svg .tubefill{fill:var(--frame);stroke:none}
 svg .ol{stroke:var(--ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tape{stroke:var(--tape);fill:none;stroke-linecap:round;stroke-linejoin:round}
+svg .grip{fill:var(--tape);stroke:none}   /* the end of a flat bar's grip */
 svg .ol.butt,svg .tape.butt{stroke-linecap:butt}
 svg .olfill{fill:var(--ink);stroke:none}
 svg .part{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -319,6 +329,7 @@ svg .saddle{fill:var(--part);stroke:none}
 svg .comp{stroke:var(--comp);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .chain{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tire,svg .tread{stroke:var(--tire);fill:none}
+svg .tirewall{stroke:var(--tirewall,var(--tire));fill:none}   /* the band of sidewall between the rim and the tread */
 svg .rim{stroke:var(--wheel);fill:none}
 svg .spoke{stroke:var(--wheel);stroke-width:1;vector-effect:non-scaling-stroke}
 svg .blur{fill:var(--spin)}
@@ -346,6 +357,23 @@ svg .limbfill,svg .flesh{stroke:var(--ink);stroke-width:6;stroke-opacity:var(--r
 svg .limbfill{fill:var(--rider)}
 svg .limbfill.far{fill:var(--rider-far);stroke:color-mix(in srgb,var(--ink) 30%,var(--stage))}
 svg .halo{stroke:var(--stage);fill:none;stroke-linecap:round;stroke-linejoin:round}
+/* The Male and Female rider profiles (svg.real) are outlined in one colour, --oline, the same by day and by night: black, or white once
+   the rider's colour is extremely dark (the script sets it). It draws the edge of the whole figure, the lines between the limbs,
+   the hand, and the Body Details lines. Where that colour is the page's own the outline between limbs is a 4.5 mm gap, as on the test
+   dummy; otherwise it is a 3 mm line (--oline-w). The far-side limbs get it mostly faded into the page, as they are.
+   A near limb's outline (.nh) stops short of the joint it grows from, so the limb runs into the body instead of ringing the joint; the
+   limb itself (.nl) has no edge of its own. */
+svg .det{fill:none;stroke:var(--oline,#000);stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+svg .detfill{fill:var(--oline,#000);pointer-events:none}
+svg .detline{stroke-width:calc(var(--oline-w,6px)/2)}   /* as thick as the outline round the figure shows: half its stroke, the other half lying under the fill */
+svg .hair{pointer-events:none} svg .hairfill{fill:var(--hair)}
+svg.real .limbfill{stroke:var(--oline,#000);stroke-opacity:1}
+svg.real .limbfill.far{stroke:color-mix(in srgb,var(--oline,#000) 30%,var(--stage))}
+svg .farol{display:none;fill:none;stroke:color-mix(in srgb,var(--oline,#000) 30%,var(--stage));stroke-width:6;stroke-linejoin:round}
+svg.real .farol{display:inline} svg.real .limbfill.fl{stroke:none}
+svg.real .nl{stroke:none}
+svg.real .nh{stroke:var(--oline,#000);stroke-width:var(--oline-w,6px)}
+svg .under{display:none} svg.real .under{display:inline}
 svg .flesh{fill:var(--rider)}
 /* The smiley: clicking the head puts a classic one on it, in black or white (--face), whichever stands out from the rider's colour. */
 svg .head{cursor:pointer}
@@ -353,6 +381,7 @@ svg .face{pointer-events:none}
 svg .face .eye{fill:var(--face,#fff)}
 svg .face .smile{fill:none;stroke:var(--face,#fff);stroke-width:.1;stroke-linecap:round}
 svg .hand{stroke:color-mix(in srgb,var(--ink) var(--rider-edge-pct,0%),var(--stage));stroke-opacity:1;stroke-width:9;paint-order:stroke;cursor:pointer}
+svg.real .hand{stroke:var(--oline,#000);stroke-width:var(--oline-w,6px)}
 svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
 
@@ -557,7 +586,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
         </details>
         <details class="pick">
-          <summary class="grphead"><h3 class="grp">Gear</h3></summary>
+          <summary class="grphead"><h3 class="grp">Gear ratio</h3></summary>
           <div class="group">
             <div class="stack">
               <div class="slider">
@@ -598,7 +627,8 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <summary class="grphead"><h3 class="grp">View options</h3></summary>
           <div class="group">
             <div class="togs">
-              <label class="tog wide" for="o-angles"><input id="o-angles" type="checkbox"><span><i class="off">Show</i><i class="on">Hide</i> joint angles on the rider</span></label>
+              <label class="tog" for="o-joints"><input id="o-joints" type="checkbox"><span><i class="off">Show</i><i class="on">Hide</i> joints</span></label>
+              <label class="tog" for="o-angles"><input id="o-angles" type="checkbox"><span><i class="off">Show</i><i class="on">Hide</i> joint angles</span></label>
               <label class="tog" for="o-hideRider"><input id="o-hideRider" type="checkbox"><span><i class="off">Hide</i><i class="on">Show</i> rider</span></label>
               <label class="tog" for="o-hideBike"><input id="o-hideBike" type="checkbox"><span><i class="off">Hide</i><i class="on">Show</i> bike</span></label>
             </div>
@@ -608,8 +638,19 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </details>
 
     <details class="sec" id="sec-appearance" open>
-      <summary><h2>Appearance</h2><span class="dots" aria-hidden="true"><i class="sw sw-rider"></i><i class="sw sw-frame"></i><i class="sw sw-text"></i><i class="sw sw-tape"></i><i class="sw sw-wheel"></i><i class="sw sw-comp"></i></span></summary>
+      <summary><h2>Appearance</h2><span class="dots" aria-hidden="true"><i class="sw sw-rider"></i><i class="sw sw-frame"></i><i class="sw sw-tires"></i></span></summary>
       <div class="sec-body">
+        <details class="pick" id="grp-profile">
+          <summary class="grphead"><h3 class="grp" id="cap-profile">Rider profile</h3></summary>
+          <div class="group">
+            <div class="seg" role="radiogroup" aria-labelledby="cap-profile">
+              <input type="radio" name="profile" id="profile-dummy" value="dummy"><label for="profile-dummy">Test Dummy</label>
+              <input type="radio" name="profile" id="profile-male" value="male"><label for="profile-male">Male</label>
+              <input type="radio" name="profile" id="profile-female" value="female"><label for="profile-female">Female</label>
+            </div>
+            <label class="tog" for="o-details"><input id="o-details" type="checkbox"><span>Body Details</span></label>
+          </div>
+        </details>
         <details class="pick" id="grp-rider">
           <summary class="grphead"><h3 class="grp">Rider color</h3><i class="sw sw-rider" aria-hidden="true"></i></summary>
           <div class="group sliders">
@@ -624,6 +665,23 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             <div class="slider">
               <label class="cap" for="o-riderB">Brightness</label>
               <div class="slot slot-bri"><input id="o-riderB" type="range" min="0" max="100" step="1"></div>
+            </div>
+          </div>
+        </details>
+        <details class="pick" id="grp-hair">
+          <summary class="grphead"><h3 class="grp">Hair color</h3><i class="sw sw-hair" aria-hidden="true"></i></summary>
+          <div class="group sliders">
+            <div class="slider">
+              <label class="cap" for="o-hairH">Hue</label>
+              <div class="slot slot-hue"><input id="o-hairH" type="range" min="0" max="359" step="1"></div>
+            </div>
+            <div class="slider">
+              <label class="cap" for="o-hairS">Saturation</label>
+              <div class="slot slot-sat"><input id="o-hairS" type="range" min="0" max="100" step="1"></div>
+            </div>
+            <div class="slider">
+              <label class="cap" for="o-hairB">Brightness</label>
+              <div class="slot slot-bri"><input id="o-hairB" type="range" min="0" max="100" step="1"></div>
             </div>
           </div>
         </details>
@@ -648,9 +706,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <summary class="grphead"><h3 class="grp">Frame text</h3><i class="sw sw-text" aria-hidden="true"></i></summary>
           <div class="group sliders">
             <input class="textin" id="o-frameText" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Frame text" placeholder="Text for the downtube">
-            <div class="togs">
+            <div class="togs three">
               <label class="tog" for="o-textBold"><input id="o-textBold" type="checkbox"><span>Bold</span></label>
               <label class="tog" for="o-textItalic"><input id="o-textItalic" type="checkbox"><span>Italic</span></label>
+              <label class="tog" for="o-textWide"><input id="o-textWide" type="checkbox"><span>Wide</span></label>
             </div>
             <div class="slider">
               <label class="cap" for="o-textH">Hue</label>
@@ -694,16 +753,59 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               <div class="top"><label class="cap" for="o-rimDepth">Wheel depth</label><output id="o-rimDepth-out" for="o-rimDepth"></output></div>
               <div class="rail"><input id="o-rimDepth" type="range"></div>
             </div>
-            <div class="slider">
-              <div class="top"><label class="cap" for="o-tread">Tire tread</label><output id="o-tread-out" for="o-tread"></output></div>
-              <div class="rail"><input id="o-tread" type="range" min="0" max="100" step="25"></div>
-            </div>
             <div class="ctl"><span class="cap" id="cap-disc">Disc brakes</span>
               <div class="seg" role="radiogroup" aria-labelledby="cap-disc">
                 <input type="radio" name="disc" id="disc-on" value="on"><label for="disc-on">On</label>
                 <input type="radio" name="disc" id="disc-off" value="off"><label for="disc-off">Off</label>
               </div>
             </div>
+          </div>
+        </details>
+        <details class="pick" id="grp-tires">
+          <summary class="grphead"><h3 class="grp">Tires</h3><i class="sw sw-tires" aria-hidden="true"></i></summary>
+          <div class="stack">
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-tire">Tire size</label><output id="o-tire-out" for="o-tire"></output></div>
+              <div class="rail"><input id="o-tire" type="range"></div>
+            </div>
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-tread">Tire tread</label><output id="o-tread-out" for="o-tread"></output></div>
+              <div class="rail"><input id="o-tread" type="range" min="0" max="100" step="25"></div>
+            </div>
+            <details class="pick" id="grp-tire">
+              <summary class="grphead"><span class="cap">Tire color</span><i class="sw sw-tire" aria-hidden="true"></i></summary>
+              <div class="group sliders">
+                <div class="slider">
+                  <label class="cap" for="o-tireH">Hue</label>
+                  <div class="slot slot-hue"><input id="o-tireH" type="range" min="0" max="359" step="1"></div>
+                </div>
+                <div class="slider">
+                  <label class="cap" for="o-tireS">Saturation</label>
+                  <div class="slot slot-sat"><input id="o-tireS" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="slider">
+                  <label class="cap" for="o-tireB">Brightness</label>
+                  <div class="slot slot-bri"><input id="o-tireB" type="range" min="0" max="100" step="1"></div>
+                </div>
+              </div>
+            </details>
+            <details class="pick" id="grp-wall">
+              <summary class="grphead"><span class="cap">Tirewall color</span><i class="sw sw-wall" aria-hidden="true"></i></summary>
+              <div class="group sliders">
+                <div class="slider">
+                  <label class="cap" for="o-wallH">Hue</label>
+                  <div class="slot slot-hue"><input id="o-wallH" type="range" min="0" max="359" step="1"></div>
+                </div>
+                <div class="slider">
+                  <label class="cap" for="o-wallS">Saturation</label>
+                  <div class="slot slot-sat"><input id="o-wallS" type="range" min="0" max="100" step="1"></div>
+                </div>
+                <div class="slider">
+                  <label class="cap" for="o-wallB">Brightness</label>
+                  <div class="slot slot-bri"><input id="o-wallB" type="range" min="0" max="100" step="1"></div>
+                </div>
+              </div>
+            </details>
           </div>
         </details>
         <details class="pick" id="grp-comp">
@@ -736,11 +838,15 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     <div class="canvas">
       <svg id="view" role="img" aria-label="Side view of the rider pedaling the bike" preserveAspectRatio="xMidYMax meet"></svg>
       <div class="hud">
-        <div class="alerts" id="alerts" aria-live="polite"></div>
-        <div class="transport">
-          <span class="speed" id="speed"></span>
-          <button class="btn primary" id="play" type="button">Pause</button>
+        <div class="hudrow">
+          <button class="btn" id="copy-link" type="button" title="Copy a link to this page with the settings as they are now">Copy Link</button>
+          <div class="transport">
+            <span class="speed" id="speed"></span>
+            <button class="btn primary" id="play" type="button">Pause</button>
+          </div>
         </div>
+        <div class="alerts" id="alerts" aria-live="polite"></div>
+        <span class="said" id="copy-said" role="status"></span>
       </div>
     </div>
     <div class="readouts">
@@ -794,17 +900,24 @@ const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stood this far above the top tube centreline when it was first measured to its top (older saved bikes are carried over by it)
 const TT_DROP = 10;  // the top tube joins this much further down the head tube, so more head tube shows above it; it is moved parallel to itself, which keeps its slope
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
-  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0 };
-const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, hideRider: false, hideBike: false, incline: 0, smiley: false,
-  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
-  frameText: '', textBold: false, textItalic: false, textH: 0, textS: 0, textB: 100 };   // lettering on the downtube: none to begin with, and white
+  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
+const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false,
+  riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
+  frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 };   // lettering on the downtube: none to begin with, and white
+// This version of the page has Body Details switched off: its button is dimmed and cannot be pressed on any rider profile, and the
+// details are never drawn, whatever a remembered setup or a link says. (Set this to true for the version where the button works.)
+// The remembered setting itself is left alone, so the full version still finds it as it was.
+const BODY_DETAILS = false, detailsOn = () => BODY_DETAILS && opt.details;
 let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
+// geo: which geometry the bike has: one recommended for the rider ('road', 'gravel' or 'mountain') or the user's 'own'. lastGeo: the
+// recommendation last used. ownBike: the user's own geometry, kept while a recommendation is showing.
+let geo = 'road', lastGeo = 'road', ownBike = null;
 const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
 function defaults() {
-  ownBody = null;
-  bike = { ...DEF_BIKE }; link(); opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
+  ownBody = null; ownBike = null; geo = lastGeo = 'road';
+  opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
   body = { sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') };
-  syncSaddle();
+  recommend('road');   // the page opens on the road geometry recommended for this rider, 6 ft 0 in
 }
 function restore(d) {
   if (!d || typeof d !== 'object') return;
@@ -828,12 +941,15 @@ function restore(d) {
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
   if (o.turbo === true && !Number.isFinite(o.incline)) o.incline = 15;   // saved with the old Turbo Mode button on: the same hill
-  take(opt, o); opt.frameText = opt.frameText.slice(0, 30);
+  take(opt, o); opt.frameText = opt.frameText.slice(0, 30); if (!SHAPES[opt.profile]) opt.profile = 'dummy';
   if (d.units === 'cm' || d.units === 'in') units = d.units;
   // The rider's own measurements, kept while "Use average measurements" is selected.
   if (d.own && typeof d.own === 'object' && PARTS.every(k => Number.isFinite(d.own[k]))) ownBody = Object.fromEntries(PARTS.map(k => [k, d.own[k]]));
   if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
+  // A bike saved before recommendations existed is the user's own. A saved recommendation keeps the bike it was saved with.
+  geo = ['road', 'gravel', 'mountain', 'own'].includes(d.geo) ? d.geo : 'own'; lastGeo = ['road', 'gravel', 'mountain'].includes(d.lastGeo) ? d.lastGeo : geo === 'own' ? 'road' : geo;
+  if (d.ownBike && typeof d.ownBike === 'object') { ownBike = { ...bike }; take(ownBike, d.ownBike); if (![622, 584, 559].includes(ownBike.rim)) ownBike.rim = 622; }
   if (body.sex !== 'm' && body.sex !== 'f') body.sex = 'm';
   if (!['tops', 'hoods', 'drops'].includes(opt.hands)) opt.hands = 'hoods';
   opt.incline = clamp(opt.incline, 0, INCLINE_MAX);
@@ -856,16 +972,118 @@ function link(k) {
   if (b.pinHT === 'fork') b.headLen = axis - Math.sqrt(Math.max(1, b.fork ** 2 - b.rake ** 2));
   else b.fork = Math.hypot(Math.max(1, axis - b.headLen), b.rake);
 }
+/* ---------- recommended geometry ---------- */
+// Frames for a rider's height, by kind of bike. The sizes are a consensus of current stock geometries (endurance road: Specialized
+// Roubaix, Trek Domane, Cannondale Synapse, Canyon Endurace, Giant Defy, with Moots, Mosaic, Enve and Fairlight; gravel: Specialized
+// Diverge, Trek Checkpoint, Canyon Grizl, Giant Revolt, Santa Cruz Stigmata, Cervelo Aspero, Salsa Warbird, with Moots, Enve, Ritchey,
+// Fairlight and Open; mountain: cross-country and trail hardtails, Specialized Chisel and Fuse, Trek Procaliber and Roscoe, Canyon
+// Exceed, Giant XTC, Santa Cruz Chameleon, Kona Honzo, Salsa Timberjack, Ritchey Ultra), written in the round figures frames are built
+// to: top tubes and seat tubes in whole centimetres, head tubes and chainstays in 5 mm, angles in half degrees, stock fork lengths and
+// rakes, stems in 10 mm, standard crank lengths. Stack follows from the head tube, fork and bottom bracket drop, and reach from the
+// top tube, so both land within a few millimetres of the makers' own for the size.
+// Each size: [for riders up to this height in mm, effective top tube, seat tube (centre to top), head tube, seat angle, head angle,
+// fork rake, stock stem, crank]. back: the back angle the cockpit is set for, balanced to slightly casual for the kind of bike.
+const GEO = {
+  road: { back: 45, fork: 375, chainstay: 420, bbDrop: 75, rim: 622, tire: 30, flat: false, stemAngle: -6, barReach: 80, barDrop: 125, stems: [70, 130], sizes: [
+    [1550, 500, 390, 95, 74.5, 70.5, 53, 70, 160], [1600, 510, 430, 115, 74.5, 70.5, 53, 80, 165], [1670, 530, 450, 130, 74, 71, 53, 90, 165], [1730, 540, 480, 140, 73.5, 71.5, 50, 90, 170], [1780, 550, 500, 155, 73.5, 72, 47, 100, 172.5],
+    [1840, 560, 520, 170, 73.5, 72.5, 47, 100, 172.5], [1890, 570, 540, 190, 73.5, 72.5, 47, 110, 175], [1940, 580, 560, 200, 73, 73, 45, 110, 175], [Infinity, 600, 580, 225, 73, 73, 45, 120, 175]] },
+  gravel: { back: 46, fork: 395, chainstay: 430, bbDrop: 75, rim: 622, tire: 45, flat: false, stemAngle: -6, barReach: 70, barDrop: 115, stems: [50, 120], sizes: [
+    [1560, 520, 400, 95, 74.5, 70, 50, 60, 160], [1620, 530, 430, 120, 74, 70, 50, 70, 165], [1680, 540, 460, 130, 74, 70.5, 50, 70, 170], [1730, 550, 480, 135, 73.5, 71, 50, 80, 170], [1780, 560, 500, 145, 73.5, 71, 50, 80, 172.5],
+    [1860, 580, 520, 165, 73.5, 71.5, 50, 90, 172.5], [1920, 600, 550, 190, 73, 71.5, 50, 90, 175], [Infinity, 610, 570, 205, 73, 71.5, 50, 100, 175]] },
+  // A hardtail with a 120 mm fork (530 mm axle to crown) and 29 x 2.35 tires, between cross-country and trail, with a flat bar. The two
+  // smallest sizes are on 27.5 inch wheels, with the shorter fork and smaller bottom bracket drop that go with them.
+  mountain: { back: 57, fork: 530, chainstay: 430, bbDrop: 60, rim: 622, tire: 60, flat: true, stemAngle: 0, barReach: 80, barDrop: 125, stems: [40, 70], sizes: [
+    [1580, 550, 340, 90, 74.5, 67, 44, 50, 165, { rim: 584, fork: 510, bbDrop: 45 }], [1650, 580, 360, 90, 74.5, 67, 44, 50, 170, { rim: 584, fork: 510, bbDrop: 45 }],
+    [1730, 600, 380, 95, 74.5, 67, 44, 50, 170], [1790, 620, 410, 100, 74.5, 67, 44, 60, 170], [1880, 640, 440, 105, 74.5, 67, 44, 60, 175], [Infinity, 660, 480, 120, 74.5, 67, 44, 60, 175]] }
+};
+// Sets the bike to the recommended frame of this kind for the rider as they are now.
+//  1. Size goes by height, moved toward a longer frame for a torso and arms longer than average for that height and toward a shorter
+//     one for shorter (half of the difference counts), as makers advise for riders between sizes.
+//  2. Inseam can only send the rider down, and no further than one size under the one for their height: while the top tube is higher
+//     than the inseam or too little seatpost shows. (Makers' own charts go by height and leave little standover to spare, so a snug
+//     frame is kept. A rider with short legs and a long back is fitted for reach first, and the note under the switch says so.)
+//  3. The saddle is set from inseam, and placed fore and aft to bring the knee over the pedal axle, as far as a standard seatpost allows.
+//  4. The stem (near the size's stock length) and the spacers under it (5 to 35 mm) are chosen to bring the rider's back
+//     closest to the kind's angle without cramping the reach, hands on the shifters or on the flat bar's grips.
+function recommend(kind) {
+  const T = GEO[kind], avg = averages(body.height, body.sex), keep = [opt.hands, opt.incline];
+  const upper = (body.torso + body.upperArm + body.forearm) / (avg.torso + avg.upperArm + avg.forearm), tall = body.height * (1 + (upper - 1) / 2);
+  let i = T.sizes.findIndex(z => tall <= z[0]); const floor = Math.max(0, T.sizes.findIndex(z => body.height <= z[0]) - 1);
+  const frame = n => { const [, tt, st, ht, sta, hta, rake, stem, crank, own] = T.sizes[n], ha = rad(hta), { fork, bbDrop, rim } = { ...T, ...own };
+    bike = { ...DEF_BIKE, topTube: tt, seatTube: st, headLen: ht, sta, hta, rake, fork, chainstay: T.chainstay, bbDrop, rim, tire: T.tire, crank, stem, spacers: 20,
+      stemAngle: T.stemAngle, barReach: T.barReach, barDrop: T.barDrop, barAngle: 0, flat: T.flat, autoSaddle: true, setback: 75, pinTT: 'topTube', pinHT: 'fork',
+      stack: (ht + 12 + Math.sqrt(fork ** 2 - rake ** 2)) * Math.sin(ha) + bbDrop - rake * Math.cos(ha) };
+    link(); syncSaddle(); };
+  opt.hands = 'hoods'; opt.incline = 0;
+  const standover = () => { solve(); return (G.stJ[1] + G.htJ[1]) / 2 + 14 / Math.cos(rad(G.slope)) - G.groundY; };
+  for (frame(i); i > floor && (body.inseam - standover() < 1 || bike.saddleH - bike.seatTube < 80); frame(--i));
+  // Saddle fore and aft: the middle of the rails stays within 25 mm of a seatpost head set 10 mm behind the seat tube's line.
+  const post = -(bike.saddleH - 45) * Math.cos(rad(bike.sta)) - 10; let sb = null;
+  for (let v = 0; v <= 140; v += 5) { if (Math.abs(-v - 130 - post) > 25) continue; bike.setback = v; solve(); cycle(); const c = Math.abs(C.kops + 5); if (!sb || c < sb[0]) sb = [c, v]; }
+  bike.setback = sb ? sb[1] : clamp(Math.round((-post - 130) / 5) * 5, 0, 140);
+  const stock = bike.stem; let fit = null;
+  for (let st = Math.max(T.stems[0], stock - (T.flat ? 10 : 20)); st <= Math.min(T.stems[1], stock + (T.flat ? 10 : 20)); st += 10) for (let sp = 5; sp <= 35; sp += 5) {
+    bike.stem = st; bike.spacers = sp; solve();
+    // Judged as the readouts show it, in whole degrees: the back angle first, then (on drops) a reach long enough for the shoulder to
+    // open to 75 degrees, then staying near the stock stem and a middling stack of spacers.
+    const c = Math.abs(Math.round(deg(G.tA)) - T.back) + (T.flat ? 0 : 2.5 * Math.max(0, 75 - Math.round(G.shoulderAng))) + .6 * Math.abs(st - stock) / 10 + .15 * Math.abs(sp - 20) / 5 + (G.arm === 'ok' ? 0 : 20);
+    if (!fit || c < fit[0]) fit = [c, st, sp]; }
+  bike.stem = fit[1]; bike.spacers = fit[2]; [opt.hands, opt.incline] = keep;
+}
+// Choosing a recommendation or "Enter my own geometry". The user's own bike is set aside while a recommendation shows and comes back
+// when they return to their own; with none set aside, their own starts from the bike as it is.
+function setGeo(v) {
+  if (v === 'own') { if (geo !== 'own') { lastGeo = geo; if (ownBike) { bike = { ...ownBike }; link(); syncSaddle(); } } }
+  else { if (geo === 'own') ownBike = { ...bike }; recommend(v); lastGeo = v; }
+  geo = v; refresh(); update();
+}
+const touchBike = () => { if (geo !== 'own') { lastGeo = geo; geo = 'own'; } };   // a bike control was moved: from here the geometry is the user's own
+const fitBike = () => { if (geo === 'own') syncSaddle(); else recommend(geo); };   // the body changed: a recommended bike follows it
+/* ---------- link to these settings ---------- */
+// Copy Link puts the settings into the page's address, after a #, so the page can be opened as it is now. Only what differs from
+// LINK_BASE is written, which keeps the address short. LINK_BASE is a fixed reference, not the live defaults: it must never be edited,
+// or links made earlier would open differently. If the reference ever has to change, add another under a new number and keep this one.
+// The panel's width and NIGHT MODE belong to the device, not the setup, so they are left out.
+const LINK_URL = 'https://www.jasonbrewer.org/bike';
+const LINK_BASE = { 1: { units: 'in', bikeUnits: 'mm', geo: 'road', lastGeo: 'road',
+  bike: { seatTube: 520, topTube: 560, sta: 73.5, hta: 72.5, chainstay: 420, bbDrop: 75, headLen: 170, reach: 385.45, stack: 589.27, pinTT: 'topTube', pinHT: 'fork', fork: 375, rake: 47, rim: 622, tire: 30, saddleH: 765, autoSaddle: true, setback: 100, crank: 172.5, spacers: 25, stem: 110, stemAngle: -6, barReach: 80, barDrop: 125, barAngle: 0, flat: false },
+  body: { sex: 'm', height: 1828.8, custom: false, inseam: 860, thigh: 448, shank: 450, foot: 278, torso: 526.64, upperArm: 340, forearm: 342 },
+  opt: { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false, riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off', frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 } } };
+const b64 = { to: t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+  from: t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))) };
+function linkTo() {
+  const B = LINK_BASE[1], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 1 };   // lengths to a hundredth of a millimetre
+  [['b', bike, B.bike], ['y', body, B.body], ['o', opt, B.opt]].forEach(([key, cur, base]) => { const o = {};
+    for (const k in cur) { const v = r2(cur[k]); if (v !== base[k]) o[k] = v; } if (Object.keys(o).length) d[key] = o; });
+  if (units !== B.units) d.u = units; if (bikeUnits !== B.bikeUnits) d.k = bikeUnits; if (geo !== B.geo) d.g = geo; if (lastGeo !== B.lastGeo) d.l = lastGeo;
+  return Object.keys(d).length > 1 ? LINK_URL + '#s=' + b64.to(JSON.stringify(d)) : LINK_URL;
+}
+// The settings carried by this page's address, if it has any, in the form restore() takes.
+function linkFrom() {
+  const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); if (!m) return null;
+  try { const d = JSON.parse(b64.from(m[1])), B = LINK_BASE[d && d.v], obj = v => v && typeof v === 'object' ? v : {}; if (!B) return null;
+    return { v: 7, bike: { ...B.bike, ...obj(d.b) }, body: { ...B.body, ...obj(d.y) }, opt: { ...B.opt, ...obj(d.o) },
+      units: d.u || B.units, bikeUnits: d.k || B.bikeUnits, geo: d.g || B.geo, lastGeo: d.l || B.lastGeo };
+  } catch (e) { return null; }
+}
+// Opened from a link: its settings replace the page's, and the # part is then taken off the address, so a reload keeps whatever
+// has been changed since instead of putting the link's settings back.
+function openLink() {
+  const d = linkFrom(); if (!d) return false;
+  defaults(); restore(d);
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  return true;
+}
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 6, bike, body, opt, units, bikeUnits, own: ownBody, panelW })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 7, bike, body, opt, units, bikeUnits, own: ownBody, panelW, geo, lastGeo, ownBike })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
   ['Frame', [
     { k: 'stack', l: 'Stack', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
-    { k: 'reach', l: 'Reach', u: 'mm', s: 1, min: 330, max: 480, step: 1, d: 0 },
-    { k: 'seatTube', l: 'Seat tube length', n: 'center to top', u: 'mm', s: 1, min: 420, max: 720, step: 1, d: 0 },
-    { k: 'topTube', l: 'Top tube length', n: 'effective', u: 'mm', s: 1, min: 450, max: 660, step: 1, d: 0 },
+    { k: 'reach', l: 'Reach', u: 'mm', s: 1, min: 330, max: 520, step: 1, d: 0 },
+    { k: 'seatTube', l: 'Seat tube length', n: 'center to top', u: 'mm', s: 1, min: 340, max: 720, step: 1, d: 0 },
+    { k: 'topTube', l: 'Top tube length', n: 'effective', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
     { k: 'chainstay', l: 'Chainstay length', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
     { k: 'sta', l: 'Seat tube angle', u: '°', s: 1, min: 68, max: 80, step: .1, d: 1 },
     { k: 'bbDrop', l: 'Bottom bracket drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 },
@@ -873,10 +1091,10 @@ const BIKE = [
     { k: 'hta', l: 'Head tube angle', u: '°', s: 1, min: 64, max: 76, step: .1, d: 1 }
   ]],
   ['Fork and wheels', [
-    { k: 'fork', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 420, step: 1, d: 0 },
+    { k: 'fork', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 560, step: 1, d: 0 },
     { k: 'rake', l: 'Fork rake', u: 'mm', s: 1, min: 30, max: 65, step: 1, d: 0 },
-    { k: 'rim', sel: [[559, '26 inch'], [584, '650b'], [622, '700c']], l: 'Wheel size' },   // three stops, smallest first
-    { k: 'tire', l: 'Tire width', u: 'mm', s: 1, min: 20, max: 60, step: 1, d: 0 }
+    { k: 'rim', sel: [[559, '26 in'], [584, '650b / 27.5 in'], [622, '700c / 29 in']], l: 'Wheel size' },   // three stops, smallest first
+    { k: 'tire', l: 'Tire width', u: 'mm', s: 1, min: 20, max: 65, step: 1, d: 0 }
   ]],
   ['Saddle and cranks', [
     { k: 'saddleH', l: 'Saddle height', n: 'BB to saddle top', u: 'mm', s: 1, min: 550, max: 950, step: 1, d: 0 },
@@ -884,7 +1102,7 @@ const BIKE = [
     { k: 'crank', l: 'Crank length', u: 'mm', s: 1, min: 150, max: 185, step: 2.5, d: 1 }
   ]],
   ['Cockpit', [
-    { k: 'stem', l: 'Stem length', u: 'mm', s: 1, min: 50, max: 150, step: 5, d: 0 },
+    { k: 'stem', l: 'Stem length', u: 'mm', s: 1, min: 30, max: 150, step: 5, d: 0 },
     { k: 'stemAngle', l: 'Stem angle', u: '°', s: 1, min: -25, max: 25, step: 1, d: 0 },
     { k: 'spacers', l: 'Spacers under stem', u: 'mm', s: 1, min: 0, max: 100, step: 5, d: 0 },
     { k: 'barReach', l: 'Bar reach', u: 'mm', s: 1, min: 60, max: 110, step: 1, d: 0 },
@@ -969,7 +1187,7 @@ function syncSaddle() { if (bike.autoSaddle) bike.saddleH = clamp(Math.round(1.0
 // scaled together to fit the new height, and the arms and feet stay as entered.
 function setHeight(mm) {
   body.height = clamp(mm, HMIN, HMAX); if (body.custom) fitBody(); else Object.assign(body, averages(body.height, body.sex));
-  syncSaddle(); refresh(); update();
+  fitBike(); refresh(); update();
 }
 // "Use average measurements" or "Enter my own". Going to averages sets the rider's own aside; coming back brings them out again,
 // fitted to the height as it is now.
@@ -977,13 +1195,18 @@ function setBodyMode(own) {
   if (own === body.custom) return;
   if (own) { if (ownBody) { Object.assign(body, ownBody); fitBody(); } }
   else { ownBody = Object.fromEntries(PARTS.map(k => [k, body[k]])); Object.assign(body, averages(body.height, body.sex)); }
-  body.custom = own; syncSaddle(); refresh(); update();
+  body.custom = own; fitBike(); refresh(); update();
 }
 function buildPanel() {
-  $('bike-fields').innerHTML = `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
+  $('bike-fields').innerHTML = `<div class="group"><div class="ctl"><span class="cap" id="cap-geo">Recommend geometry for</span>` +
+    `<div class="seg" role="radiogroup" aria-labelledby="cap-geo">${[['road', 'Road'], ['gravel', 'Gravel'], ['mountain', 'Mountain']].map(([v, l]) => `<input type="radio" name="geo" id="geo-${v}" value="${v}"><label for="geo-${v}">${l}</label>`).join('')}</div></div>` +
+    `<label class="tog" for="geo-own"><input id="geo-own" type="checkbox"><span>Enter my own geometry</span></label><p class="hint" id="geo-hint"><span id="geo-fit"></span><span id="geo-tight" hidden> The top tube stands above this inseam; a real frame this size often dips its top tube lower than the straight one drawn here.</span></p></div>` +
+    `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
     `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
     `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div>` + BIKE.map(([name, fs]) =>
-    `<details class="pick"><summary class="grphead"><h3 class="grp">${name}</h3></summary><div class="group"><div class="stack">${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
+    `<details class="pick"><summary class="grphead"><h3 class="grp">${name}</h3></summary><div class="group"><div class="stack">` +
+    (name === 'Cockpit' ? `<div class="ctl"><span class="cap" id="cap-bar">Handlebar</span><div class="seg" role="radiogroup" aria-labelledby="cap-bar"><input type="radio" name="bar" id="bar-drop" value="drop"><label for="bar-drop">Drop</label>` +
+      `<input type="radio" name="bar" id="bar-flat" value="flat"><label for="bar-flat">Flat</label></div></div>` : '') + `${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
     (name.startsWith('Saddle') ? `<div class="group"><label class="tog" for="b-auto"><input id="b-auto" type="checkbox"><span>Set saddle height from inseam</span></label><p class="hint">When on, pedal to saddle top is 109% of your inseam.</p></div>` : '') +
     `</div></details>`).join('');
@@ -993,17 +1216,17 @@ function buildPanel() {
     const el = $('b-' + f.k), out = $('b-' + f.k + '-out');
     if (f.sel) {   // a choice of sizes: one stop for each
       A(el, { min: 0, max: f.sel.length - 1, step: 1 });
-      el.addEventListener('input', () => { bike[f.k] = f.sel[+el.value][0]; refresh(); update(); });
+      el.addEventListener('input', () => { touchBike(); bike[f.k] = f.sel[+el.value][0]; refresh(); update(); });
       shows.push(() => { const i = Math.max(0, f.sel.findIndex(o => o[0] === bike[f.k])); el.value = i; out.textContent = f.sel[i][1]; });
       return;
     }
-    const apply = v => { bike[f.k] = v * scaleOf(f).k;   // v is in the units shown; unitUI() gives the slider its scale in them
+    const apply = v => { touchBike(); bike[f.k] = v * scaleOf(f).k;   // v is in the units shown; unitUI() gives the slider its scale in them
       if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); };
     el.addEventListener('input', () => apply(+el.value));
     shows.push(() => { const sc = scaleOf(f), v = bike[f.k] / sc.k; el.value = v; out.textContent = v.toFixed(sc.d) + (sc.u === '°' ? '°' : NB + sc.u); });
     typers['b-' + f.k] = { set: apply };   // a typed value is taken as typed, not rounded to the slider's step
   }));
-  $('b-auto').addEventListener('change', e => { bike.autoSaddle = e.target.checked; syncSaddle(); refresh(); update(); });
+  $('b-auto').addEventListener('change', e => { touchBike(); bike.autoSaddle = e.target.checked; syncSaddle(); refresh(); update(); });
   shows.push(() => { $('b-auto').checked = bike.autoSaddle; });
 
   // Height and the body measurements: sliders in the Pedal cadence design, each running from its smallest allowed value to its largest.
@@ -1025,25 +1248,45 @@ function buildPanel() {
     const m = t.match(/^(\d+(?:\.\d+)?)\s*(?:'|′|ft|feet)\s*(\d+(?:\.\d+)?)?/i) || t.match(/^(\d+)\s+(\d+(?:\.\d+)?)/);
     if (m) return +m[1] * 12 + (+m[2] || 0); const v = parseFloat(t); return v < 10 ? v * 12 : v; };
   // A measurement that would push itself or the ones tied to it past their limits stops at the furthest value that fits.
-  BODY.forEach(f => bodySlider(f.k, () => body[f.k], mm => { const lim = partRange(f.k); setPart(f.k, clamp(mm, lim[0], lim[1])); body.custom = true; syncSaddle(); refresh(); update(); },
+  BODY.forEach(f => bodySlider(f.k, () => body[f.k], mm => { const lim = partRange(f.k); setPart(f.k, clamp(mm, lim[0], lim[1])); body.custom = true; fitBike(); refresh(); update(); },
     () => (body[f.k] / fac()).toFixed(1) + NB + (units === 'in' ? 'in' : 'cm')));
 
   const radios = (name, get, set) => {
     const rs = [...document.querySelectorAll(`input[name="${name}"]`)], seg = rs[0].parentElement;
     seg.style.setProperty('--n', rs.length);
-    const slide = () => seg.style.setProperty('--i', Math.max(0, rs.findIndex(r => r.value === get())));   // moves the highlight
+    const slide = () => { const i = rs.findIndex(r => r.value === get()); seg.style.setProperty('--i', Math.max(0, i)); seg.classList.toggle('none', i < 0); };   // moves the highlight; none chosen, none shown
     rs.forEach(r => { r.addEventListener('change', () => { if (r.checked) { set(r.value); slide(); } }); shows.push(() => { r.checked = r.value === get(); }); });
     shows.push(slide);
   };
   radios('units', () => units, v => { units = v; unitUI(); refresh(); update(); });
   radios('bikeUnits', () => bikeUnits, v => { bikeUnits = v; unitUI(); refresh(); update(); });
+  // Recommend geometry for Road, Gravel or Mountain, or Enter my own geometry: one of the four is always on. Pressing the button while
+  // it is on goes back to the recommendation last used.
+  radios('geo', () => geo, v => setGeo(v));
+  $('geo-own').addEventListener('change', e => setGeo(e.target.checked ? 'own' : lastGeo));
+  shows.push(() => { $('geo-own').checked = geo === 'own';
+    $('geo-fit').textContent = geo === 'own' ? '' : `For ${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} with a ${(body.inseam / fac()).toFixed(1)}${NB}${units === 'in' ? 'in' : 'cm'} inseam: ` +
+      `a ${Math.round(bike.topTube / 10)}${NB}cm top tube and a ${Math.round(bike.seatTube / 10)}${NB}cm seat tube.`; $('geo-hint').hidden = geo === 'own'; });
+  // Handlebar: drops or a flat bar. A flat bar has one place for the hands, so its drop-bar sliders and the Hand position switch are put away.
+  radios('bar', () => bike.flat ? 'flat' : 'drop', v => { touchBike(); bike.flat = v === 'flat'; refresh(); update(); });
+  shows.push(() => { ['barReach', 'barDrop', 'barAngle'].forEach(k => { $('b-' + k).closest('.slider').hidden = bike.flat; }); $('cap-hands').closest('.ctl').hidden = bike.flat; });
   radios('sex', () => body.sex, v => { body.sex = v; setHeight(body.height); });
   radios('hands', () => opt.hands, v => { opt.hands = v; update(); });
+  radios('profile', () => opt.profile, v => { opt.profile = v; refresh(); update(); });
+  // Body Details draws on the Male and Female builds; the test dummy has none, so there the button waits, dimmed.
+  // Hair is one of the Body Details, so the Hair color subsection is put away while the button is off, and for the test dummy, which has no hair.
+  const hairShown = () => { $('grp-hair').hidden = !detailsOn() || !SHAPES[opt.profile]; };
+  $('o-details').addEventListener('change', e => { if (!BODY_DETAILS) return; opt.details = e.target.checked; hairShown(); update(); });
+  shows.push(() => { $('o-details').checked = detailsOn(); $('o-details').disabled = !BODY_DETAILS || !SHAPES[opt.profile]; hairShown(); });
+  // Hair color: each build keeps its own, and the sliders work on the hair of the build that is selected.
+  ['H', 'S', 'B'].forEach(c => { const el = $('o-hair' + c);
+    el.addEventListener('input', () => { opt[hairKey() + c] = +el.value; update(); });
+    shows.push(() => { el.value = opt[hairKey() + c]; el.disabled = !SHAPES[opt.profile]; $('grp-hair').classList.toggle('off', !SHAPES[opt.profile]); }); });
   radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
   radios('disc', () => opt.disc, v => { opt.disc = v; update(); });
   radios('bodyMode', () => body.custom ? 'own' : 'avg', v => setBodyMode(v === 'own'));
   // In "Enter my own", this puts every measurement back to the average for the height.
-  $('body-reset').addEventListener('click', () => { Object.assign(body, averages(body.height, body.sex)); ownBody = null; syncSaddle(); refresh(); update(); });
+  $('body-reset').addEventListener('click', () => { Object.assign(body, averages(body.height, body.sex)); ownBody = null; fitBike(); refresh(); update(); });
 
   // length: the option is a length in mm, shown and stepped in inches when those are chosen (unitUI() sets its scale).
   const range = (k, fmt, length) => { const el = $('o-' + k), out = $('o-' + k + '-out'), per = () => length && inch() ? 25.4 : 1;
@@ -1053,14 +1296,26 @@ function buildPanel() {
   range('cadence', v => v + NB + 'rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
   ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'textH', 'textS', 'textB', 'wheelGray', 'compGray'].forEach(k => range(k));
   range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart
+  // Tire size is the Tire width of Bike Geometry, shown here too: one value with two sliders, each moving the other.
+  { const f = BIKE.flatMap(([, fs]) => fs).find(q => q.k === 'tire'), el = $('o-tire'), out = $('o-tire-out');
+    el.addEventListener('input', () => typers['b-tire'].set(+el.value)); typers['o-tire'] = typers['b-tire'];
+    shows.push(() => { const sc = scaleOf(f), v = bike.tire / sc.k; el.value = v; out.textContent = v.toFixed(sc.d) + NB + sc.u; }); }
+  // Tire color colours the whole tire, tread and tirewall too, until Tirewall color is first moved; from then the tirewall keeps its own.
+  ['H', 'S', 'B'].forEach(c => { const t = $('o-tire' + c), w = $('o-wall' + c);
+    t.addEventListener('input', () => { opt['tire' + c] = +t.value; refresh(); update(); });
+    w.addEventListener('input', () => { if (!opt.wallOwn) { opt.wallOwn = true; ['H', 'S', 'B'].forEach(k => opt['wall' + k] = opt['tire' + k]); } opt['wall' + c] = +w.value; refresh(); update(); });
+    shows.push(() => { t.value = opt['tire' + c]; w.value = opt[(opt.wallOwn ? 'wall' : 'tire') + c]; }); });
   range('rimDepth', v => len(v, 2), true);
-  range('ring', v => v + NB + 't'); range('cog', v => v + NB + 't');
+  range('ring', v => v + 'T'); range('cog', v => v + 'T');   // teeth are written 50T everywhere
   $('o-angles').addEventListener('change', e => { opt.angles = e.target.checked; update(); });
   shows.push(() => { $('o-angles').checked = opt.angles; });
+  // Show joints: the dots on the hip, knee, ankle, shoulder, elbow and wrist. On to begin with, as they have always been drawn.
+  $('o-joints').addEventListener('change', e => { opt.joints = e.target.checked; update(); });
+  shows.push(() => { $('o-joints').checked = opt.joints; });
   // Frame text: what is typed goes onto the downtube as it is typed. Bold and Italic style it there and in the box.
   $('o-frameText').addEventListener('input', e => { opt.frameText = e.target.value; update(); });
   shows.push(() => { const el = $('o-frameText'); if (el.value !== opt.frameText) el.value = opt.frameText; });
-  ['hideRider', 'hideBike', 'textBold', 'textItalic'].forEach(k => { $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; update(); }); shows.push(() => { $('o-' + k).checked = opt[k]; }); });
+  ['hideRider', 'hideBike', 'textBold', 'textItalic', 'textWide'].forEach(k => { $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; update(); }); shows.push(() => { $('o-' + k).checked = opt[k]; }); });
   $('o-scrub').addEventListener('input', e => { setPlaying(false); const t = rad(+e.target.value); wheelAng += deg(t - theta) * opt.ring / opt.cog; theta = t; drawFrame(); });
   // Any slider that shows a number takes a typed value: click the number, or press Enter with the slider in focus.
   document.querySelectorAll('.slider output').forEach(out => { if (['b-rim', 'o-tread'].includes(out.getAttribute('for'))) return;   // these two show words
@@ -1068,6 +1323,17 @@ function buildPanel() {
   document.addEventListener('click', e => { const out = e.target.closest('output.typed'); if (out) typeValue($(out.getAttribute('for'))); });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input[type=range]') && $(e.target.id + '-out')?.classList.contains('typed')) { e.preventDefault(); typeValue(e.target); } });
   $('play').addEventListener('click', () => setPlaying(!playing));
+  // Copy Link: the address of this page with the settings as they are now. The button says Copied for a moment, at the same width.
+  const cp = $('copy-link'); let cpT = 0;
+  cp.addEventListener('click', async () => { const url = linkTo(); let ok = false;
+    try { await navigator.clipboard.writeText(url); ok = true; }
+    catch (e) { try { const t = document.createElement('textarea'); t.value = url; t.readOnly = true; t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';   // where the clipboard is not offered: the older way
+      document.body.append(t); t.select(); ok = document.execCommand('copy'); t.remove(); } catch (e2) {} }
+    if (!ok) { window.prompt('Copy this link:', url); return; }
+    cp.style.minWidth = cp.offsetWidth + 'px'; cp.textContent = 'Copied'; $('copy-said').textContent = 'Link copied';
+    clearTimeout(cpT); cpT = setTimeout(() => { cp.textContent = 'Copy Link'; cp.style.minWidth = ''; $('copy-said').textContent = ''; }, 1600); });
+  // A link pasted into the address bar while the page is already open: take its settings without a reload.
+  window.addEventListener('hashchange', () => { if (openLink()) { unitUI(); refresh(); update(); } });
   // Reset to defaults asks first. Pressing it swaps it for Confirm and Cancel; Cancel, Escape, or going on to anything else on the
   // page puts it back. Confirm ignores presses for the first moment, so a double-click on Reset can't run straight through it.
   // The buttons change hands in an order that never hides the one holding the focus, and 'asking' is only on once they have.
@@ -1102,10 +1368,12 @@ function unitUI() {
   BODY.forEach(b => ends($('p-' + b.k), b.min, b.max, fac(), units === 'in' ? .1 : .5));
   BIKE.forEach(([, fs]) => fs.forEach(f => { if (!f.sel) { const sc = scaleOf(f); ends($('b-' + f.k), f.min * f.s, f.max * f.s, sc.k, sc.step); } }));
   ends($('o-rimDepth'), 15, 90, inch() ? 25.4 : 1, inch() ? .05 : 1);
+  { const f = BIKE.flatMap(([, fs]) => fs).find(q => q.k === 'tire'), sc = scaleOf(f); ends($('o-tire'), f.min * f.s, f.max * f.s, sc.k, sc.step); }
 }
 
 /* ---------- geometry: origin at the bottom bracket, x forward, y up ---------- */
 let G, C;
+const FLAT_GRIP = [-40, 15];   // a flat bar's grips against its clamp: swept back 40 mm and risen 15 mm, as on a 760 mm riser bar
 function ik(p0, p1, a, b, side) {
   const dx = p1[0] - p0[0], dy = p1[1] - p0[1], d = Math.hypot(dx, dy) || 1e-6;
   const dc = clamp(d, Math.abs(a - b) + .01, a + b - .01), al = (a * a - b * b + dc * dc) / (2 * dc), h = Math.sqrt(Math.max(0, a * a - al * al));
@@ -1157,7 +1425,7 @@ function solve() {
   const stemBase = along(headTop, u, 32 + b.spacers), steerTop = along(headTop, u, 52 + b.spacers);
   const stA = rad(90 - b.hta + b.stemAngle);
   const bar = [stemBase[0] + b.stem * Math.cos(stA), stemBase[1] + b.stem * Math.sin(stA)];
-  const bg = barGeom(b), off = bg.grips[opt.hands];
+  const bg = barGeom(b), off = b.flat ? FLAT_GRIP : bg.grips[opt.hands];
   const grip = [bar[0] + off[0], bar[1] + off[1]];
   const saddleY = b.saddleH * Math.sin(sa), ankleH = .039 * H;
   // The hip joint sits a little above the saddle, toward its back.
@@ -1237,7 +1505,8 @@ let BND = null, GND = null;   // BND: what the view has to hold. GND: the ground
 
 function makeWheel() {
   const g = N('g'), o = { g };
-  o.tire = N('circle', 'tire', g); o.rim = N('circle', 'rim', g); o.rot = N('g', '', g);
+  o.ol = N('circle', 'ol', g, { 'stroke-width': 6, visibility: 'hidden' });   // edge line for a tire as pale as the page
+  o.tire = N('circle', 'tire', g); o.wall = N('circle', 'tirewall', g); o.rim = N('circle', 'rim', g); o.rot = N('g', '', g);
   o.blur = N('circle', 'blur', o.rot); o.spokes = N('g', '', o.rot);
   o.lines = Array.from({ length: 20 }, () => N('line', 'spoke', o.spokes));
   o.valve = N('line', 'valve', o.rot); o.tread = N('circle', 'tread', o.rot); o.hub = N('circle', 'hub', g, { r: 17 });
@@ -1256,9 +1525,12 @@ function makeRotor() {
 function makeLeg(far) {
   const c = far ? ' far' : '', o = {};
   o.pedal = N('rect', 'pedal' + c, root, { x: -46, y: -10, width: 92, height: 20, rx: 6 });
-  if (!far) o.hT = N('path', 'halo', root, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + c);
-  if (!far) o.hS = N('path', 'halo', root, { 'stroke-width': 9 }); o.shank = N('path', 'limbfill' + c);
-  o.shoeG = N('g'); if (!far) o.hF = N('path', 'halo', o.shoeG, { 'stroke-width': 9 }); o.shoe = N('path', 'limbfill' + c, o.shoeG);
+  // The far leg of the Male and Female builds is edged as one shape, like the near one: its outline (.farol) lies under both halves,
+  // which then have no edge of their own (.fl), so the lower leg does not ring the knee.
+  if (far) o.ol = N('path', 'farol'); else o.hT = N('path', 'halo nh', root, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + (far ? c + ' fl' : ' nl'));
+  if (!far) o.hS = N('path', 'halo nh', root, { 'stroke-width': 9 }); o.shank = N('path', 'limbfill' + (far ? c + ' fl' : ' nl'));
+  if (!far) o.det = N('path', 'det detline');   // Body Details on the near leg
+  o.shoeG = N('g'); if (!far) o.hF = N('path', 'halo nh', o.shoeG, { 'stroke-width': 9 }); o.shoe = N('path', 'limbfill' + (far ? c : ' nl'), o.shoeG);
   return o;
 }
 function buildScene() {
@@ -1287,20 +1559,28 @@ function buildScene() {
   E.stem = tube(26, 'comp'); E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
   // Same fading inner edge line as the frame, for very pale bar tape. Each line comes with a round dot for its end at the stem.
   E.barOL = N('g', '', root, { visibility: 'hidden' }); [['ol', 22], ['tape', 16]].forEach(([c, w]) => { N('path', c + ' butt', E.barOL, { 'stroke-width': w }); N('path', c, E.barOL, { 'stroke-width': w }); }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', root, { 'stroke-width': 24 });
+  // A flat bar, seen from its end: the rise from the clamp to the grip, the brake lever, and the grip's round end.
+  E.flatG = N('g', '', root, { display: 'none' }); E.riser = N('line', 'comp', E.flatG, { 'stroke-width': 22 }); E.flatLever = N('line', 'comp', E.flatG, { 'stroke-width': 9 }); E.grip = N('circle', 'grip', E.flatG, { r: 17 });
   E.ring = N('circle', 'ring chainring'); E.spider = N('g');
   E.arms = Array.from({ length: 5 }, () => N('line', 'comp', E.spider, { 'stroke-width': 18 }));
   E.chainTop = N('path', 'chain', root, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
   E.crank = N('path', 'crank');
+  // Male and Female: the whole outlines of the near thigh and upper arm, laid under the body. Whatever part of either stands outside
+  // the body is edged there, at every point of the pedal stroke; the part inside is hidden by the body, so no line crosses it.
+  E.under = N('path', 'halo nh under');
   E.torso = N('path', 'limbfill'); E.neck = N('line', 'limb'); E.head = N('circle', 'flesh head');
   // The smiley, drawn for a head of radius 1 and scaled to fit: two upright oval eyes and a wide smile. Clicking the head turns it on and off.
   E.face = N('g', 'face', root, { display: 'none' });
   [-.22, .22].forEach(x => N('ellipse', 'eye', E.face, { cx: x, cy: -.22, rx: .1, ry: .17 })); N('path', 'smile', E.face, { d: 'M -0.55 0.12 A 0.6 0.6 0 0 0 0.55 0.12' });
   E.head.addEventListener('click', () => { opt.smiley = !opt.smiley; update(); });
+  // Body Details: the hair (cut to the outline of the head), the lines on the trunk and the head, and the few filled marks.
+  E.hairClip = N('path', '', N('clipPath', '', root, { id: 'hair-clip' })); E.hair = N('path', 'hair hairfill', root, { 'clip-path': 'url(#hair-clip)' }); E.lips = N('path', 'hair', root, { 'clip-path': 'url(#hair-clip)' }); E.det = N('path', 'det detline'); E.eyeDet = N('path', 'det'); E.detFill = N('path', 'detfill'); E.areola = N('path', 'hair'); E.nip = N('path', 'hair');
   E.near = makeLeg(false);
-  E.hU = N('path', 'halo', root, { 'stroke-width': 9 }); E.upper = N('path', 'limbfill'); E.hF = N('path', 'halo', root, { 'stroke-width': 9 }); E.fore = N('path', 'limbfill'); E.hand = N('circle', 'flesh hand');
+  E.hU = N('path', 'halo nh', root, { 'stroke-width': 9 }); E.upper = N('path', 'limbfill nl'); E.hF = N('path', 'halo nh', root, { 'stroke-width': 9 }); E.fore = N('path', 'limbfill nl'); E.hand = N('circle', 'flesh hand');
   // Clicking the hand steps through the hand positions: bar tops, shifters, drops.
   N('title', '', E.hand).textContent = 'Click to change hand position';
-  E.hand.addEventListener('click', () => { const order = ['tops', 'hoods', 'drops']; opt.hands = order[(order.indexOf(opt.hands) + 1) % 3]; refresh(); update(); });
+  E.armDet = N('path', 'det detline');
+  E.hand.addEventListener('click', () => { if (bike.flat) return; const order = ['tops', 'hoods', 'drops']; opt.hands = order[(order.indexOf(opt.hands) + 1) % 3]; refresh(); update(); });
   E.j = {}; ['hip', 'knee', 'ankle', 'shoulder', 'elbow', 'wrist'].forEach(k => E.j[k] = N('circle', 'joint'));
   // The Incline control, on top of everything: the band along the ground line and the handle that rides it.
   E.incHit = N('line', 'inchit'); E.incDot = N('circle', 'incdot', root, { tabindex: 0, role: 'slider', 'aria-label': 'Incline', 'aria-valuemin': 0, 'aria-valuemax': INCLINE_MAX });
@@ -1320,10 +1600,17 @@ function buildScene() {
   E.incDot.addEventListener('keydown', e => { const k = { ArrowRight: .5, ArrowUp: .5, ArrowLeft: -.5, ArrowDown: -.5, PageUp: 5, PageDown: -5 }[e.key], v = e.key === 'Home' ? 0 : e.key === 'End' ? INCLINE_MAX : k ? clamp(opt.incline + k, 0, INCLINE_MAX) : null;
     if (v === null) return; e.preventDefault(); svg.classList.add('keys'); opt.incline = Math.round(v * 10) / 10; update(); });
   E.labG = N('g'); E.lab = {}; ['knee', 'hip', 'shoulder', 'elbow'].forEach(k => E.lab[k] = N('text', 'lab', E.labG));
+  // Edge lines for the components and the wheels, for when their colour is close to the page's (black, in night mode). Under each part
+  // lies a copy in the page's ink that applyColors keeps 3 mm wider all round; each entry is [part, its copy, the part's line width
+  // where the style sheet sets it]. The chainring's arms share one centre, so their copies all go under all five.
+  const edgeTwin = (e, w = 0) => { const t = e.cloneNode(false); t.setAttribute('class', 'ol' + (e.classList.contains('butt') ? ' butt' : '')); t.setAttribute('visibility', 'hidden');
+    if (e.parentNode === E.spider) E.spider.prepend(t); else e.before(t); return [e, t, w]; };
+  E.edge = { comp: [E.seatpost, E.steerer, E.clamp, E.rails, E.stem, E.lever, E.hood, E.riser, E.flatLever, ...E.arms, E.cog].map(e => edgeTwin(e)).concat([edgeTwin(E.ring, 14)]),
+    wheel: E.wheels.flatMap(w => [w.rim, w.hub].map(e => edgeTwin(e))) };
   // Every shape in the scene is marked as part of the rider or part of the bike, so that either can be hidden. The ground line and
   // the Incline control belong to neither and always show.
-  const rider = new Set([E.torso, E.neck, E.head, E.face, E.hU, E.upper, E.hF, E.fore, E.hand, E.labG, ...Object.values(E.j),
-    ...[E.far, E.near].flatMap(l => [l.hT, l.thigh, l.hS, l.shank, l.shoeG])]), neither = new Set([E.ground, E.incHit, E.incDot]);
+  const rider = new Set([E.under, E.torso, E.neck, E.head, E.face, E.hair, E.hairClip.parentNode, E.lips, E.det, E.eyeDet, E.detFill, E.areola, E.nip, E.armDet, E.hU, E.upper, E.hF, E.fore, E.hand, E.labG, ...Object.values(E.j),
+    ...[E.far, E.near].flatMap(l => [l.ol, l.hT, l.thigh, l.hS, l.shank, l.det, l.shoeG])]), neither = new Set([E.ground, E.incHit, E.incDot]);
   [...E.scene.children].forEach(e => { if (!neither.has(e)) e.classList.add(rider.has(e) ? 'is-rider' : 'is-bike'); });
 }
 // Frames the drawing so the ground line always lands the same distance above the bottom of the view, whatever the bike,
@@ -1391,10 +1678,14 @@ function drawStatic() {
   // Rim depth sets how far the rim reaches in from the tire; tread is a ring of knobs cut into the outer edge of the tire.
   const rd = opt.rimDepth, rs = b.rim / 2 - rd, kd = opt.tread / 100 * Math.min(10, .4 * b.tire), rk = g.R - kd / 2;
   const knobs = kd > 0 ? treadDash(2 * Math.PI * rk) : 'none';
+  // The tirewall: the band from the rim out to where the tread begins. Seen from the side that is about two thirds of a narrow road
+  // tire's height, a little over half of a gravel tire's and under half of a wide mountain tire's, whose side knobs come further down.
+  const wallH = Math.max(0, Math.min(clamp(.64 - (b.tire - 25) * .0049, .45, .66) * b.tire, b.tire - kd - 2));
   [g.rear, g.front].forEach((ax, i) => {
     const w = E.wheels[i]; A(w.g, { transform: `translate(${pt(ax)})` });
     A(E.rotors[i].g, { transform: `translate(${pt(ax)})`, display: opt.disc === 'on' ? 'inline' : 'none' });
     A(w.tire, { r: r1(b.rim / 2 + (b.tire - kd + 1) / 2), 'stroke-width': r1(b.tire - kd + 1) }); A(w.tread, { r: r1(rk), 'stroke-width': r1(kd), 'stroke-dasharray': knobs });
+    A(w.ol, { r: r1(g.R) }); A(w.wall, { r: r1(b.rim / 2 + wallH / 2), 'stroke-width': r1(wallH), display: opt.wallOwn ? 'inline' : 'none' });
     A(w.rim, { r: r1(b.rim / 2 - rd / 2), 'stroke-width': rd }); A(w.blur, { r: r1(rs) });
     w.lines.forEach((l, k) => { const ra = rad(k * 18), hb = ra + rad(k % 2 ? 50 : -50);
       A(l, { x1: r1(21 * Math.cos(hb)), y1: r1(21 * Math.sin(hb)), x2: r1(rs * Math.cos(ra)), y2: r1(rs * Math.sin(ra)) }); });
@@ -1412,8 +1703,11 @@ function drawStatic() {
   // of the head tube.
   const dtL = dist([0, 0], dtTop), dtW = +E.downtube.getAttribute('stroke-width'), tAt = along([0, 0], unit(dtTop), dtL * 2 / 3);
   A(E.textG, { transform: `translate(${pt(tAt)}) rotate(${r1(-deg(Math.atan2(dtTop[1], dtTop[0])))})`, display: opt.frameText.trim() ? 'inline' : 'none' });
-  A(E.textClip, { x: r1(60 - dtL * 2 / 3), y: -dtW / 2, width: r1(Math.max(0, dtL - 84)), height: dtW });
-  A(E.text, { 'font-size': dtW, y: r1(.32 * dtW), 'font-weight': opt.textBold ? 700 : 400, 'font-style': opt.textItalic ? 'italic' : 'normal' });
+  // Wide stretches the lettering to one and a half times its width, about its middle. The clip is measured in the lettering's own
+  // stretched space, so it is narrowed by the same factor and still ends where the tube does. The text box in the panel is not stretched.
+  const tk = opt.textWide ? 1.5 : 1;
+  A(E.textClip, { x: r1((60 - dtL * 2 / 3) / tk), y: -dtW / 2, width: r1(Math.max(0, dtL - 84) / tk), height: dtW });
+  A(E.text, { 'font-size': dtW, y: r1(.32 * dtW), 'font-weight': opt.textBold ? 700 : 400, 'font-style': opt.textItalic ? 'italic' : 'normal', transform: `scale(${tk} 1)` });
   if (E.text.textContent !== opt.frameText) E.text.textContent = opt.frameText;
   $('o-frameText').style.fontWeight = opt.textBold ? 700 : 400; $('o-frameText').style.fontStyle = opt.textItalic ? 'italic' : 'normal';
   setLine(E.headtube, g.headBot, g.headTop);
@@ -1452,6 +1746,9 @@ function drawStatic() {
   [E.bar, olLine].forEach(e => e.setAttribute('d', bd(bEnd))); inLine.setAttribute('d', bd(along(bEnd, bDir, -3))); [E.barTop, olDot, inDot].forEach(e => e.setAttribute('d', bDot));
   A(E.hood, { d: `M ${bg.hood.map(q).join(' L ')}` });
   setLine(E.lever, [g.bar[0] + bg.lever[0][0], g.bar[1] + bg.lever[0][1]], [g.bar[0] + bg.lever[1][0], g.bar[1] + bg.lever[1][1]]);
+  // Drops or the flat bar: one is shown and the other put away.
+  [E.bar, E.barTop, E.barOL, E.lever, E.hood].forEach(e => e.setAttribute('display', b.flat ? 'none' : 'inline')); E.flatG.setAttribute('display', b.flat ? 'inline' : 'none');
+  setLine(E.riser, g.bar, g.grip); setDot(E.grip, g.grip); setLine(E.flatLever, [g.grip[0] + 16, g.grip[1] - 8], [g.grip[0] + 92, g.grip[1] - 42]);
 
   const rc = opt.ring * 12.7 / (2 * Math.PI), rg = opt.cog * 12.7 / (2 * Math.PI);
   // The chain is 5 mm wide on each sprocket's pitch circle; both sprockets end flush with the chain's outer edge.
@@ -1469,23 +1766,65 @@ function drawStatic() {
 
   // rider, upper body
   const tw = .085 * H, dir = unit(sub(g.shoulder, g.hip)), mid = [(g.hip[0] + g.shoulder[0]) / 2 - dir[1] * .09 * body.torso, (g.hip[1] + g.shoulder[1]) / 2 + dir[0] * .09 * body.torso];
-  // Torso outline along its curved centreline: current width at the hip, widening to 1.1x at the shoulder.
-  const tl = [], tr = [], w1 = 1.1 * tw;
-  for (let i = 0; i <= 20; i++) { const t = i / 20, a = 1 - t, w = tw + (w1 - tw) * t;
-    const c0 = [a * a * g.hip[0] + 2 * a * t * mid[0] + t * t * g.shoulder[0], a * a * g.hip[1] + 2 * a * t * mid[1] + t * t * g.shoulder[1]];
-    const n = unit([-(a * (mid[1] - g.hip[1]) + t * (g.shoulder[1] - mid[1])), a * (mid[0] - g.hip[0]) + t * (g.shoulder[0] - mid[0])]);
-    tl.push(pt(along(c0, n, w / 2))); tr.push(pt(along(c0, n, -w / 2))); }
-  A(E.torso, { d: `M ${tl.join(' L ')} A ${r1(w1 / 2)} ${r1(w1 / 2)} 0 0 1 ${tr.reverse().join(' L ')} A ${r1(tw / 2)} ${r1(tw / 2)} 0 0 1 ${tl[0]} Z` });
-  setLine(E.neck, g.shoulder, g.headC); A(E.neck, { 'stroke-width': r1(.046 * H) });
-  setDot(E.head, g.headC, g.hr);
-  // The face sits level on the head, also when the picture is tilted for a hill.
-  A(E.face, { display: opt.smiley ? 'inline' : 'none', transform: `translate(${pt(g.headC)}) rotate(${opt.incline}) scale(${r1(g.hr)})` });
-  const uw = .036 * H, fw = .03 * H;
-  // Upper arm: 1.5x the base arm width at the shoulder, tapering to 1.25x at the elbow.
-  const ua = taper(g.shoulder, g.elbow, .75 * uw, .625 * uw); E.upper.setAttribute('d', ua); E.hU.setAttribute('d', ua);
-  // Forearm: starts at the upper arm's elbow width and tapers to the wrist.
-  const fa = taper(g.elbow, g.wrist, .625 * uw, fw / 2); E.fore.setAttribute('d', fa); E.hF.setAttribute('d', fa);
-  setDot(E.hand, g.wrist, .025 * H);
+  const P = SHAPES[opt.profile], D = P && detailsOn() ? P.det : null, uw = .036 * H, fw = .03 * H;   // P: the Male or Female build; none for the test dummy. D: its Body Details, when they are on
+  [E.hair, E.lips, E.det, E.eyeDet, E.detFill, E.areola, E.nip, E.armDet, E.near.det].forEach(e => A(e, { display: D ? 'inline' : 'none', 'stroke-width': r1(.0024 * H) }));   // that width is the eyelids'; the other lines take the outline's (.detline)
+  svg.classList.toggle('real', !!P); [E.neck, E.head].forEach(e => e.setAttribute('display', P ? 'none' : 'inline'));
+  A(E.face, { display: opt.smiley && !P ? 'inline' : 'none', transform: `translate(${pt(g.headC)}) rotate(${opt.incline}) scale(${r1(g.hr)})` });   // level on the head, also on a hill
+  if (P) {
+    // Trunk, neck and head are one shape, so their overlaps leave no seams. The trunk is plotted around the same curved spine as
+    // the dummy's: s runs from the hip joint (0) to the shoulder joint (1) and beyond both (there in steps of an average torso), w is out toward the back (+) or the front (-).
+    const t0 = unit(sub(mid, g.hip)), t1 = unit(sub(g.shoulder, mid));
+    const spine = ([s, w, corner]) => { const t = clamp(s, 0, 1), a = 1 - t, e = s < 0 ? t0 : s > 1 ? t1 : unit([a * (mid[0] - g.hip[0]) + t * (g.shoulder[0] - mid[0]), a * (mid[1] - g.hip[1]) + t * (g.shoulder[1] - mid[1])]);
+      const c = s < 0 ? along(g.hip, t0, s * .288 * H) : s > 1 ? along(g.shoulder, t1, (s - 1) * .288 * H) : [a * a * g.hip[0] + 2 * a * t * mid[0] + t * t * g.shoulder[0], a * a * g.hip[1] + 2 * a * t * mid[1] + t * t * g.shoulder[1]];
+      return [c[0] - e[1] * w * H, c[1] + e[0] * w * H, corner]; };
+    // The head is a profile facing forward. It nods as the neck leans: a rider low over the bars looks ahead from under the brow.
+    const nod = .3 * (Math.atan2(g.headC[1] - g.shoulder[1], g.headC[0] - g.shoulder[0]) - Math.PI / 2), cn = Math.cos(nod), sn = Math.sin(nod), hs = g.hr * P.headSize;
+    const face = ([x, y]) => [g.headC[0] + hs * (x * cn - y * sn), g.headC[1] + hs * (x * sn + y * cn)];
+    let d = smooth(P.torso.map(spine), true) + smooth(limbPts(spine(P.neckBase), face(P.skullBase), P.neck, H).all, true) + smooth(P.head.map(face), true);
+    let bun = '';   // hair gathered in a bun: a round on the back of the head, part of the outline
+    if (P.bun) { const c = face(P.bun.at), r = P.bun.r * hs; bun = smooth(Array.from({ length: 10 }, (_, i) => [c[0] + r * Math.cos(-i * Math.PI / 5), c[1] + r * Math.sin(-i * Math.PI / 5)]), true); d += bun; }
+    A(E.torso, { d });
+    const ua = limbPts(g.shoulder, g.elbow, P.upper, H), fa = limbPts(g.elbow, g.wrist, P.fore, H);
+    // The upper arm's outline carries the forearm's whole outline too, under both of them: the two are then edged as one shape, with no
+    // break in the line at the elbow and no ring round it. (The legs do the same at the knee.)
+    G.armOL = smooth(ua.all, true);   // for the outline under the body, drawn with the near thigh's each frame
+    E.upper.setAttribute('d', G.armOL); E.hU.setAttribute('d', smooth(ua.open) + ' ' + smooth(fa.all, true)); E.fore.setAttribute('d', smooth(fa.all, true)); E.hF.setAttribute('d', smooth(fa.open));
+    setDot(E.hand, g.wrist, P.hand * H);
+    if (D) {
+      // Hair: everything on the far side of the hairline from the face, cut to the outline of the head; a bun is hair all through.
+      const headD = smooth(P.head.map(face), true), lines = (L, at) => L.map(l => smooth(l.map(at))).join(' ');
+      const ec = Math.cos(rad(EAR.tilt)), es = Math.sin(rad(EAR.tilt)), ear = ([x, y]) => face([EAR.at[0] + EAR.size * (x * ec - y * es), EAR.at[1] + EAR.size * (x * es + y * ec)]);
+      A(E.hairClip, { d: headD + bun }); A(E.lips, D.lips ? { d: smooth(D.lips.map(face), true), fill: D.areola.fill } : { d: '' });
+      A(E.hair, { d: smooth(D.hairline.map(face)) + ' L ' + [[-1.6, -.5], [-1.6, 1.6], [1.4, 1.6], [1.2, .7]].map(q => pt(face(q))).join(' L ') + ' Z ' + bun });
+      A(E.eyeDet, { d: lines(D.eyes, face) });
+      A(E.det, { d: smooth(EAR.rim.map(ear), true) + lines(EAR.inner, ear) + ' ' + lines(D.head, face) + ' ' + lines(D.torso, spine) + ' ' + lines(D.neck, limbAt(spine(P.neckBase), face(P.skullBase), H)) });
+      const dot = (c, r) => `M ${pt([c[0] - r, c[1]])} a ${r1(r)} ${r1(r)} 0 1 0 ${r1(2 * r)} 0 a ${r1(r)} ${r1(r)} 0 1 0 ${r1(-2 * r)} 0 Z`;
+      // The eyebrow is a filled shape: [x, y, half-thickness] from its thin end, toward the ear, to its thick end at the brow.
+      A(E.detFill, { d: D.eye.map(([x, y, r]) => dot(face([x, y]), r * hs)).join(' ') + ' ' + D.nipple.map(([sx, w, r]) => dot(spine([sx, w]), r * H)).join(' ') +
+        ' ' + smooth([...D.brow.map(([x, y, h]) => face([x, y + h])), ...D.brow.map(([x, y, h]) => face([x, y - h])).reverse()], true) });
+      // An areola, seen from the side: an ellipse lying along the chest where it is, and the nipple on it.
+      const ar = D.areola;
+      if (ar) { const c = spine(ar.at), e = unit(sub(spine([ar.at[0] + .02, ar.at[1]]), spine([ar.at[0] - .02, ar.at[1]]))), a = [e[0] * ar.rx * H, e[1] * ar.rx * H], rot = r1(deg(Math.atan2(-e[1], e[0]))), rr = `${r1(ar.rx * H)} ${r1(ar.ry * H)} ${rot}`;
+        A(E.areola, { d: `M ${pt([c[0] - a[0], c[1] - a[1]])} A ${rr} 1 0 ${pt([c[0] + a[0], c[1] + a[1]])} A ${rr} 1 0 ${pt([c[0] - a[0], c[1] - a[1]])} Z`, fill: ar.fill }); A(E.nip, { d: dot(spine(ar.nipAt), ar.nip * H), fill: ar.nipFill }); }
+      else { A(E.areola, { d: '' }); A(E.nip, { d: '' }); }
+      A(E.armDet, { d: lines(D.upper, limbAt(g.shoulder, g.elbow, H)) + ' ' + lines(D.fore, limbAt(g.elbow, g.wrist, H)) });
+    }
+  } else {
+    // Torso outline along its curved centreline: current width at the hip, widening to 1.1x at the shoulder.
+    const tl = [], tr = [], w1 = 1.1 * tw;
+    for (let i = 0; i <= 20; i++) { const t = i / 20, a = 1 - t, w = tw + (w1 - tw) * t;
+      const c0 = [a * a * g.hip[0] + 2 * a * t * mid[0] + t * t * g.shoulder[0], a * a * g.hip[1] + 2 * a * t * mid[1] + t * t * g.shoulder[1]];
+      const n = unit([-(a * (mid[1] - g.hip[1]) + t * (g.shoulder[1] - mid[1])), a * (mid[0] - g.hip[0]) + t * (g.shoulder[0] - mid[0])]);
+      tl.push(pt(along(c0, n, w / 2))); tr.push(pt(along(c0, n, -w / 2))); }
+    A(E.torso, { d: `M ${tl.join(' L ')} A ${r1(w1 / 2)} ${r1(w1 / 2)} 0 0 1 ${tr.reverse().join(' L ')} A ${r1(tw / 2)} ${r1(tw / 2)} 0 0 1 ${tl[0]} Z` });
+    setLine(E.neck, g.shoulder, g.headC); A(E.neck, { 'stroke-width': r1(.046 * H) });
+    setDot(E.head, g.headC, g.hr);
+    // Upper arm: 1.5x the base arm width at the shoulder, tapering to 1.25x at the elbow.
+    const ua = taper(g.shoulder, g.elbow, .75 * uw, .625 * uw); E.upper.setAttribute('d', ua); E.hU.setAttribute('d', ua);
+    // Forearm: starts at the upper arm's elbow width and tapers to the wrist.
+    const fa = taper(g.elbow, g.wrist, .625 * uw, fw / 2); E.fore.setAttribute('d', fa); E.hF.setAttribute('d', fa);
+    setDot(E.hand, g.wrist, .025 * H);
+  }
   [E.near, E.far].forEach(o => {
     // Foot in side view, drawn around the ankle joint: the top is an arc concentric with the ankle (same radius as the
     // lower leg there), a concave instep sweeps down to a rounded toe, and the back curves in under the ankle to a rounded heel.
@@ -1500,7 +1839,8 @@ function drawStatic() {
   });
   const jr = .0075 * H, jw = r1(.003 * H);
   [['hip', g.hip], ['shoulder', g.shoulder], ['elbow', g.elbow], ['wrist', g.wrist]].forEach(([k, p]) => setDot(E.j[k], p, jr));
-  ['knee', 'ankle'].forEach(k => A(E.j[k], { r: r1(jr) })); Object.values(E.j).forEach(c => A(c, { 'stroke-width': jw }));
+  ['knee', 'ankle'].forEach(k => A(E.j[k], { r: r1(jr) }));
+  Object.values(E.j).forEach(c => A(c, { 'stroke-width': jw, display: opt.joints ? 'inline' : 'none' }));
 
   E.labG.setAttribute('visibility', opt.angles ? 'visible' : 'hidden');
   svg.classList.toggle('norider', !!opt.hideRider); svg.classList.toggle('nobike', !!opt.hideBike);
@@ -1512,6 +1852,85 @@ function drawStatic() {
   Object.values(E.lab).forEach(upright);
   fit();
 }
+/* ---------- rider profiles ---------- */
+// The Male and Female builds hang on the same joints as the test dummy; only the shapes around them change. Every width is a share of
+// the rider's height. A limb is a list of stations from one joint (0) to the next (1): [how far along, half-width on the left of the
+// way there, half-width on the right]. Left is the front of a leg or an arm, and the back of the neck.
+// torso: [s, w] points around the trunk, plotted on the spine (see drawStatic). head: a profile, in head radii, nose toward +x.
+// The ear, for both builds, drawn in its own frame (1 = its height, front toward +x) and then set on the head: at (head radii), size
+// and a backward tilt in degrees. rim: all the way round, from where it leaves the head above the ear hole, over the top, down the back
+// to the lobe and up the front past the tragus. inner: the fold inside the rim that rings the bowl, and the tragus.
+const EAR = { at: [-.05, -.04], size: .58, tilt: 12,
+  rim: [[.115, .14], [.11, .32], [.03, .45], [-.13, .5], [-.29, .44], [-.39, .28], [-.41, .08], [-.36, -.12], [-.27, -.27], [-.2, -.38], [-.1, -.48], [.01, -.5], [.08, -.42], [.09, -.3], [.12, -.17], [.13, -.02]],
+  inner: [[[.02, .24], [-.1, .33], [-.24, .26], [-.29, .08], [-.24, -.1], [-.12, -.2], [-.01, -.2]], [[.05, .07], [-.03, -.01], [.04, -.09]]] };
+const SHAPES = {
+  male: { hairKey: 'hairM',
+    // The seat is one round from the lower back to underneath, so the back runs into the leg without a point behind the saddle. Behind the hip joint it is
+    // an arc of about .062 of his height that leaves the line of the back just above the joint. Underneath it draws in to a circle about the joint at the
+    // half-width of the top of the thigh (.044), so it ends where the thigh's line begins and sinks a third to a half of the way into the saddle, no deeper.
+    torso: [[0, -.05], [-.074, -.04], [-.097, -.0335], [-.124, -.025], [-.142, -.0165], [-.155, -.0087], [-.168, 0], [-.168, .012], [-.145, .028], [-.096, .0425], [-.023, .0535], [.058, .056], [.14, .054], [.3, .05], [.55, .054], [.8, .061], [.97, .058], [1.1, .04], [1.15, 0], [1.08, -.04],
+      [.98, -.056], [.86, -.068], [.73, -.062], [.56, -.053], [.3, -.047], [.12, -.049]],
+    neckBase: [1.03, .01], skullBase: [-.15, -.5], neck: [[0, .05, .044], [.35, .037, .033], [.7, .035, .031], [1, .035, .031]],
+    headSize: 1.03, head: [[-.1, 1.06], [.42, .98], [.74, .74], [.87, .44], [.94, .2], [.9, .05], [1.02, -.12], [1.15, -.27], [.98, -.36], [.99, -.47], [.94, -.55], [.96, -.64], [.88, -.74],
+      [.9, -.9], [.72, -1], [.4, -.9], [.05, -.8], [-.35, -.72], [-.72, -.52], [-.96, -.12], [-1.02, .34], [-.8, .78], [-.48, .98]],
+    fold: [1, 0], thigh: [[0, .046, .044], [.14, .054, .054], [.32, .056, .051], [.55, .049, .043], [.8, .037, .033], [1, .031, .03]],
+    shank: [[0, .029, .029], [.15, .027, .039], [.32, .025, .046], [.55, .021, .032], [.8, .018, .02], [1, .019, .019]],
+    upper: [[0, .037, .039], [.1, .037, .038], [.2, .037, .037], [.45, .037, .034], [.75, .028, .027], [1, .023, .0235]],
+    fore: [[0, .022, .023], [.22, .027, .026], [.5, .022, .021], [.76, .0145, .0145], [.9, .014, .014]], hand: .021,
+    // Body Details. hairline: from the forehead round the ear to the nape (head radii); the hair is everything behind it.
+    // eyes: the two eyelids. head: nostril (his), mouth, jaw; the ear is the same on both (EAR). neck: the muscle from behind the ear to the base of the throat, placed like a limb's lines along the neck. eye, nipple: filled marks [x, y, radius]. brow: the eyebrow, a filled shape. areola: a coloured ellipse on the trunk, and its nipple. lips: filled in the areola's colour and cut to the outline of the face. The rest are lines on each part.
+    det: { hairline: [[.79, .68], [.59, .56], [.45, .4], [.37, .22], [.33, .04], [.26, -.12], [.17, -.1], [.125, .08], [.06, .24], [-.08, .31], [-.22, .29], [-.33, .14], [-.38, -.08], [-.46, -.32], [-.62, -.46], [-.88, -.48]],
+      eyes: [[[.62, .12], [.73, .19], [.85, .14]], [[.65, .1], [.75, .085], [.85, .14]]],
+      head: [[[1.03, -.3], [.97, -.27], [.93, -.33]], [[.955, -.555], [.87, -.56], [.785, -.53]], [[.36, -.9], [.12, -.8], [-.04, -.62], [-.1, -.4]]],
+      eye: [[.765, .135, .045]], brow: [[.56, .265, .01], [.67, .32, .024], [.78, .335, .038], [.87, .31, .044]], neck: [[[1, .014], [.6, -.004], [.22, -.03]]], nipple: [],
+      torso: [[[.775, -.03], [.75, -.046], [.735, -.058]], [[.66, -.03], [.5, -.034], [.34, -.033], [.2, -.034], [.08, -.026]], [[.56, -.034], [.555, -.05]], [[.44, -.034], [.435, -.046]]],
+      upper: [[[.16, .034], [.34, .017], [.45, .001], [.62, -.006], [.85, -.004]]], fore: [[[.12, .004], [.4, .006], [.7, .003]]],
+      thigh: [[[.2, -.012], [.5, -.01], [.84, -.006]]], shank: [[[.08, -.02], [.28, -.03], [.46, -.02], [.6, -.006]]] } },
+  female: { hairKey: 'hairF',
+    // The back is arched: hollow at the waist, fuller again at the shoulder blades. The seat is one swell around the hip joint, from the lower back to underneath, where it is about a circle at the half-width of the
+    // back of the thigh, so the leg leaves it in one line at any point of the pedal stroke. The bust is a slope down to a round underside, which meets the stomach in a crease (a corner).
+    // The back is drawn with as few points as hold its shape. After the two under the seat come five: low behind the seat, the back of the seat, its top, the hollow of the lower back, and the shoulder blade.
+    torso: [[0, -.043], [-.082, -.041], [-.15, -.022], [-.179, .016], [-.1365, .0578], [.0385, .0708], [.37, .0355], [.875, .049],
+      [1.08, .032], [1.125, 0], [1.07, -.032],
+      [.97, -.0453], [.935, -.0513], [.905, -.0574], [.87, -.0646], [.83, -.0726], [.79, -.0824], [.75, -.0884], [.71, -.09], [.671, -.088], [.636, -.082], [.611, -.0735], [.599, -.0655], [.5955, -.057], [.594, -.047, 1], [.48, -.0425], [.34, -.0375], [.2, -.035], [.08, -.037]],
+    neckBase: [1.03, .008], skullBase: [-.2, -.5], neck: [[0, .04, .036], [.35, .027, .025], [.7, .025, .023], [1, .025, .023]],
+    headSize: 1.03, head: [[-.1, 1.1], [.42, 1.02], [.76, .76], [.88, .42], [.9, .18], [.86, .04], [.97, -.12], [1.08, -.25], [.93, -.33], [.96, -.45], [.92, -.54], [.94, -.62], [.845, -.711],
+      [.8325, -.8525], [.6925, -.951], [.38, -.86], [.05, -.76], [-.35, -.7], [-.74, -.52], [-1.02, -.12], [-1.1, .36], [-.86, .82], [-.5, 1.04]],
+    bun: { at: [-1.02, .46], r: .41 },
+    fold: [1, 1], thigh: [[0, .045, .049], [.14, .051, .05], [.32, .05, .048], [.55, .043, .04], [.8, .032, .029], [1, .0275, .0265]],
+    shank: [[0, .026, .026], [.15, .024, .033], [.32, .022, .037], [.55, .018, .027], [.8, .0155, .0175], [1, .017, .017]],
+    upper: [[0, .026, .028], [.1, .0255, .0275], [.2, .025, .027], [.45, .023, .023], [.75, .0185, .018], [1, .016, .0165]],
+    fore: [[0, .0155, .016], [.22, .0175, .017], [.5, .014, .014], [.76, .0088, .0088], [.9, .0085, .0085]], hand: .018,
+    det: { hairline: [[.79, .68], [.63, .56], [.51, .4], [.43, .22], [.37, .06], [.29, -.04], [.19, 0], [.125, .14], [.04, .27], [-.1, .32], [-.24, .28], [-.34, .12], [-.4, -.1], [-.5, -.32], [-.66, -.46], [-.9, -.48]],
+      eyes: [[[.56, .127], [.62, .097], [.73, .167], [.86, .127]], [[.65, .077], [.75, .062], [.86, .127]]],
+      head: [[[.935, -.54], [.855, -.546], [.775, -.515]], [[.2, -.82], [.02, -.72], [-.08, -.56], [-.12, -.38]]],
+      eye: [[.765, .112, .045]], brow: [[.58, .262, .008], [.69, .312, .018], [.79, .322, .028], [.87, .297, .033]],
+      lips: [[1.02, -.39], [.95, -.405], [.87, -.44], [.785, -.512], [.86, -.61], [.93, -.67], [1.02, -.67], [1.08, -.53]], neck: [[[1, .01], [.6, -.003], [.22, -.023]]], nipple: [],
+      areola: { at: [.71, -.0842], rx: .0125, ry: .0052, fill: '#d63a2f', nipAt: [.71, -.0895], nip: .0046, nipFill: '#a82a21' },   // the nipple stands out past the outline of the breast
+      torso: [[[.594, -.047], [.6319, -.0425], [.6704, -.0391], [.7098, -.0371], [.745, -.0365]]],   // a line from the crease under the breast, carried on a short way behind it and bowed toward the back
+      upper: [], fore: [], thigh: [], shank: [] } }
+};
+// Which hair colour the Hair color sliders work on: the selected build's own (the test dummy has no hair; its sliders rest on the male's).
+function hairKey() { return (SHAPES[opt.profile] || SHAPES.male).hairKey; }
+// A smooth curve through a list of points (a Catmull-Rom spline, written as Bezier curves), closed into a shape or left open.
+// A point with a third value set is a corner: the curve comes into it and leaves it along its own two sides, with no rounding.
+function smooth(P, closed) {
+  const n = P.length, at = i => P[closed ? (i + n) % n : clamp(i, 0, n - 1)]; let d = 'M ' + pt(P[0]);
+  for (let i = 0; i < (closed ? n : n - 1); i++) { let a = at(i - 1), b = at(i), c = at(i + 1), e = at(i + 2); if (b[2]) a = b; if (c[2]) e = c;
+    d += ` C ${pt([b[0] + (c[0] - a[0]) / 6, b[1] + (c[1] - a[1]) / 6])} ${pt([c[0] - (e[0] - b[0]) / 6, c[1] - (e[1] - b[1]) / 6])} ${pt(c)}`; }
+  return d + (closed ? ' Z ' : '');
+}
+// The points around a limb from p0 to p1, from its stations: out along the left side, round the far end, back along the right side,
+// round the near end. all: the whole outline. open: without the near end, for the outline that runs into the body; it can start
+// later on either side (skip: how many stations to leave out on the left and on the right).
+function limbPts(p0, p1, st, H, skip = [1, 1]) {
+  const d = unit(sub(p1, p0)), n = [-d[1], d[0]], L = dist(p0, p1), q = (t, w, x = 0) => [p0[0] + d[0] * (t * L + x * H) + n[0] * w * H, p0[1] + d[1] * (t * L + x * H) + n[1] * w * H];
+  const [t0, l0, r0] = st[0], [t1, l1, r1] = st[st.length - 1], c0 = (l0 + r0) / 2, c1 = (l1 + r1) / 2, k = Math.SQRT1_2;
+  const left = st.map(([t, l]) => q(t, l)), right = st.map(([t, , r]) => q(t, -r)).reverse(), end = [q(t1, l1 * k, c1 * k), q(t1, 0, c1), q(t1, -r1 * k, c1 * k)];
+  return { open: [...left.slice(skip[0]), ...end, ...right.slice(0, st.length - skip[1])], all: [...left, ...end, ...right, q(t0, -r0 * k, -c0 * k), q(t0, 0, -c0), q(t0, l0 * k, -c0 * k)] };
+}
+// A place on a limb from p0 to p1, for its detail lines: [how far along, how far to the left of the way there, in body heights].
+function limbAt(p0, p1, H) { const d = unit(sub(p1, p0)), L = dist(p0, p1); return ([t, w]) => [p0[0] + d[0] * t * L - d[1] * w * H, p0[1] + d[1] * t * L + d[0] * w * H]; }
 // Tapered limb outline between two joints (radius R0 at the first, R1 at the second). The thigh runs from torso
 // width at the hip to knee width; the lower leg from knee width to ankle width. The same shape carries the light outline.
 function taper(h, k, R0, R1) {
@@ -1522,9 +1941,15 @@ function taper(h, k, R0, R1) {
 }
 function putLeg(o, L) {
   A(o.pedal, { transform: `translate(${pt(L.s)}) rotate(${r1(L.phi)})` });
-  const H = G.H, th = taper(G.hip, L.knee, .0425 * H, .029 * H), sh = taper(L.knee, L.ankle, .029 * H, .021 * H);
-  o.thigh.setAttribute('d', th); o.shank.setAttribute('d', sh);
-  if (o.hT) { o.hT.setAttribute('d', th); o.hS.setAttribute('d', sh); }
+  const H = G.H, P = SHAPES[opt.profile];
+  if (P) { const t = limbPts(G.hip, L.knee, P.thigh, H, P.fold), k = limbPts(L.knee, L.ankle, P.shank, H);   // fold: where the thigh's outline starts (see limbPts)
+    o.thigh.setAttribute('d', smooth(t.all, true)); o.shank.setAttribute('d', smooth(k.all, true));
+    if (o.hT) { o.hT.setAttribute('d', smooth(t.open) + ' ' + smooth(k.all, true)); o.hS.setAttribute('d', smooth(k.open)); E.under.setAttribute('d', smooth(t.all, true) + ' ' + G.armOL); }
+    if (o.ol) o.ol.setAttribute('d', smooth(t.all, true) + ' ' + smooth(k.all, true));
+    if (o.det && detailsOn()) o.det.setAttribute('d', P.det.thigh.map(l => smooth(l.map(limbAt(G.hip, L.knee, H)))).join(' ') + ' ' + P.det.shank.map(l => smooth(l.map(limbAt(L.knee, L.ankle, H)))).join(' ')); }
+  else { const th = taper(G.hip, L.knee, .0425 * H, .029 * H), sh = taper(L.knee, L.ankle, .029 * H, .021 * H);
+    o.thigh.setAttribute('d', th); o.shank.setAttribute('d', sh);
+    if (o.hT) { o.hT.setAttribute('d', th); o.hS.setAttribute('d', sh); } }
   A(o.shoeG, { transform: `translate(${pt(L.ankle)}) rotate(${r1(L.phi)})` });
 }
 let theta = rad(115), wheelAng = 0, playing = true, last = 0, lastK = '', lastH = '';
@@ -1574,12 +1999,14 @@ function readouts() {
   const seated = opt.incline <= SEATED, sit = (v, t) => seated ? tag(v, t) : v;
   // Stack to reach: frames under 1.45 are race geometry (long and low), 1.45 to 1.55 sporty endurance, over 1.55 relaxed and upright.
   const ratio = +(b.stack / b.reach).toFixed(2);
-  $('r-ratio').innerHTML = tag(ratio.toFixed(2) + ':1', ['plain', ratio < 1.45 ? 'race' : ratio <= 1.55 ? 'endurance' : 'relaxed']);
+  // (The bands are for drop-bar frames; a flat-bar frame is long and low by design, so it gets the number without a label.)
+  $('r-ratio').innerHTML = b.flat ? ratio.toFixed(2) + ':1' : tag(ratio.toFixed(2) + ':1', ['plain', ratio < 1.45 ? 'race' : ratio <= 1.55 ? 'endurance' : 'relaxed']);
   // Standover: halfway along the top tube, from the ground under the tires to the tube's upper surface (14 mm above its centreline, square to the tube).
   // It is labelled against the rider's inseam (floor to crotch), in whole millimetres: 26 or more to spare is clear, 1 to 25 is snug, none is too tall.
   const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY, spare = Math.round(body.inseam) - Math.round(standover);
   const so = spare >= 26 ? ['ok', 'clear'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
   $('r-standover').innerHTML = `${len(standover)}<span class="tag ${so[0]}">${so[1]}</span>`;
+  $('geo-tight').hidden = geo === 'own' || spare >= 1;   // a recommended frame that still reads too tall says why under the switch
   const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');   // always a number, 0.0° included
   $('r-wb').textContent = len(g.front[0] - g.rear[0]);
   // Trail: how far the tire's contact point sits behind the steering axis. Road bikes run from about 50 to 63 mm, with 57 or 58 widely
@@ -1589,7 +2016,7 @@ function readouts() {
   $('r-trail').innerHTML = `${len(trail)}<span class="tag ${tr[0]}">${tr[1]}</span>`;
   // Saddle-to-bar drop is judged against saddle height, so a tall rider is not marked down for a drop that suits the frame: under 4%
   // of it (about 3 cm on a mid-size bike) is upright, the recreational range; over 12% (about 9 cm) is deep, the top of the racing range.
-  const drop = Math.round(g.saddleY - (g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
+  const drop = Math.round(g.saddleY - (b.flat ? g.grip[1] + 17 : g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
   $('r-drop').innerHTML = tag(drop >= 0 ? len(drop) : len(-drop) + NB + 'rise', ['plain', drop < dLo ? 'upright' : drop <= dHi ? 'moderate' : 'deep']);
   $('t-drop').title = `Top of the saddle down to the top of the bars. For this saddle height, under ${len(dLo)} is upright, up to ${len(dHi)} is moderate, more is deep.`;
   const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'saddle high'] : C.kmax < 135 ? ['warn', 'saddle low'] : ['ok', 'typical'];
@@ -1607,7 +2034,7 @@ function readouts() {
   $('r-back').innerHTML = `${back}°<span class="tag ${bk[0]}">${bk[1]}</span>`;
   // Shoulder angle, torso to upper arm: 75 to 100 degrees is the span fitters see as normal (their targets, 80 to 95, sit inside it).
   // Less is a short reach to the bars, more a long one.
-  const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = sit(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
+  const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = b.flat ? sh + '°' : sit(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
   // Knee against the pedal axle: the classic starting point puts the knee over the axle or up to 20 mm behind it. Within that band (with
   // 10 mm of leeway ahead) the value is labelled neutral; outside it the value already says which way, so there is no label. Fitters
   // differ on whether this should be a target, so the label is not coloured as good or bad.
@@ -1617,7 +2044,7 @@ function readouts() {
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
-  else if (b.fork < 339.5 || b.fork > 420.5) al.push(['warn', `This stack and head tube length need a ${len(b.fork)} fork. Road forks are usually ${inch() ? '13.4 to 16.5' + NB + 'in' : '340 to 420' + NB + 'mm'}.`]);
+  else if (b.fork < 339.5 || b.fork > 560.5) al.push(['warn', `This stack and head tube length need a ${len(b.fork)} fork. Forks run from about ${inch() ? '13.4 to 22' + NB + 'in' : '340 to 560' + NB + 'mm'}.`]);
   if (g.slope < -2) al.push(['warn', 'The top tube rises toward the saddle. The seat tube is long for this stack.']);
   if (opt.incline > SEATED) ;   // out of the saddle: the knee angles no longer say anything about saddle height
   else if (C.worst === 'fail') al.push(['bad', 'The leg can’t reach the pedal at the bottom of the stroke. Lower the saddle.']);
@@ -1630,8 +2057,8 @@ function readouts() {
 
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
-  $('gear-hint').textContent = `${opt.ring}${NB}×${NB}${opt.cog} at ${opt.cadence}${NB}rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}.`;
-  $('sum-bike').textContent = `${inch() ? len(b.seatTube) : r1(b.seatTube / 10) + NB + 'cm'} · ${{ 622: '700c', 584: '650b', 559: '26' + NB + 'in' }[b.rim]}${NB}×${NB}${Math.round(b.tire)}`;
+  $('gear-hint').textContent = `${opt.ring}T${NB}×${NB}${opt.cog}T at ${opt.cadence}${NB}rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}. The gear ratio is ${(opt.ring / opt.cog).toFixed(2)}.`;
+  $('sum-bike').textContent = `${inch() ? len(b.seatTube) : r1(b.seatTube / 10) + NB + 'cm'} · ${(b.flat ? { 622: '29' + NB + 'in', 584: '27.5' + NB + 'in' } : { 622: '700c', 584: '650b' })[b.rim] || '26' + NB + 'in'}${NB}×${NB}${Math.round(b.tire)}`;
   $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
   $('sum-options').textContent = `${opt.ring}T${NB}×${NB}${opt.cog}T at ${opt.cadence}${NB}rpm`;   // chainring × rear cog at the pedal cadence
   $('body-hint').textContent = body.custom ? 'Legs and torso have to fit within your height, so lengthening one shortens the other.'
@@ -1643,42 +2070,58 @@ function hsb(h, s, v) { s /= 100; v /= 100;
   const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
   return '#' + [f(5), f(3), f(1)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const gray = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 217).toString(16).padStart(2, '0'); return '#' + x + x + x; };
-// Night mode shows each chosen colour with its lightness mirrored and its hue kept: black becomes white, a dark blue a light
-// blue, and a pure red stays the same red. Moving all three channels by one amount does exactly that.
-const mirror = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), d = 255 - Math.max(...c) - Math.min(...c);
-  return '#' + c.map(x => (x + d).toString(16).padStart(2, '0')).join(''); };
 // The crank arms and pedals are drawn 25% darker than the components colour, so they stand apart from the chainring, star or solid.
 // A colour in the darker half (black, by day) has no room to darken, so there it goes 25% lighter instead.
 const shade = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), dark = Math.max(...c) + Math.min(...c) < 255;
   return '#' + c.map(x => Math.round(dark ? x + (255 - x) * .25 : x * .75).toString(16).padStart(2, '0')).join(''); };
-function applyColors() { const st = document.documentElement.style, tone = document.documentElement.classList.contains('night') ? mirror : c => c;
-  // The edge line fades in as the frame nears white (in night mode that same colour is drawn near black, on a black page):
-  // it starts at 15% saturation and 85% brightness and is solid by 5% and 95%.
-  const paleness = (S, B) => Math.round(clamp((15 - S) / 10, 0, 1) * clamp((B - 85) / 10, 0, 1) * 100) / 100;
+// Every colour chosen under Appearance is drawn as chosen, by day and in night mode alike: night mode changes the page, not the bike or
+// the rider. What does follow the page is the edge line, which fades in round any part whose colour comes close to the page's and would
+// otherwise be lost against it: close to white by day, close to black in night mode.
+function applyColors() { const st = document.documentElement.style, night = document.documentElement.classList.contains('night');
+  // By day the edge line starts at 15% saturation and 85% brightness and is solid by 5% and 95%. In night mode it starts at 15% brightness
+  // and is solid by 5%, whatever the saturation (that dark, every hue is nearly black).
+  const paleness = (S, B) => Math.round((night ? clamp((15 - B) / 10, 0, 1) : clamp((15 - S) / 10, 0, 1) * clamp((B - 85) / 10, 0, 1)) * 100) / 100;
   const fade = (g, S, B) => { const pale = paleness(S, B);
     g.setAttribute('visibility', pale > 0 ? 'visible' : 'hidden'); g.setAttribute('opacity', pale); };
   fade(E.olG, opt.frameS, opt.frameB); fade(E.barOL, opt.tapeS, opt.tapeB);
   // The rider gets the same edge line, by the same measure; the far-side limbs take their colour from the rider's in the style sheet.
   const riderPale = paleness(opt.riderS, opt.riderB);
   st.setProperty('--rider-edge', riderPale); st.setProperty('--rider-edge-pct', riderPale * 100 + '%');
-  const rider = tone(hsb(opt.riderH, opt.riderS, opt.riderB)); st.setProperty('--rider', rider);
+  const rider = hsb(opt.riderH, opt.riderS, opt.riderB); st.setProperty('--rider', rider);
   // The smiley is black on a light rider and white on a dark one (by how bright the colour looks).
   const [rr, rg, rb] = [1, 3, 5].map(i => parseInt(rider.slice(i, i + 2), 16)); st.setProperty('--face', .299 * rr + .587 * rg + .114 * rb > 150 ? '#000000' : '#ffffff');
-  st.setProperty('--frame', tone(hsb(opt.frameH, opt.frameS, opt.frameB)));
-  st.setProperty('--tape', tone(hsb(opt.tapeH, opt.tapeS, opt.tapeB)));
-  st.setProperty('--ftext', tone(hsb(opt.textH, opt.textS, opt.textB)));
+  // Male and Female outlines: black, in either mode, unless the rider is extremely dark (20% brightness or less), then white.
+  // Where the outline is the page's own colour it is the wider gap between limbs; otherwise the 3 mm edge line.
+  const darkRider = Math.max(rr, rg, rb) <= 51;
+  st.setProperty('--oline', darkRider ? '#ffffff' : '#000000'); st.setProperty('--oline-w', (darkRider !== night ? 9 : 6) + 'px');
+  const hk = hairKey(); st.setProperty('--hair', hsb(opt[hk + 'H'], opt[hk + 'S'], opt[hk + 'B']));
+  $('grp-hair').style.setProperty('--pure', hsb(opt[hk + 'H'], 100, 100)); $('grp-hair').style.setProperty('--full', hsb(opt[hk + 'H'], opt[hk + 'S'], 100));
+  st.setProperty('--frame', hsb(opt.frameH, opt.frameS, opt.frameB));
+  st.setProperty('--tape', hsb(opt.tapeH, opt.tapeS, opt.tapeB));
+  st.setProperty('--ftext', hsb(opt.textH, opt.textS, opt.textB));
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
   [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS], ['grp-text', opt.textH, opt.textS]].forEach(([id, h, sat]) => {
-    $(id).style.setProperty('--pure', tone(hsb(h, 100, 100))); $(id).style.setProperty('--full', tone(hsb(h, sat, 100))); });
-  st.setProperty('--wheel', tone(gray(opt.wheelGray))); st.setProperty('--comp', tone(gray(opt.compGray)));
-  st.setProperty('--crank', shade(tone(gray(opt.compGray)))); }
+    $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
+  st.setProperty('--wheel', gray(opt.wheelGray)); st.setProperty('--comp', gray(opt.compGray));
+  // The components and the wheels have gray scales that stop short of white, so by day they always show. In night mode their dark end
+  // is the page's colour, and there they get an edge line too: under each part, a copy 3 mm wider all round (see edgeTwin).
+  // A gray's brightness is 85% of its slider's value, as the scale tops out at a light gray.
+  [[E.edge.comp, opt.compGray], [E.edge.wheel, opt.wheelGray]].forEach(([twins, g]) => { const pale = paleness(0, g * .85);
+    twins.forEach(([e, t, w]) => { fade(t, 0, g * .85); if (!pale) return;
+      ['x1', 'y1', 'x2', 'y2', 'd', 'cx', 'cy', 'r', 'transform', 'display'].forEach(a => { const v = e.getAttribute(a); if (v === null) t.removeAttribute(a); else t.setAttribute(a, v); });
+      t.setAttribute('stroke-width', (e.hasAttribute('stroke-width') ? +e.getAttribute('stroke-width') : w) + 6); }); });
+  // Tires: one colour for the whole tire, and the tirewall's own once it has been set. A tire as pale as the page gets the edge line too.
+  const wk = opt.wallOwn ? 'wall' : 'tire'; st.setProperty('--tire', hsb(opt.tireH, opt.tireS, opt.tireB)); st.setProperty('--tirewall', hsb(opt[wk + 'H'], opt[wk + 'S'], opt[wk + 'B']));
+  [['grp-tire', opt.tireH, opt.tireS], ['grp-wall', opt[wk + 'H'], opt[wk + 'S']]].forEach(([id, h, sat]) => { $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
+  E.wheels.forEach(w => fade(w.ol, opt.tireS, opt.tireB));
+  st.setProperty('--crank', shade(gray(opt.compGray))); }
 function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); save(); }
 
 /* ---------- boot ---------- */
 function start() {
   defaults();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
-  restore(saved); setPanelW(panelW);
+  restore(saved); openLink(); setPanelW(panelW);   // settings from a link come before the ones remembered on this device
   buildPanel(); buildScene(); unitUI(); refresh();
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { playing = false; $('play').textContent = 'Play'; }
   update();
