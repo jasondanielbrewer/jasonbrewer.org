@@ -134,6 +134,12 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec[open]>summary::before{transform:translateY(-5px) rotate(45deg)}
 .sec>summary h2{font:600 20px/1.1 var(--font);letter-spacing:-.01em}
 .sec>summary h2{flex:none;white-space:nowrap}   /* a section's title stays on one line; in a narrow panel its summary is cut short instead */
+/* Beside the Appearance title: one dot for each of its colours, in the order of the rows below. They show while the section is closed
+   and fade away when it is opened, where each row carries its own swatch. */
+.sec .dots{margin-left:auto;align-self:center;display:flex;gap:4px;transition:opacity .3s}
+.sec .dots .sw{width:12px;height:12px}
+.sec[open]>summary .dots{opacity:0}
+@media (prefers-reduced-motion:reduce){ .sec .dots{transition:none} }
 .sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 12px var(--font);font-variant-numeric:tabular-nums}
 .sec-body{display:flex;flex-direction:column;gap:16px;padding:6px 0 18px}   /* 6px on top of the title's own 12px: 18px from a section title to its first line */
 
@@ -602,7 +608,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </details>
 
     <details class="sec" id="sec-appearance" open>
-      <summary><h2>Appearance</h2></summary>
+      <summary><h2>Appearance</h2><span class="dots" aria-hidden="true"><i class="sw sw-rider"></i><i class="sw sw-frame"></i><i class="sw sw-text"></i><i class="sw sw-tape"></i><i class="sw sw-wheel"></i><i class="sw sw-comp"></i></span></summary>
       <div class="sec-body">
         <details class="pick" id="grp-rider">
           <summary class="grphead"><h3 class="grp">Rider color</h3><i class="sw sw-rider" aria-hidden="true"></i></summary>
