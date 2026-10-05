@@ -27,7 +27,7 @@ img{max-width:100%}
   --crank:var(--comp);                          /* crank arms and pedals */
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
-  --lo:#000000; --hi:#ffffff; --gray-hi:#d9d9d9;  /* ends of the colour sliders' scales */
+  --lo:#000000; --hi:#ffffff;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
   --home-font:"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the home page's font stack */
   --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
@@ -244,8 +244,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .slot-hue{background:linear-gradient(to right,#f00 11px,#ff0 calc(11px + (100% - 22px)*.1667),#0f0 calc(11px + (100% - 22px)*.3333),#0ff calc(11px + (100% - 22px)*.5),#00f calc(11px + (100% - 22px)*.6667),#f0f calc(11px + (100% - 22px)*.8333),#f00 calc(100% - 11px))}
 .slot-sat{background:linear-gradient(to right,var(--hi) 11px,var(--pure) calc(100% - 11px))}
 .slot-bri{background:linear-gradient(to right,var(--lo) 11px,var(--full) calc(100% - 11px))}
-.slot-gray{background:linear-gradient(to right,var(--lo) 11px,var(--gray-hi) calc(100% - 11px))}
-.slot-gray.full{background:linear-gradient(to right,var(--lo) 11px,var(--hi) calc(100% - 11px))}   /* Components color: all the way to white */
+.slot-gray{background:linear-gradient(to right,var(--lo) 11px,var(--hi) calc(100% - 11px))}   /* Wheel color and Components color: black to white */
 /* The test dummy has no hair: there the Hair color sliders wait, dimmed. */
 #grp-hair.off .group{opacity:.35}
 .slot input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
@@ -333,7 +332,7 @@ svg .chain{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:rou
 svg .tire,svg .tread{stroke:var(--tire);fill:none}
 svg .tirewall{stroke:var(--tirewall,var(--tire));fill:none}   /* the band of sidewall between the rim and the tread */
 svg .rim{stroke:var(--wheel);fill:none}
-svg .spoke{stroke:var(--wheel);stroke-width:1;vector-effect:non-scaling-stroke}
+svg .spoke{stroke:color-mix(in srgb,var(--ink) var(--wheel-edge-pct,0%),var(--wheel));stroke-width:1;vector-effect:non-scaling-stroke}   /* too thin to hold an edge line, a spoke turns to the page's ink as the wheels' edge line fades in */
 svg .blur{fill:var(--spin)}
 svg.playing .spoke{stroke:var(--spin)}
 svg .valve{stroke:var(--wheel);stroke-width:7;stroke-linecap:round}
@@ -843,7 +842,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           <div class="stack">
             <div class="slider">
               <label class="cap" for="o-compGray">Components color</label>
-              <div class="slot slot-gray full"><input id="o-compGray" type="range" min="0" max="100" step="1"></div>
+              <div class="slot slot-gray"><input id="o-compGray" type="range" min="0" max="100" step="1"></div>
             </div>
             <div class="ctl"><span class="cap" id="cap-ringStyle">Chainring style</span>
               <div class="seg" role="radiogroup" aria-labelledby="cap-ringStyle">
@@ -932,7 +931,7 @@ const TT_DROP = 10;  // the top tube joins this much further down the head tube,
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false,
-  riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
+  riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
   frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 };   // lettering on the downtube: none to begin with, and white
 // The switch for Body Details as a whole. true: the button works on the Male and Female profiles, as usual. false: the button is
 // dimmed and cannot be pressed on any rider profile, and the details are never drawn, whatever a remembered setup or a link says
@@ -971,6 +970,7 @@ function restore(d) {
   const o = { ...d.opt }; if (!(d.v >= 2)) o.cadence = undefined; if (!(d.v >= 3) && o.compGray === 65) o.compGray = undefined;
   // Components color used to stop at a light gray (85% brightness); it now runs to white. A setting from before keeps the gray it showed.
   if (!(d.v >= 8) && Number.isFinite(o.compGray)) o.compGray = Math.round(o.compGray * 217 / 255 * 100) / 100;
+  if (!(d.v >= 9) && Number.isFinite(o.wheelGray)) o.wheelGray = Math.round(o.wheelGray * 217 / 255 * 100) / 100;   // Wheel color the same, one version later
   if (!(d.v >= 4) && o.frameS === 86 && o.frameB === 85) o.frameS = o.frameB = undefined;
   if (o.turbo === true && !Number.isFinite(o.incline)) o.incline = 15;   // saved with the old Turbo Mode button on: the same hill
   take(opt, o); opt.frameText = opt.frameText.slice(0, 30); if (!SHAPES[opt.profile]) opt.profile = 'dummy';
@@ -1082,10 +1082,11 @@ const LINK_BASE = { 1: { units: 'in', bikeUnits: 'mm', geo: 'road', lastGeo: 'ro
   body: { sex: 'm', height: 1828.8, custom: false, inseam: 860, thigh: 448, shank: 450, foot: 278, torso: 526.64, upperArm: 340, forearm: 342 },
   opt: { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false, riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off', frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 } } };
 LINK_BASE[2] = LINK_BASE[1];   // links numbered 2 use the same reference; the number records that their Components color runs to white (in links numbered 1 it stopped at a light gray, and restore() carries those over)
+LINK_BASE[3] = { ...LINK_BASE[1], opt: { ...LINK_BASE[1].opt, wheelGray: 74 } };   // links numbered 3: Wheel color runs to white as well, and its starting gray is 74 on that scale (the 87 of the old one)
 const b64 = { to: t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   from: t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))) };
 function linkTo() {
-  const B = LINK_BASE[2], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 2 };   // lengths to a hundredth of a millimetre
+  const B = LINK_BASE[3], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 3 };   // lengths to a hundredth of a millimetre
   [['b', bike, B.bike], ['y', body, B.body], ['o', opt, B.opt]].forEach(([key, cur, base]) => { const o = {};
     for (const k in cur) { const v = r2(cur[k]); if (v !== base[k]) o[k] = v; } if (Object.keys(o).length) d[key] = o; });
   if (units !== B.units) d.u = units; if (bikeUnits !== B.bikeUnits) d.k = bikeUnits; if (geo !== B.geo) d.g = geo; if (lastGeo !== B.lastGeo) d.l = lastGeo;
@@ -1095,7 +1096,7 @@ function linkTo() {
 function linkFrom() {
   const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); if (!m) return null;
   try { const d = JSON.parse(b64.from(m[1])), B = LINK_BASE[d && d.v], obj = v => v && typeof v === 'object' ? v : {}; if (!B) return null;
-    return { v: d.v >= 2 ? 8 : 7, bike: { ...B.bike, ...obj(d.b) }, body: { ...B.body, ...obj(d.y) }, opt: { ...B.opt, ...obj(d.o) },
+    return { v: d.v >= 3 ? 9 : d.v >= 2 ? 8 : 7, bike: { ...B.bike, ...obj(d.b) }, body: { ...B.body, ...obj(d.y) }, opt: { ...B.opt, ...obj(d.o) },
       units: d.u || B.units, bikeUnits: d.k || B.bikeUnits, geo: d.g || B.geo, lastGeo: d.l || B.lastGeo };
   } catch (e) { return null; }
 }
@@ -1108,7 +1109,7 @@ function openLink() {
   return true;
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 8, bike, body, opt, units, bikeUnits, own: ownBody, panelW, geo, lastGeo, ownBike })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 9, bike, body, opt, units, bikeUnits, own: ownBody, panelW, geo, lastGeo, ownBike })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
@@ -1648,7 +1649,7 @@ function buildScene() {
   // ink first and then both smaller, so the edge line runs round the two together and does not cross where they overlap.
   const cockpitG = document.createElementNS(NS, 'g'); cockpitG.setAttribute('visibility', 'hidden'); E.stem.after(cockpitG);
   E.edge = { comp: [E.seatpost, E.clamp, E.rails, E.lever, E.hood, E.riser, E.flatLever, E.cog].map(e => edgeOver(e)).concat([E.steerer, E.stem].map(e => edgeOver(e, 0, cockpitG)), E.arms.map(e => edgeOver(e, 0, armsG)), [edgeOver(E.ring, 14)]),
-    wheel: E.wheels.flatMap(w => [w.rim, w.hub].map(e => edgeOver(e))) };
+    wheel: E.wheels.flatMap(w => [edgeOver(w.rim), edgeOver(w.hub), edgeOver(w.valve, 7)]) };
   // Every shape in the scene is marked as part of the rider or part of the bike, so that either can be hidden. The ground line and
   // the Incline control belong to neither and always show.
   const rider = new Set([E.under, E.trunkOL, E.torso, E.neck, E.head, E.face, E.hair, E.hairClip.parentNode, E.lips, E.det, E.eyeDet, E.detFill, E.areola, E.nip, E.armDet, E.hU, E.upper, E.hF, E.fore, E.hand, E.labG, ...Object.values(E.j),
@@ -2120,12 +2121,11 @@ function readouts() {
     : 'The rider is drawn with the average proportions for this height.';
   $('body-reset').hidden = !body.custom;
 }
-// Appearance: frame colour from hue / saturation / brightness; wheels on a black-to-light-gray scale, components from black to white.
+// Appearance: frame colour from hue / saturation / brightness; wheels and components on a scale from black to white.
 function hsb(h, s, v) { s /= 100; v /= 100;
   const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
   return '#' + [f(5), f(3), f(1)].map(x => x.toString(16).padStart(2, '0')).join(''); }
-const gray = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 217).toString(16).padStart(2, '0'); return '#' + x + x + x; };
-const grayFull = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 255).toString(16).padStart(2, '0'); return '#' + x + x + x; };   // the components' scale: black to white
+const grayFull = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 255).toString(16).padStart(2, '0'); return '#' + x + x + x; };   // the wheels' and the components' scale: black to white
 // The crank arms and pedals are drawn 25% darker than the components colour, so they stand apart from the chainring, star or solid.
 // A colour in the darker half (black, by day) has no room to darken, so there it goes 25% lighter instead.
 const shade = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), dark = Math.max(...c) + Math.min(...c) < 255;
@@ -2158,12 +2158,12 @@ function applyColors() { const st = document.documentElement.style, night = docu
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
   [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS], ['grp-text', opt.textH, opt.textS]].forEach(([id, h, sat]) => {
     $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
-  st.setProperty('--wheel', gray(opt.wheelGray)); st.setProperty('--comp', grayFull(opt.compGray));
-  // The components and the wheels get the frame's edge line, by the frame's rule: it fades in as their colour nears the page's. The
-  // components run from black to white, so that can happen by day or in night mode; the wheels' scale stops at a light gray (85%
-  // brightness), so for them it only happens in night mode. Each part's two copies (see edgeOver) are kept in step with it here:
+  st.setProperty('--wheel', grayFull(opt.wheelGray)); st.setProperty('--comp', grayFull(opt.compGray));
+  // The components and the wheels get the frame's edge line, by the frame's rule: it fades in as their colour nears the page's. Both
+  // run from black to white, so that can happen by day or in night mode. Each part's two copies (see edgeOver) are kept in step with it here:
   // one at full size in the page's ink, one 6 mm narrower (3 mm shorter at square-cut ends, 3 mm less in radius for a disc) in its own colour.
-  [[E.edge.comp, opt.compGray], [E.edge.wheel, opt.wheelGray * .85]].forEach(([parts, B]) => { const pale = paleness(0, B);
+  st.setProperty('--wheel-edge-pct', paleness(0, opt.wheelGray) * 100 + '%');   // for the spokes
+  [[E.edge.comp, opt.compGray], [E.edge.wheel, opt.wheelGray]].forEach(([parts, B]) => { const pale = paleness(0, B);
     parts.forEach(([e, ol, inn, w0, g]) => { fade(g, 0, B); if (!pale) return;
       inn.setAttribute('class', e.getAttribute('class'));
       ['x1', 'y1', 'x2', 'y2', 'd', 'cx', 'cy', 'r', 'transform', 'display'].forEach(a => { const v = e.getAttribute(a); [ol, inn].forEach(t => v === null ? t.removeAttribute(a) : t.setAttribute(a, v)); });
