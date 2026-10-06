@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="night">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#f0f0f0">
 <title>jasonbrewer.org</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&display=swap">
 <style>
   :root {
     --dot: #f0f0f0;           /* the color under the dot, replaced live */
-    --page: #000;             /* page background: black in night mode, the dot's color otherwise */
-    --ink: #f0f0f0;           /* text: the dot's color in night mode, black or white otherwise */
+    --page: #f0f0f0;          /* page background: black in night mode, the dot's color otherwise */
+    --ink: #000;              /* text: the dot's color in night mode, black or white otherwise */
     --line: #000;             /* dot outline: black or white by day, black in night mode */
     --tick-room: 0px;         /* how far ENERGY / MOOD move down when the axis numbers show */
     --font: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the page font, switched by clicking the site name */
@@ -92,7 +92,7 @@
     text-rendering: geometricPrecision;   /* exact glyph positions at any size */
   }
   #text text { font-weight: 400; text-anchor: start; }
-  #text .lab { font-weight: 700; }
+  #text .lab { font-weight: 400; }
   :root.night #text text { transition: none; }   /* text keeps exact pace with the dot's color */
 
   /* The three switches. Their words are the size of ENERGY / MOOD in regular weight.
@@ -176,7 +176,7 @@
 </svg>
 <div id="safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
 <a id="site" href="/bike/" aria-label="Bike"></a>
-<button id="night" class="switch" type="button" role="switch" aria-checked="true"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+<button id="night" class="switch" type="button" role="switch" aria-checked="false"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
 <button id="key" class="switch" type="button" role="switch" aria-checked="false"><span class="track" aria-hidden="true"><span class="thumb"></span></span><span class="words">SHOW KEY</span></button>
 <button id="hide" class="switch" type="button" role="switch" aria-checked="false" aria-label="Hide controls"><span class="words">HIDE CONTROLS</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
 <div id="field">
@@ -278,8 +278,8 @@
   function placeNumbers() {
     centered(nEnergy, 400, num.cL, num.base, num.fs);         // energy on the left
     centered(nMood,   400, num.cR, num.base, num.fs);         // mood on the right
-    centered(lEnergy, 700, num.cL, num.labBase, num.labFs);
-    centered(lMood,   700, num.cR, num.labBase, num.labFs);
+    centered(lEnergy, 400, num.cL, num.labBase, num.labFs);
+    centered(lMood,   400, num.cR, num.labBase, num.labFs);
   }
 
   // mobile: 0 = desktop arrangement, 1 = mobile arrangement, in between while the window changes shape.
@@ -373,7 +373,7 @@
     // Numbers with their labels, treated as one block.
     //   desktop: the block starts the set distance below the square
     //   mobile:  the block is centered between the bottom of the square and the top of SHOW KEY
-    var cap = measure('MOODENERGY', 700).asc;
+    var cap = measure('MOODENERGY', 400).asc;
     var labelGap = 2.25 * cap * (fs1 * 0.45);                 // number bottom to label top
     var blockH = digitH * fsN + labelGap + cap * fsL;
     var keyTop = edgeBottom - PAD - measure('H', 400).asc * fsL;               // top of the words SHOW KEY
@@ -427,7 +427,7 @@
   function mobileFit(W, edgeTop, edgeBottom, edgeLeft) {
     var t = measure(TITLE, 400), u = 1 / (t.left + t.right);
     var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
-    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 700).asc;
+    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 400).asc;
     var ten = measure('10', 400), site = measure(tSite.textContent, 400);
     var fsL = 0.5625 * u, fsK = fsL * 2 / 3;
     var clear = (0.05 + fsL * 0.35) * 2 / 3;
@@ -558,10 +558,10 @@
     setNight(!night);
     try { localStorage.setItem('night-mode', night ? '1' : '0'); } catch (err) {}   // remembered on this device
   });
-  // night mode is on by default; a device that has switched it off keeps it off
+  // night mode is off by default; a device that has switched it on keeps it on
   var savedNight = null;
   try { savedNight = localStorage.getItem('night-mode'); } catch (err) {}
-  setNight(savedNight !== '0');
+  setNight(savedNight === '1');
 
   /* ---------- SHOW KEY: axis numbers and tick marks ---------- */
   var keyBtn = document.getElementById('key');
