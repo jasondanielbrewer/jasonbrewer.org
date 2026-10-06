@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en" class="night">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#ffffff">
 <title>Bike Fit Visualizer</title>
-<script>/* Night mode is on unless this device has switched it off (the same setting as the home page), decided before the first paint. */
-try { if (localStorage.getItem('night-mode') === '0') document.documentElement.classList.remove('night'); } catch (e) {}</script>
+<script>/* Night mode is off unless this device has switched it on (the same setting as the home page), decided before the first paint. */
+try { if (localStorage.getItem('night-mode') === '1') document.documentElement.classList.add('night'); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>
@@ -161,6 +161,10 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tog span{display:block;padding:7px 8px;border:1px solid var(--rule);border-radius:7px;background:var(--field);color:var(--ink);
   font-size:13px;font-weight:500;text-align:center;transition:background .16s,color .16s}
 .tog input:checked+span{background:var(--rule);color:var(--accent-ink)}
+/* Enter my own geometry sits under Road, Gravel and Mountain and reads as one of them: while it is off its words are their gray,
+   and darken under the pointer as theirs do. */
+#geo-own:not(:checked)+span{color:var(--muted)}
+#geo-own:not(:checked)+span:hover{color:var(--ink)}
 /* The first word says what pressing the button will do next, so it swaps when the button is on: Show becomes Hide, and Hide becomes Show. */
 .tog i{font-style:normal} .tog .on,.tog input:checked+span .off{display:none} .tog input:checked+span .on{display:inline}
 .tog input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
@@ -265,15 +269,15 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .foot{padding-top:14px;display:flex;gap:8px}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
 /* Reset asks first: the button gives way to Confirm (green) and Cancel (red), side by side across the same width. */
-/* The two colours are fixed, the same in both modes; the lettering is white in normal mode and black in Night Mode. */
-.btn.confirm{background:var(--go);border-color:var(--go);color:var(--accent-ink)}
-.btn.cancel{background:var(--stop);border-color:var(--stop);color:var(--accent-ink)}
+/* The two colours are fixed, the same in both modes, and so is the lettering: white in normal mode and in Night Mode alike. */
+.btn.confirm{background:var(--go);border-color:var(--go);color:#ffffff}
+.btn.cancel{background:var(--stop);border-color:var(--stop);color:#ffffff}
 
 /* ---------- stage ---------- */
 .stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:var(--stage)}
 .canvas{position:relative;min-height:0;overflow:hidden}
 .canvas svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-/* Over the drawing: a row with Copy Link at the left and the speed and Play/Pause at the right, and any warnings beneath it. */
+/* Over the drawing: a row with Play/Pause at the upper left, the speed to the right of it, and Copy Link at the upper right; any warnings beneath it. */
 .hud{position:absolute;top:12px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .hud>.hudrow{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}   /* the gap between the buttons lets clicks through to the drawing */
@@ -285,7 +289,11 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
   padding:6px 10px;font-size:13px;line-height:1.3}
 .alert::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--caution);transform:translateY(-1px)}
 .alert.bad::before{background:var(--stop)}
-.transport{display:flex;align-items:center;gap:10px;margin-left:auto}
+.transport{display:flex;align-items:center;gap:10px}
+/* Play/Pause keeps one width whichever word it shows, so the speed beside it stays put: an unseen "Pause", the wider of the two words,
+   sits under the label and sets the width, in whatever font the page is drawn in. */
+#play{display:inline-grid;text-align:center}
+#play::after{content:"Pause";height:0;overflow:hidden;visibility:hidden}
 .speed{font:500 12.5px var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);
   border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}   /* no frame: it is a reading, not a button */
 
@@ -416,7 +424,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 <header class="site" id="site-bar">
   <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
   <a id="site-link" href="https://www.jasonbrewer.org/" aria-label="jasonbrewer.org"></a>
-  <button id="night" class="switch" type="button" role="switch" aria-checked="true"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+  <button id="night" class="switch" type="button" role="switch" aria-checked="false"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
   <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
 </header>
 <script>
@@ -529,10 +537,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     setNight(!night);
     try { localStorage.setItem('night-mode', night ? '1' : '0'); } catch (err) {}   // remembered on this device
   });
-  // night mode is on by default; a device that has switched it off keeps it off
+  // night mode is off by default; a device that has switched it on keeps it on
   var savedNight = null;
   try { savedNight = localStorage.getItem('night-mode'); } catch (err) {}
-  setNight(savedNight !== '0');
+  setNight(savedNight === '1');
 
   layout();
   window.addEventListener('resize', layout);
@@ -868,11 +876,11 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
       <svg id="view" role="img" aria-label="Side view of the rider pedaling the bike" preserveAspectRatio="xMidYMax meet"></svg>
       <div class="hud">
         <div class="hudrow">
-          <button class="btn" id="copy-link" type="button" title="Copy a link to this page with the settings as they are now">Copy Link</button>
           <div class="transport">
-            <span class="speed" id="speed"></span>
             <button class="btn primary" id="play" type="button">Pause</button>
+            <span class="speed" id="speed"></span>
           </div>
+          <button class="btn" id="copy-link" type="button" title="Copy a link to this page with the settings as they are now">Copy Link</button>
         </div>
         <div class="alerts" id="alerts" aria-live="polite"></div>
         <span class="said" id="copy-said" role="status"></span>
