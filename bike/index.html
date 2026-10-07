@@ -24,11 +24,13 @@ img{max-width:100%}
   --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dots on the warnings */
+  --info:#166bff;                               /* the blue of the readouts' descriptive labels (moderate, endurance, stable...), fixed in both modes: its brightness sits midway between white and black, so it just clears the 4.5 to 1 minimum contrast for small text on either (4.58 to 1 on each) */
   --crank:var(--comp);                          /* crank arms and pedals */
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
+  --ln:1.92px;                                  /* the outline of the panel's toggles (0.12 of their 16px height), and with it the sliders' lines, the ring round a colour slider's dot, the ground line, the lines that divide the page (under the title bar, beside the panel, above the readouts), and the outlines of the buttons, the boxes of choices and the text box. The script takes it down to whole screen pixels, as a browser does a border, so all of them come out alike */
   --home-font:"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the home page's font stack */
   --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
 }
@@ -56,7 +58,7 @@ h1,h2,h3,p,dl,dd{margin:0}
    the window's size or shape. The script just after the header repeats the home page's own sums and sets the size and
    position; the letters are SVG text, as they are there, with an unseen link laid over them. The font size given here
    is only a stand-in until that script has run. The bar is as tall as before: 32px plus .89 of the font size. */
-.site{position:relative;flex:none;background:var(--panel);border-bottom:1px solid var(--rule);
+.site{position:relative;flex:none;background:var(--panel);border-bottom:var(--ln) solid var(--rule);
   height:calc(env(safe-area-inset-top,0px) + 32px + .89em);
   font:400 clamp(9px,calc(.0694*min(33.333vh,100vw - 2*max(24px,6vw))),40px)/1 var(--font)}
 .site svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;user-select:none;-webkit-user-select:none}
@@ -100,18 +102,15 @@ h1,h2,h3,p,dl,dd{margin:0}
 .switch[aria-checked="true"] .track { background: currentColor; }
 .switch[aria-checked="true"] .thumb { background: var(--page); transform: translate(calc(var(--sw) * 0.75), -50%); }
 @media (prefers-reduced-motion: reduce) { .switch .thumb { transition: none; } }
-/* Drag handle on the edge between the panel and the drawing. */
-.resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - 1px);width:11px;cursor:col-resize;touch-action:none;z-index:5}
-.resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;background:transparent;transition:background .12s}
-/* The grip: a short 1px line beside the panel's edge, which grows into a 3px rounded bar when the edge is hovered, dragged or focused. */
-.resizer::after{content:"";position:absolute;top:50%;left:5px;width:1px;height:36px;margin-top:-18px;border-radius:0;background:var(--rule);transition:left .12s,width .12s,border-radius .12s}
-.resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{background:var(--rule);width:2px}   /* the panel's 1px edge line thickens to 2px */
-.resizer:hover::after,.resizer.drag::after,.resizer:focus-visible::after{left:4px;width:3px;border-radius:1.5px}
-@media (prefers-reduced-motion:reduce){ .resizer::after{transition:none} }
+/* Drag handle on the edge between the panel and the drawing. It has no mark of its own: the edge line itself is the handle,
+   shown by the pointer's shape and by the line thickening when it is hovered, dragged or focused. */
+.resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - var(--ln));width:11px;cursor:col-resize;touch-action:none;z-index:5}   /* it starts on the panel's edge line, which is --ln thick */
+.resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:0;border-left:var(--ln) solid transparent;transition:border-color .12s}
+.resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{border-left-color:var(--rule);border-left-width:calc(var(--ln) + 1px)}   /* the panel's edge line thickens by 1px */
 .resizer:focus-visible{outline:none}
 
 /* ---------- control panel ---------- */
-.panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border-right:1px solid var(--rule);
+.panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border-right:var(--ln) solid var(--rule);
   padding-inline:16px;padding-block:6px 28px;display:flex;flex-direction:column}
 /* The panel's scroll bar is a thin black handle (white in night mode) with nothing behind it: no filled track and no edge lines, just the panel showing
    through. Browsers that take the standard properties use those; the others (Safari, older Chrome) get the same look from the
@@ -127,6 +126,13 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec + .sec{margin-top:15px}
 .sec:not([open]) + .sec{margin-top:12px}
 .sec>summary{display:flex;align-items:baseline;gap:10px;padding:12px 0;cursor:pointer;list-style:none;border-radius:4px}
+/* A section's title stays at the top of the panel while its controls scroll beneath it, and is carried off by the next section's title.
+   Behind it a strip of the panel's own colour, reaching to both edges of the panel and up over the 6px of space above the title,
+   hides what passes under. The panel keeps that height clear at its top when it scrolls a control into view (with the Tab key, say),
+   so nothing comes to rest behind a title. */
+.sec>summary{position:sticky;top:0;z-index:3}
+.sec>summary::after{content:"";position:absolute;inset:-6px -16px 0;z-index:-1;background:var(--panel)}
+.panel{scroll-padding-top:58px}
 .sec>summary::-webkit-details-marker{display:none}
 .sec>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--rule);border-bottom:2px solid var(--rule);
   transform:translateY(-4px) rotate(-45deg);transition:transform .15s}
@@ -143,14 +149,14 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec-body{display:flex;flex-direction:column;gap:16px;padding:6px 0 18px}   /* 6px on top of the title's own 12px: 18px from a section title to its first line */
 
 .group{display:flex;flex-direction:column;gap:8px}
-.grp{font:600 11px/1.2 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.grp{font:500 16px/1.2 var(--font);color:var(--ink)}   /* a subsection's title: written as typed (first letter capital), in the page's ink: black, white in night mode */
 .cap{font-size:13px;font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:12px}
 
 /* A one-line text box, outlined like the switches and buttons. */
-.textin{display:block;box-sizing:border-box;width:100%;min-width:0;font:400 13.5px/1.3 var(--font);color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:7px;padding:7px 10px}
+.textin{display:block;box-sizing:border-box;width:100%;min-width:0;font:400 13.5px/1.3 var(--font);color:var(--ink);background:var(--field);border:var(--ln) solid var(--rule);border-radius:999px;padding:7px 14px}   /* a pill, like the buttons; 14px at the sides keeps the words clear of its round ends */
 .textin::placeholder{color:var(--muted);opacity:1;font-weight:400;font-style:normal}
-.textin:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.textin:focus,.textin:focus-visible{outline:none}   /* no second outline while it is being typed in: its own outline and the text cursor show it is in use (said outright, or the browser would draw a ring of its own) */
 /* On/off buttons: an outlined box when off, filled when on. Each is a checkbox underneath, so it works from the keyboard and is
    announced as checked or not. They sit two to a row; a wide one takes the whole row. */
 .togs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
@@ -158,7 +164,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tog.wide{grid-column:1 / -1}
 .togs.three{grid-template-columns:repeat(3,minmax(0,1fr))}   /* Bold, Italic and Wide share one row */
 .tog input{position:absolute;opacity:0;pointer-events:none}
-.tog span{display:block;padding:7px 8px;border:1px solid var(--rule);border-radius:7px;background:var(--field);color:var(--ink);
+.tog span{display:block;padding:7px 8px;border:var(--ln) solid var(--rule);border-radius:999px;background:var(--field);color:var(--ink);
   font-size:13px;font-weight:500;text-align:center;transition:background .16s,color .16s}
 .tog input:checked+span{background:var(--rule);color:var(--accent-ink)}
 /* Enter my own geometry sits under Road, Gravel and Mountain and reads as one of them: while it is off its words are their gray,
@@ -170,15 +176,33 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tog input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .tog input:disabled+span{opacity:.35;cursor:default}
 @media (prefers-reduced-motion:reduce){ .tog span{transition:none} }
+/* Switches in the panel: a row with the name at the left and, at the right edge, a toggle drawn like the NIGHT MODE switch: the same pill,
+   1.75 times as wide as it is tall, outlined in the page's ink with a dot at its left; when on, the pill fills and the dot crosses to the
+   right in the panel's colour. NIGHT MODE's toggle is sized by its own lettering, which changes with the window; these keep one size:
+   16px tall, the height of the dot on a slider. The whole row is the switch: pressing anywhere on it turns it. */
+.tgl{--sw:16px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:24px;
+  color:var(--ink);cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent}
+.tgl input{position:absolute;opacity:0;pointer-events:none}
+.tgl .cap{min-width:0}
+.tgl .track{flex:none;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);box-sizing:border-box;
+  border:var(--ln) solid currentColor;border-radius:999px}   /* --ln: 0.12 of the height, as on the NIGHT MODE switch */
+.tgl .thumb{position:absolute;top:50%;left:calc(var(--sw) * 0.13);width:calc(var(--sw) * 0.5);height:calc(var(--sw) * 0.5);border-radius:50%;
+  background:currentColor;transform:translateY(-50%);transition:left .15s}
+.tgl input:checked+.track{background:currentColor}
+.tgl input:checked+.track .thumb{left:calc(100% - var(--sw) * 0.63);background:var(--panel)}   /* as far from the right end as it was from the left */
+.tgl:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.tgl:has(input:disabled){opacity:.35;cursor:default}
+@media (prefers-reduced-motion:reduce){ .tgl .thumb{transition:none} }
 .hint{color:var(--muted);font-size:12.5px;line-height:1.35}
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ctl{display:flex;flex-direction:column;gap:5px;min-width:0}
-.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid var(--rule);border-radius:7px;
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:var(--ln) solid var(--rule);border-radius:999px;
   background:var(--field) linear-gradient(var(--rule),var(--rule)) calc(var(--i,0)/(var(--n,2) - 1)*100%) 0/calc(100%/var(--n,2)) 100% no-repeat}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 /* The black highlight is one block that slides to the chosen option (--i of --n). It is painted as the switch's own background, in
-   the border's colour, so it runs right out to the border and takes the switch's rounded corners with no gap. */
+   the border's colour, so it runs right out to the border and takes the switch's round end with no gap: on the first or last option
+   it is round at the outer end and straight at the inner one. */
 .seg.none{background-size:0 100%}   /* none of its options chosen: no highlight, just the outlined box and its words */
 .ready .seg{transition:background-position .18s cubic-bezier(.3,.7,.3,1)}
 .seg label{position:relative;padding:7px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .16s}
@@ -219,14 +243,14 @@ input[type=range]::-webkit-slider-runnable-track{box-shadow:none;filter:none}
 input[type=range]::-moz-range-thumb{box-shadow:none;filter:none}
 input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 
-.btn{font:500 13.5px var(--font);color:var(--ink);background:var(--field);border:1px solid var(--line);
-  border-radius:6px;padding:6px 14px;cursor:pointer}
+.btn{font:500 13.5px var(--font);color:var(--ink);background:var(--field);border:var(--ln) solid var(--line);
+  border-radius:999px;padding:6px 14px;cursor:pointer}   /* 999px: every button, box of choices and text box is a pill, its ends fully round */
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.link{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:500}
 :is(.btn,summary,input[type=range]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .group.sliders{gap:12px}
-/* Bike and Options: 28px above each all-caps subtitle that follows other controls, the same as between Appearance's subsections. */
+/* Bike and Options: 28px above each subsection title that follows other controls, the same as between Appearance's subsections. */
 #sec-bike .sec-body>*+.pick,#sec-options .sec-body>*+.pick{margin-top:12px}
 /* Appearance: 28px between subsections (16px elsewhere), so each colour group reads as its own block. */
 #sec-appearance .sec-body{gap:28px}
@@ -243,7 +267,9 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
 .sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-hair{background:var(--hair)} .sw-tire{background:var(--tire)} .sw-wall{background:var(--tirewall,var(--tire))} .sw-tires{background:linear-gradient(to right,var(--tire) 50%,var(--tirewall,var(--tire)) 50%)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
-   Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen. */
+   Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen.
+   The thumb is a filled dot in the page's ink, like the dot of a toggle, with a ring of the panel's colour as thick as a toggle's
+   outline, so that it shows against any part of the scale, the black and white ends included. */
 .slot{display:flex;padding:3px;border-radius:999px;background:var(--slot)}
 .slot-hue{background:linear-gradient(to right,#f00 11px,#ff0 calc(11px + (100% - 22px)*.1667),#0f0 calc(11px + (100% - 22px)*.3333),#0ff calc(11px + (100% - 22px)*.5),#00f calc(11px + (100% - 22px)*.6667),#f0f calc(11px + (100% - 22px)*.8333),#f00 calc(100% - 11px))}
 .slot-sat{background:linear-gradient(to right,var(--hi) 11px,var(--pure) calc(100% - 11px))}
@@ -254,17 +280,18 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .slot input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .slot input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .slot input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
-.slot input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--ink)}
+.slot input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--ink)}
 .slot input[type=range]:focus-visible{outline-offset:5px}
-/* Plain sliders: a thin black line with a white, black-ringed handle sitting on it. */
+/* Plain sliders: a line as thick as a toggle's outline with a filled dot sitting on it, both in the page's ink. The line is drawn as a
+   border, so that the browser fits it to the screen's pixels exactly as it does the toggle's outline. */
 .rail{position:relative;display:flex;align-items:center;height:22px}
-.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - .5px);height:1px;background:var(--ink)}
+.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - var(--ln) / 2);height:0;border-top:var(--ln) solid var(--ink)}
 .rail input[type=range]{-webkit-appearance:none;appearance:none;position:relative;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .rail input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .rail input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
-.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:1px solid var(--ink);border-radius:50%;background:var(--field)}
+.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--ink)}
+.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--ink)}
 .rail input[type=range]:focus-visible{outline-offset:4px}
 .foot{padding-top:14px;display:flex;gap:8px}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
@@ -297,9 +324,9 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .speed{font:500 12.5px var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);
   border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}   /* no frame: it is a reading, not a button */
 
-.readouts{border-top:1px solid var(--rule);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
-.rogroup{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start}
-.rogroup h3{font:600 11px/1.5 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.readouts{border-top:var(--ln) solid var(--rule);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
+.rogroup{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:baseline}   /* baseline: Bike and Rider stand on the same line as the first readout's name */
+.rogroup h3{font:500 16px/1.2 var(--font);color:var(--ink)}   /* Bike and Rider: set like the panel's subsection titles */
 /* Six readouts across; the last column is a little wider, for "18 mm ahead" with its label. */
 .rogroup dl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.3fr);gap:8px 12px}
 .ro{display:flex;flex-direction:column;gap:1px;min-width:0}
@@ -307,22 +334,22 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 /* A value and its label sit on one line; where a column is too narrow for both, the label drops under the value (the value itself never breaks). */
 .ro dd{font:500 15px/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px}
 .tag{font:500 11px var(--font);letter-spacing:.04em;text-transform:uppercase}
-.tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--muted)}   /* plain: a description, not a verdict */
+.tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--info)}   /* plain: a description, not a verdict of good or bad: blue */
 
 /* ---------- drawing ---------- */
 svg .ftext{fill:var(--ftext);font-family:var(--font);white-space:pre;pointer-events:none}   /* the lettering on the downtube */
 svg.norider .is-rider,svg.nobike .is-bike{display:none!important}   /* the Hide rider and Hide bike options. !important: they also win over the later rules that show a part for the Male and Female builds (.farol, .under) */
-/* The ground line and the level line under a hill are as thin as the lines of the sliders in the panel: 1px, whatever the drawing's scale. */
-svg .ground{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+/* The ground line and the level line under a hill are as thick as the lines of the sliders in the panel (--ln), whatever the drawing's scale. */
+svg .ground{stroke:var(--ink);stroke-width:var(--ln);vector-effect:non-scaling-stroke}
 svg .ground.level{shape-rendering:crispEdges}   /* a level line is drawn on whole pixels, sharp like the sliders' lines; a sloping one is smoothed */
 /* The angle of the hill, drawn between the level line and the sloping ground: a thin arc with an arrowhead at each end. */
-svg .incarc{fill:none;stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+svg .incarc{fill:none;stroke:var(--ink);stroke-width:var(--ln);vector-effect:non-scaling-stroke}
 svg .inchead{fill:var(--ink);stroke:none}
-/* The ground line is the Incline control. Its handle looks like the other sliders' (a ringed dot on a thin line) and rides along
+/* The ground line is the Incline control. Its handle looks like the other sliders' (a filled dot on a line) and rides along
    the line; an unseen band along the line makes the line itself easy to grab. */
 svg .inchit{stroke:transparent;stroke-width:90;stroke-linecap:round;pointer-events:stroke;cursor:pointer;touch-action:none}
-svg .incdot{fill:var(--field);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;cursor:grab;touch-action:none;outline:none}
-svg.keys .incdot:focus{stroke-width:3}   /* a heavier ring while it is being worked from the keyboard */
+svg .incdot{fill:var(--ink);stroke:var(--ink);stroke-width:0;vector-effect:non-scaling-stroke;cursor:grab;touch-action:none;outline:none}
+svg.keys .incdot:focus{stroke-width:3}   /* a larger dot while it is being worked from the keyboard */
 svg.tilting .incdot,svg.tilting .inchit{cursor:grabbing}
 svg .tube{stroke:var(--frame);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tube.butt,svg .comp.butt{stroke-linecap:butt}
@@ -410,7 +437,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 @media (max-width:760px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(250px,47%) minmax(0,1fr)}
   .stage{grid-row:1}
-  .panel{grid-row:2;border-right:0;border-top:1px solid var(--rule)}
+  .panel{grid-row:2;border-right:0;border-top:var(--ln) solid var(--rule)}
   .readouts{flex-direction:row;gap:22px;overflow-x:auto;padding-block:8px 10px}
   .rogroup{display:flex;gap:14px;flex:none}
   .rogroup dl{display:flex;gap:16px}
@@ -646,34 +673,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         <details class="pick">
           <summary class="grphead"><h3 class="grp">Visibility options</h3></summary>
           <div class="group">
-            <div class="row2">
-              <div class="ctl"><span class="cap" id="cap-showJoints">Joints</span>
-                <div class="seg" role="radiogroup" aria-labelledby="cap-showJoints">
-                  <input type="radio" name="showJoints" id="showJoints-on" value="on"><label for="showJoints-on">On</label>
-                  <input type="radio" name="showJoints" id="showJoints-off" value="off"><label for="showJoints-off">Off</label>
-                </div>
-              </div>
-              <div class="ctl"><span class="cap" id="cap-showAngles">Joint angles</span>
-                <div class="seg" role="radiogroup" aria-labelledby="cap-showAngles">
-                  <input type="radio" name="showAngles" id="showAngles-on" value="on"><label for="showAngles-on">On</label>
-                  <input type="radio" name="showAngles" id="showAngles-off" value="off"><label for="showAngles-off">Off</label>
-                </div>
-              </div>
-            </div>
-            <div class="row2">
-              <div class="ctl"><span class="cap" id="cap-showRider">Rider</span>
-                <div class="seg" role="radiogroup" aria-labelledby="cap-showRider">
-                  <input type="radio" name="showRider" id="showRider-on" value="on"><label for="showRider-on">On</label>
-                  <input type="radio" name="showRider" id="showRider-off" value="off"><label for="showRider-off">Off</label>
-                </div>
-              </div>
-              <div class="ctl"><span class="cap" id="cap-showBike">Bike</span>
-                <div class="seg" role="radiogroup" aria-labelledby="cap-showBike">
-                  <input type="radio" name="showBike" id="showBike-on" value="on"><label for="showBike-on">On</label>
-                  <input type="radio" name="showBike" id="showBike-off" value="off"><label for="showBike-off">Off</label>
-                </div>
-              </div>
-            </div>
+            <label class="tgl" for="o-showJoints"><span class="cap">Joints</span><input id="o-showJoints" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <label class="tgl" for="o-showAngles"><span class="cap">Joint angles</span><input id="o-showAngles" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <label class="tgl" for="o-showRider"><span class="cap">Rider</span><input id="o-showRider" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <label class="tgl" for="o-showBike"><span class="cap">Bike</span><input id="o-showBike" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
           </div>
         </details>
       </div>
@@ -690,7 +693,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               <input type="radio" name="profile" id="profile-male" value="male"><label for="profile-male">Male</label>
               <input type="radio" name="profile" id="profile-female" value="female"><label for="profile-female">Female</label>
             </div>
-            <label class="tog" for="o-details"><input id="o-details" type="checkbox"><span>Body Details</span></label>
+            <label class="tgl" for="o-details"><span class="cap">Body Details</span><input id="o-details" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
             <div class="slider">
               <label class="cap" for="o-riderH">Hue</label>
               <div class="slot slot-hue"><input id="o-riderH" type="range" min="0" max="359" step="1"></div>
@@ -790,12 +793,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               <div class="top"><label class="cap" for="o-rimDepth">Wheel depth</label><output id="o-rimDepth-out" for="o-rimDepth"></output></div>
               <div class="rail"><input id="o-rimDepth" type="range"></div>
             </div>
-            <div class="ctl"><span class="cap" id="cap-disc">Disc brakes</span>
-              <div class="seg" role="radiogroup" aria-labelledby="cap-disc">
-                <input type="radio" name="disc" id="disc-on" value="on"><label for="disc-on">On</label>
-                <input type="radio" name="disc" id="disc-off" value="off"><label for="disc-off">Off</label>
-              </div>
-            </div>
+            <label class="tgl" for="o-disc"><span class="cap">Disc brakes</span><input id="o-disc" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
           </div>
         </details>
         <details class="pick" id="grp-tires">
@@ -1250,7 +1248,7 @@ function buildPanel() {
     (name === 'Cockpit' ? `<div class="ctl"><span class="cap" id="cap-bar">Handlebar</span><div class="seg" role="radiogroup" aria-labelledby="cap-bar"><input type="radio" name="bar" id="bar-drop" value="drop"><label for="bar-drop">Drop</label>` +
       `<input type="radio" name="bar" id="bar-flat" value="flat"><label for="bar-flat">Flat</label></div></div>` : '') + `${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
-    (name.startsWith('Saddle') ? `<div class="group"><label class="tog" for="b-auto"><input id="b-auto" type="checkbox"><span>Set saddle height from inseam</span></label><p class="hint">When on, pedal to saddle top is 109% of your inseam.</p></div>` : '') +
+    (name.startsWith('Saddle') ? `<div class="group"><label class="tgl" for="b-auto"><span class="cap">Set saddle height from inseam</span><input id="b-auto" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label><p class="hint">When on, pedal to saddle top is 109% of your inseam.</p></div>` : '') +
     `</div></details>`).join('');
   BIKE.forEach(([, fs]) => fs.forEach(f => {
     // Each runs from its smallest allowed value to its largest. The value beside the label is read from the bike itself, so one that
@@ -1325,7 +1323,8 @@ function buildPanel() {
     el.addEventListener('input', () => { opt[hairKey() + c] = +el.value; update(); });
     shows.push(() => { el.value = opt[hairKey() + c]; el.disabled = !SHAPES[opt.profile]; $('grp-hair').classList.toggle('off', !SHAPES[opt.profile]); }); });
   radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
-  radios('disc', () => opt.disc, v => { opt.disc = v; update(); });
+  $('o-disc').addEventListener('change', e => { opt.disc = e.target.checked ? 'on' : 'off'; update(); });   // a switch; the setting is kept as 'on' or 'off'
+  shows.push(() => { $('o-disc').checked = opt.disc === 'on'; });
   radios('bodyMode', () => body.custom ? 'own' : 'avg', v => setBodyMode(v === 'own'));
   // In "Enter my own", this puts every measurement back to the average for the height.
   $('body-reset').addEventListener('click', () => { Object.assign(body, averages(body.height, body.sex)); ownBody = null; fitBike(); refresh(); update(); });
@@ -1349,11 +1348,11 @@ function buildPanel() {
     shows.push(() => { t.value = opt['tire' + c]; w.value = opt[(opt.wallOwn ? 'wall' : 'tire') + c]; }); });
   range('rimDepth', v => len(v, 2), true);
   range('ring', v => v + 'T'); range('cog', v => v + 'T');   // teeth are written 50T everywhere
-  // Visibility options: each has a title and an On / Off switch, and On always means shown. The rider and the bike are remembered
+  // Visibility options: each is a switch, and on always means shown. The rider and the bike are remembered
   // as hidden or not (hideRider, hideBike), so their switches read the other way round from the setting.
   [['showJoints', () => opt.joints, v => { opt.joints = v; }], ['showAngles', () => opt.angles, v => { opt.angles = v; }],
    ['showRider', () => !opt.hideRider, v => { opt.hideRider = !v; }], ['showBike', () => !opt.hideBike, v => { opt.hideBike = !v; }]]
-    .forEach(([name, get, set]) => radios(name, () => get() ? 'on' : 'off', v => { set(v === 'on'); update(); }));
+    .forEach(([name, get, set]) => { const el = $('o-' + name); el.addEventListener('change', () => { set(el.checked); update(); }); shows.push(() => { el.checked = get(); }); });
   // Frame text: what is typed goes onto the downtube as it is typed. Bold and Italic style it there and in the box.
   $('o-frameText').addEventListener('input', e => { opt.frameText = e.target.value; update(); });
   shows.push(() => { const el = $('o-frameText'); if (el.value !== opt.frameText) el.value = opt.frameText; });
@@ -1389,6 +1388,12 @@ function buildPanel() {
   $('reset-no').addEventListener('click', () => resetAsk(false, true));
   foot.addEventListener('keydown', e => { if (e.key === 'Escape' && asking) resetAsk(false, true); });
   ['pointerdown', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (asking && !foot.contains(e.target)) resetAsk(false); }));
+
+  // A section closed from its title while the title is held at the top of the panel: with its controls gone the title would be left
+  // out of sight above, so the panel scrolls back to keep the title where it was pressed.
+  document.querySelectorAll('.sec>summary').forEach(s => s.addEventListener('click', () => { const d = s.parentElement, y = s.getBoundingClientRect().top;
+    if (!d.open || d.getBoundingClientRect().top > y - .5) return;   // being opened, or not held at the top
+    requestAnimationFrame(() => { if (!d.open) $('panel').scrollTop += s.getBoundingClientRect().top - y; }); }));
 
   // Panel width: drag the edge, use the arrow keys on it, or double-click it to go back to the default.
   const rz = $('resizer'), app = rz.parentElement;
@@ -1950,10 +1955,11 @@ const SHAPES = {
       upper: [[[.16, .034], [.34, .017], [.45, .001], [.62, -.006], [.85, -.004]]], fore: [[[.12, .004], [.4, .006], [.7, .003]]],
       thigh: [[[.2, -.012], [.5, -.01], [.84, -.006]]], shank: [[[.08, -.02], [.28, -.03], [.46, -.02], [.6, -.006]]] } },
   female: { hairKey: 'hairF',
-    // The back is arched: hollow at the waist, fuller again at the shoulder blades. The seat is one swell around the hip joint, from the lower back to underneath, where it is about a circle at the half-width of the
+    // The back is arched: hollow at the waist, fuller again at the shoulder blades. The seat is an arc of one circle, from the base of the lower back round to underneath, where it meets the circle about the hip joint at the half-width of the
     // back of the thigh, so the leg leaves it in one line at any point of the pedal stroke. The bust is a slope down to a round underside, which meets the stomach in a crease (a corner).
-    // The back is drawn with as few points as hold its shape. After the two under the seat come five: low behind the seat, the back of the seat, its top, the hollow of the lower back, and the shoulder blade.
-    torso: [[0, -.043], [-.082, -.041], [-.15, -.022], [-.179, .016], [-.1365, .0578], [.0385, .0708], [.37, .0355], [.875, .049],
+    // That circle is .0616 of her height in radius, centred a little above and behind the hip joint (.0126 of her height from it, up the spine and toward the back). After the two points under the seat come seven on the circle, 25 degrees apart,
+    // from low behind the seat up to where the back leaves it; then the hollow of the lower back, which the last of them looks straight toward, and the shoulder blade.
+    torso: [[0, -.043], [-.082, -.041], [-.1449, -.0266], [-.182, -.0018], [-.1789, .0251], [-.1361, .0491], [-.062, .0655], [.0267, .0712], [.1104, .0658], [.37, .0355], [.875, .049],
       [1.08, .032], [1.125, 0], [1.07, -.032],
       [.97, -.0453], [.935, -.0513], [.905, -.0574], [.87, -.0646], [.83, -.0726], [.79, -.0824], [.75, -.0884], [.71, -.09], [.671, -.088], [.636, -.082], [.611, -.0735], [.599, -.0655], [.5955, -.057], [.594, -.047, 1], [.48, -.0425], [.34, -.0375], [.2, -.035], [.08, -.037]],
     neckBase: [1.03, .008], skullBase: [-.2, -.5], neck: [[0, .04, .036], [.35, .027, .025], [.7, .025, .023], [1, .025, .023]],
@@ -2122,7 +2128,7 @@ function readouts() {
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
   $('gear-hint').textContent = `${opt.ring}T${NB}×${NB}${opt.cog}T at ${opt.cadence}${NB}rpm turns the wheels ${Math.round(opt.cadence * opt.ring / opt.cog)} times a minute: ${sp}. The gear ratio is ${(opt.ring / opt.cog).toFixed(2)}.`;
-  $('sum-bike').textContent = `${{ road: 'Road', gravel: 'Gravel', mountain: 'Mountain' }[geo] || 'Custom'} · ${inch() ? len(b.seatTube) : r1(b.seatTube / 10) + NB + 'cm'} · ${(b.flat ? { 622: '29' + NB + 'in', 584: '27.5' + NB + 'in' } : { 622: '700c', 584: '650b' })[b.rim] || '26' + NB + 'in'}${NB}×${NB}${Math.round(b.tire)}`;
+  $('sum-bike').textContent = `${{ road: 'Road', gravel: 'Gravel', mountain: 'Mountain' }[geo] || 'Custom'} · ${(b.flat ? { 622: '29' + NB + 'in', 584: '27.5' + NB + 'in' } : { 622: '700c', 584: '650b' })[b.rim] || '26' + NB + 'in'}${NB}×${NB}${Math.round(b.tire)}`;
   $('sum-body').textContent = `${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} ${body.sex === 'm' ? 'male' : 'female'}`;
   $('sum-options').textContent = `${opt.ring}T${NB}×${NB}${opt.cog}T at ${opt.cadence}${NB}rpm`;   // chainring × rear cog at the pedal cadence
   $('body-hint').textContent = body.custom ? 'Legs and torso have to fit within your height, so lengthening one shortens the other.'
@@ -2200,6 +2206,12 @@ function start() {
   update();
   document.addEventListener('nightchange', applyColors);   // the NIGHT MODE switch
   if (window.ResizeObserver) new ResizeObserver(fit).observe(svg);
+  // --ln, the thickness of the toggles' outlines and the sliders' lines. A browser draws a border in whole screen pixels, rounding down; the
+  // ground line is not a border, so the same figure is worked out here and used for all of them. It is worked out again whenever the
+  // window changes, which is also what zooming the page or moving it to another screen does.
+  const lnBase = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ln')) || 1.92;
+  const lineWidth = () => { const d = window.devicePixelRatio || 1; document.documentElement.style.setProperty('--ln', (Math.max(1, Math.floor(lnBase * d + 1e-6)) + .01) / d + 'px'); };   // .01: clear of rounding error, so it is not rounded down a second time
+  lineWidth(); window.addEventListener('resize', lineWidth);
   requestAnimationFrame(t => { last = t; document.body.classList.add('ready'); requestAnimationFrame(tick); });   // 'ready' turns on control transitions after the first paint
 }
 start();
