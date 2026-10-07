@@ -21,11 +21,10 @@ img{max-width:100%}
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
   --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc;
   --accent:#0a0a0a; --accent-ink:#ffffff; --slot:#d6d6d6;
-  --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --pure:#ff000d; --full:#ff000d;
+  --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --saddle:#212121; --fixed:#333333; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dots on the warnings */
   --info:#166bff;                               /* the blue of the readouts' descriptive labels (moderate, endurance, stable...), fixed in both modes: its brightness sits midway between white and black, so it just clears the 4.5 to 1 minimum contrast for small text on either (4.58 to 1 on each) */
-  --crank:var(--comp);                          /* crank arms and pedals */
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff;  /* ends of the colour sliders' scales */
@@ -36,7 +35,7 @@ img{max-width:100%}
 }
 
 /* Night mode: black page, text in the home page's night ink. The colours chosen under Appearance stay as they are, and so do the
-   scales of their sliders. Only the parts of the drawing that have no colour control (saddle and chain, brake rotors, the blur of a
+   scales of their sliders. Only the parts of the drawing that have no colour control (the chain, brake rotors, the blur of a
    spinning wheel) take a light version here, so that they still show against a black page. */
 :root.night{
   color-scheme:dark;
@@ -265,7 +264,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .pick[open]>summary{margin-bottom:12px}
 @media (prefers-reduced-motion:reduce){ .pick>summary>:first-child::after{transition:none} }
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
-.sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-hair{background:var(--hair)} .sw-tire{background:var(--tire)} .sw-wall{background:var(--tirewall,var(--tire))} .sw-tires{background:linear-gradient(to right,var(--tire) 50%,var(--tirewall,var(--tire)) 50%)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
+.sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-hair{background:var(--hair)} .sw-tire{background:var(--tire)} .sw-wall{background:var(--tirewall,var(--tire))} .sw-tires{background:linear-gradient(to right,var(--tire) 50%,var(--tirewall,var(--tire)) 50%)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-saddle{background:var(--saddle)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
    Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen.
    The thumb is a filled dot in the page's ink, like the dot of a toggle, with a ring of the panel's colour as thick as a toggle's
@@ -360,9 +359,11 @@ svg .grip{fill:var(--tape);stroke:none}   /* the end of a flat bar's grip */
 svg .ol.butt,svg .tape.butt{stroke-linecap:butt}
 svg .olfill{fill:var(--ink);stroke:none}
 svg .part{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
-svg .saddle{fill:var(--part);stroke:none}
+svg .saddle{fill:var(--saddle);stroke:var(--ink);stroke-width:6;stroke-opacity:var(--saddle-edge,0)}   /* its own colour (Appearance, Saddle). The stroke is its edge line: the saddle is cut to its own outline, so only the 3 mm inside it shows, and it fades in (--saddle-edge, 0 to 1, set by the script) as the colour nears the page's */
 svg .comp{stroke:var(--comp);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .compfill{fill:var(--comp);stroke:none}   /* the stem: a filled shape with square-cut ends */
+svg .shift{fill:var(--fixed);stroke:none}   /* the shifter's parts: a fixed colour (--fixed), 80% black (20% brightness), by day and in night mode alike; they do not follow Components color, and they carry no edge line in either mode */
+svg .rails{stroke:var(--fixed);fill:none;stroke-linecap:round;stroke-linejoin:round}   /* the saddle's rails: locked to the same 80% black, in both modes, with no edge line */
 svg .chain{stroke:var(--part);fill:none;stroke-linecap:round;stroke-linejoin:round}
 svg .tire,svg .tread{stroke:var(--tire);fill:none}
 svg .tirewall{stroke:var(--tirewall,var(--tire));fill:none}   /* the band of sidewall between the rim and the tread */
@@ -380,11 +381,13 @@ svg .rotor .track{fill:none;stroke:var(--metal);stroke-width:15}
 svg .rotor .arm{stroke:var(--metal);stroke-width:7;stroke-linecap:round}
 svg .rotor .carrier,svg .rotor .haze{fill:var(--metal);stroke:none}
 svg .cog{fill:var(--comp);stroke:none}
-/* Crank arms and pedals: the script sets --crank a shade apart from the components colour, so they stand out from the chainring. */
-svg .crank{fill:var(--crank);stroke:none}
-svg .crank.far{fill:color-mix(in srgb,var(--crank) 55%,var(--stage))}
-svg .pedal{fill:var(--crank)}
-svg .pedal.far{fill:color-mix(in srgb,var(--crank) 55%,var(--stage))}
+/* Crank arms and pedals take the components' colour, like the rest, and the edge line by the same rule. Each is drawn twice: at full
+   size, in a colour that turns from its own to the page's ink as the edge line fades in (--comp-edge-pct, set by the script), and
+   over that 3 mm smaller all round (.in) in its own colour. The far-side ones are both faded 45% into the page. */
+svg .crank,svg .pedal{fill:color-mix(in srgb,var(--ink) var(--comp-edge-pct,0%),var(--comp));stroke:none}
+svg .crank.in,svg .pedal.in{fill:var(--comp)}
+svg .crank.far,svg .pedal.far{fill:color-mix(in srgb,color-mix(in srgb,var(--ink) var(--comp-edge-pct,0%),var(--comp)) 55%,var(--stage))}
+svg .crank.far.in,svg .pedal.far.in{fill:color-mix(in srgb,var(--comp) 55%,var(--stage))}
 svg .limb{stroke:var(--rider);fill:none;stroke-linecap:round}
 svg .limb.far{stroke:var(--rider-far)}
 /* Rider edge line: a 3 mm outline that fades in (--rider-edge, 0 to 1, set by the script) as the rider's colour nears the page's,
@@ -782,6 +785,23 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             </div>
           </div>
         </details>
+        <details class="pick" id="grp-saddle">
+          <summary class="grphead"><h3 class="grp">Saddle</h3><i class="sw sw-saddle" aria-hidden="true"></i></summary>
+          <div class="group sliders">
+            <div class="slider">
+              <label class="cap" for="o-sdlH">Hue</label>
+              <div class="slot slot-hue"><input id="o-sdlH" type="range" min="0" max="359" step="1"></div>
+            </div>
+            <div class="slider">
+              <label class="cap" for="o-sdlS">Saturation</label>
+              <div class="slot slot-sat"><input id="o-sdlS" type="range" min="0" max="100" step="1"></div>
+            </div>
+            <div class="slider">
+              <label class="cap" for="o-sdlB">Brightness</label>
+              <div class="slot slot-bri"><input id="o-sdlB" type="range" min="0" max="100" step="1"></div>
+            </div>
+          </div>
+        </details>
         <details class="pick" id="grp-wheels">
           <summary class="grphead"><h3 class="grp">Wheels</h3><i class="sw sw-wheel" aria-hidden="true"></i></summary>
           <div class="stack">
@@ -937,7 +957,7 @@ const TT_DROP = 10;  // the top tube joins this much further down the head tube,
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
   rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false,
-  riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
+  riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, sdlH: 0, sdlS: 0, sdlB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off',
   frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 };   // lettering on the downtube: none to begin with, and white
 // The switch for Body Details as a whole. true: the button works on the Male and Female profiles, as usual. false: the button is
 // dimmed and cannot be pressed on any rider profile, and the details are never drawn, whatever a remembered setup or a link says
@@ -1086,7 +1106,7 @@ const LINK_URL = 'https://www.jasonbrewer.org/bike';
 const LINK_BASE = { 1: { units: 'in', bikeUnits: 'mm', geo: 'road', lastGeo: 'road',
   bike: { seatTube: 520, topTube: 560, sta: 73.5, hta: 72.5, chainstay: 420, bbDrop: 75, headLen: 170, reach: 385.45, stack: 589.27, pinTT: 'topTube', pinHT: 'fork', fork: 375, rake: 47, rim: 622, tire: 30, saddleH: 765, autoSaddle: true, setback: 100, crank: 172.5, spacers: 25, stem: 110, stemAngle: -6, barReach: 80, barDrop: 125, barAngle: 0, flat: false },
   body: { sex: 'm', height: 1828.8, custom: false, inseam: 860, thigh: 448, shank: 450, foot: 278, torso: 526.64, upperArm: 340, forearm: 342 },
-  opt: { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false, riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off', frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 } } };
+  opt: { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false, profile: 'dummy', details: false, riderH: 0, riderS: 0, riderB: 0, hairMH: 29, hairMS: 69, hairMB: 55, hairFH: 43, hairFS: 65, hairFB: 89, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, sdlH: 0, sdlS: 0, sdlB: 13, wheelGray: 87, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, ringStyle: 'star', disc: 'off', frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100 } } };
 LINK_BASE[2] = LINK_BASE[1];   // links numbered 2 use the same reference; the number records that their Components color runs to white (in links numbered 1 it stopped at a light gray, and restore() carries those over)
 LINK_BASE[3] = { ...LINK_BASE[1], opt: { ...LINK_BASE[1].opt, wheelGray: 74 } };   // links numbered 3: Wheel color runs to white as well, and its starting gray is 74 on that scale (the 87 of the old one)
 const b64 = { to: t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
@@ -1240,11 +1260,12 @@ function setBodyMode(own) {
 function buildPanel() {
   $('bike-fields').innerHTML = `<div class="group"><div class="ctl"><span class="cap" id="cap-geo">Recommend geometry for</span>` +
     `<div class="seg" role="radiogroup" aria-labelledby="cap-geo">${[['road', 'Road'], ['gravel', 'Gravel'], ['mountain', 'Mountain']].map(([v, l]) => `<input type="radio" name="geo" id="geo-${v}" value="${v}"><label for="geo-${v}">${l}</label>`).join('')}</div></div>` +
-    `<label class="tog" for="geo-own"><input id="geo-own" type="checkbox"><span>Enter my own geometry</span></label><p class="hint" id="geo-hint"><span id="geo-fit"></span><span id="geo-tight" hidden> The top tube stands above this inseam; a real frame this size often dips its top tube lower than the straight one drawn here.</span></p></div>` +
-    `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
-    `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
-    `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div>` + BIKE.map(([name, fs]) =>
+    `<label class="tog" for="geo-own"><input id="geo-own" type="checkbox"><span>Enter my own geometry</span></label><p class="hint" id="geo-hint"><span id="geo-fit"></span><span id="geo-tight" hidden> The top tube stands above this inseam; a real frame this size often dips its top tube lower than the straight one drawn here.</span></p></div>` + BIKE.map(([name, fs]) =>
     `<details class="pick"><summary class="grphead"><h3 class="grp">${name}</h3></summary><div class="group"><div class="stack">` +
+    // Units (inches or mm) sits at the head of Frame. It is one setting for the whole bike: every subsection's lengths and the readouts follow it.
+    (name === 'Frame' ? `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
+      `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
+      `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div>` : '') +
     (name === 'Cockpit' ? `<div class="ctl"><span class="cap" id="cap-bar">Handlebar</span><div class="seg" role="radiogroup" aria-labelledby="cap-bar"><input type="radio" name="bar" id="bar-drop" value="drop"><label for="bar-drop">Drop</label>` +
       `<input type="radio" name="bar" id="bar-flat" value="flat"><label for="bar-flat">Flat</label></div></div>` : '') + `${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
@@ -1335,7 +1356,7 @@ function buildPanel() {
     el.addEventListener('input', () => { opt[k] = +el.value * per(); put(); update(); });
     shows.push(() => { el.value = opt[k] / per(); put(); }); };
   range('cadence', v => v + NB + 'rpm'); range('elbow', v => v + '°'); range('toe', v => v + '°');
-  ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'textH', 'textS', 'textB', 'wheelGray', 'compGray'].forEach(k => range(k));
+  ['riderH', 'riderS', 'riderB', 'frameH', 'frameS', 'frameB', 'tapeH', 'tapeS', 'tapeB', 'sdlH', 'sdlS', 'sdlB', 'textH', 'textS', 'textB', 'wheelGray', 'compGray'].forEach(k => range(k));   // sdl: the saddle's colour (not saddleH, which is the bike's saddle height)
   range('tread', v => ['None', 'Light', 'Medium', 'High', 'Aggressive'][Math.round(v / 25)]);   // five stops, 25 apart
   // Tire size is the Tire width of Bike Geometry, shown here too: one value with two sliders, each moving the other.
   { const f = BIKE.flatMap(([, fs]) => fs).find(q => q.k === 'tire'), el = $('o-tire'), out = $('o-tire-out');
@@ -1436,14 +1457,30 @@ function barGeom(b) {
   if ((dr - r * (1 + Math.cos(al))) / Math.sin(al) < 2) { r = dr / 2; a0 = Math.PI / 2; }   // very short reach with a deep drop: plain half-circle
   const c = [re - r, r - dr], on = a => [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)];
   const n = [Math.cos(rad(38)), Math.sin(rad(38))], m = on(rad(38)), body = along(m, n, 22);
-  // The shifter body clamps to the upper front of the hook and reaches forward; the lever blade hangs from its front end, clear of the bar.
-  const hf = [m[0] + 46 * Math.cos(rad(25)), m[1] + 46 * Math.sin(rad(25))];
+  // The shifter, in side view: a rubber-hooded body clamped to the upper front of the hook, and the brake lever that hangs from its front
+  // end, with the shift unit behind the blade. The three outlines are traced from a side-on photograph of a current hydraulic road
+  // lever, at 6.3 pixels to the mm, and smoothed to as few points as hold the shape (22 in all). They are real parts of one size
+  // whatever the bar, so they are given in mm, [forward, up], from K, the point on the bar's centreline under the body; only the
+  // hood's rear lip is taken from the bar's own curve, so that it always closes round the bar (rim: a point on the hook at an angle,
+  // so far outside its centreline, or inside it if negative). A third value marks a corner. The lever is turned 13 degrees nose-up
+  // from the photograph's level, which is how it sits on a round bend this size: its rear lip then spans the bar from the top of the
+  // ramp to the inside of the hook, and the blade and shift unit hang clear of the hook in front of it. The lip's two ends sit
+  // half a millimetre inside the bar's own outline (the bar is 22 mm across, 11 either side of its centreline), so neither corner
+  // of the hood shows beyond the bar.
+  //   hood: front bottom corner, front face, nose, top of the horn, the dip where the hand sits, rear lip (top and bottom, on the bar),
+  //   and the knuckle under the lever's pivot. The horn stands 27 mm above the dip, and the nose is 97 mm ahead of K.
+  //   blade: from its top (hidden under the hood) down the front edge, round the forward-flicked tip and up the rear edge; 17 mm wide
+  //   where it leaves the hood, 7 mm near the tip, which comes level with the centreline of the drops on a 125 mm bar.
+  //   paddle: the shift unit, drawn under the blade: its upper corner, rear edge and lower end show behind it.
+  const K = on(rad(50)), at = (x, y, c) => c ? [K[0] + x, K[1] + y, 1] : [K[0] + x, K[1] + y], rim = (a, d) => { const p = on(rad(a)); return [p[0] + d * Math.cos(rad(a)), p[1] + d * Math.sin(rad(a)), 1]; };
+  const SHIFTER = { hood: [at(77.6, -3.8, 1), at(83.6, 12.4), at(96.8, 35.2), at(67.6, 52), at(37.1, 25.1), rim(75, 10.5), rim(37, -10.5), at(50.8, -10.1, 1)],
+    blade: [at(70.8, .2), at(78.1, -15.2), at(59.5, -80.4), at(60.9, -99.2), at(59.7, -106.5), at(52.2, -96.3), at(58.1, -60.1), at(60.8, -20.7), at(60.3, -5.1)],
+    paddle: [at(66, -28.7), at(40.5, -45.2, 1), at(40.9, -67.6), at(53.2, -94.5), at(59, -69.8)] };
   // Bar angle turns the whole bar, shifters included, about the clamp: positive lifts the hoods. The bar tops sit on that axis, so
   // the tops hand position stays where it is while the shifters and drops positions move with the bar.
-  const ba = rad(b.barAngle), cs = Math.cos(ba), sn = Math.sin(ba), turn = p => [p[0] * cs - p[1] * sn, p[0] * sn + p[1] * cs];
+  const ba = rad(b.barAngle), cs = Math.cos(ba), sn = Math.sin(ba), turn = p => [p[0] * cs - p[1] * sn, p[0] * sn + p[1] * cs], turnAll = P => P.map(p => p[2] ? [...turn(p), 1] : turn(p));
   return { r, start: turn(on(a0)), bottom: turn([c[0], -dr]), end: turn([c[0] - .45 * dr + 10, -dr]),
-    hood: [on(rad(58)), hf, [hf[0] + 4, hf[1] + 26]].map(turn),
-    lever: [[hf[0] + 2, hf[1] - 10], [re + 28, -.72 * dr]].map(turn),
+    hood: turnAll(SHIFTER.hood), blade: turnAll(SHIFTER.blade), paddle: turnAll(SHIFTER.paddle),
     grips: { tops: [0, 0], hoods: turn([body[0] - 10, body[1] + 6]), drops: turn(on(rad(-55))) } };
 }
 // Incline: the slope of the hill in degrees, from flat ground up to INCLINE_MAX, set by dragging the handle along the ground line.
@@ -1571,7 +1608,7 @@ function makeRotor() {
 }
 function makeLeg(far) {
   const c = far ? ' far' : '', o = {};
-  o.pedal = N('rect', 'pedal' + c, root, { x: -46, y: -10, width: 92, height: 20, rx: 6 });
+  o.pedal = N('g'); N('rect', 'pedal' + c, o.pedal, { x: -46, y: -10, width: 92, height: 20, rx: 6 }); N('rect', 'pedal in' + c, o.pedal, { x: -43, y: -7, width: 86, height: 14, rx: 3 });   // the pedal, and the same 3 mm smaller for its edge line
   // The far leg of the Male and Female builds is edged as one shape, like the near one: its outline (.farol) lies under both halves,
   // which then have no edge of their own (.fl), so the lower leg does not ring the knee.
   if (far) { o.shoeOL = N('g'); N('path', 'farol fso', o.shoeOL); o.ol = N('path', 'farol'); } else o.hT = N('path', 'halo nh', root, { 'stroke-width': 9 }); o.thigh = N('path', 'limbfill' + (far ? c + ' fl' : ' nl'));
@@ -1586,7 +1623,7 @@ function buildScene() {
   E.level = N('line', 'ground level', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
   E.scene = root = N('g', '', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
   E.ground = N('line', 'ground');
-  E.farCrank = N('path', 'crank far'); E.far = makeLeg(true);
+  E.farCrank = N('path', 'crank far'); E.farCrankIn = N('path', 'crank far in'); E.far = makeLeg(true);
   E.rotors = [makeRotor(), makeRotor()];   // on the far side of the wheels: in front of the far leg, behind every part of the bike
   E.wheels = [makeWheel(), makeWheel()];
   const tube = (w, cls = 'tube') => N('line', cls, root, { 'stroke-width': w });
@@ -1602,16 +1639,18 @@ function buildScene() {
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
   // Frame text: lettering along the downtube, on top of the frame and its edge line. It is clipped to the tube, so it never runs past the ends.
   E.textG = N('g'); E.textClip = N('rect', '', N('clipPath', '', E.textG, { id: 'dt-clip' })); E.text = N('text', 'ftext', E.textG, { 'clip-path': 'url(#dt-clip)', 'text-anchor': 'middle' });
-  E.clamp = tube(16, 'comp'); E.rails = N('path', 'comp', root, { 'stroke-width': 6 }); E.saddle = N('path', 'saddle');   // the rails are one line: level under the saddle, turned up into it at each end
-  E.stem = N('path', 'compfill'); E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
+  E.clamp = tube(16, 'comp'); E.rails = N('path', 'rails', root, { 'stroke-width': 6 }); E.saddleClip = N('path', '', N('clipPath', '', root, { id: 'saddle-clip' })); E.saddle = N('path', 'saddle', root, { 'clip-path': 'url(#saddle-clip)' });   // the rails are one line: level under the saddle, turned up into it at each end
+  // The shifter lies behind the handlebar, which is drawn over it: the bar runs unbroken through the hood. Back to front it is the shift unit, the brake lever's blade over it, and the hooded body over both.
+  E.stem = N('path', 'compfill'); E.shift = ['paddle', 'blade', 'hood'].map(k => ({ k, e: N('path', 'shift') }));
+  E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
   // Same fading inner edge line as the frame, for very pale bar tape. Each line comes with a round dot for its end at the stem.
-  E.barOL = N('g', '', root, { visibility: 'hidden' }); [['ol', 22], ['tape', 16]].forEach(([c, w]) => { N('path', c + ' butt', E.barOL, { 'stroke-width': w }); N('path', c, E.barOL, { 'stroke-width': w }); }); E.lever = tube(9, 'comp'); E.hood = N('path', 'comp', root, { 'stroke-width': 24 });
+  E.barOL = N('g', '', root, { visibility: 'hidden' }); [['ol', 22], ['tape', 16]].forEach(([c, w]) => { N('path', c + ' butt', E.barOL, { 'stroke-width': w }); N('path', c, E.barOL, { 'stroke-width': w }); });
   // A flat bar, seen from its end: the rise from the clamp to the grip, the brake lever, and the grip's round end.
   E.flatG = N('g', '', root, { display: 'none' }); E.riser = N('line', 'comp', E.flatG, { 'stroke-width': 22 }); E.flatLever = N('line', 'comp', E.flatG, { 'stroke-width': 9 }); E.grip = N('circle', 'grip', E.flatG, { r: 17 });
   E.ring = N('circle', 'ring chainring'); E.spider = N('g');
   E.arms = Array.from({ length: 5 }, () => N('line', 'comp', E.spider, { 'stroke-width': 18 }));
   E.chainTop = N('path', 'chain', root, { 'stroke-width': 5 });   // the front of the loop again, on top of the chainring
-  E.crank = N('path', 'crank');
+  E.crank = N('path', 'crank'); E.crankIn = N('path', 'crank in');
   // Male and Female: the whole outlines of the near thigh and upper arm, laid under the body. Whatever part of either stands outside
   // the body is edged there, at every point of the pedal stroke; the part inside is hidden by the body, so no line crosses it.
   E.under = N('path', 'halo nh under');
@@ -1661,7 +1700,7 @@ function buildScene() {
   // The stem and the steerer (with its spacers) are edged as one shape: their copies share a group that lies over the stem, both in
   // ink first and then both smaller, so the edge line runs round the two together and does not cross where they overlap.
   const cockpitG = document.createElementNS(NS, 'g'); cockpitG.setAttribute('visibility', 'hidden'); E.stem.after(cockpitG);
-  E.edge = { comp: [E.seatpost, E.clamp, E.rails, E.lever, E.hood, E.riser, E.flatLever, E.cog].map(e => edgeOver(e)).concat([E.steerer, E.stem].map(e => edgeOver(e, 0, cockpitG)), E.arms.map(e => edgeOver(e, 0, armsG)), [edgeOver(E.ring, 14)]),
+  E.edge = { comp: [E.seatpost, E.clamp, E.riser, E.flatLever, E.cog].map(e => edgeOver(e)).concat([E.steerer, E.stem].map(e => edgeOver(e, 0, cockpitG)), E.arms.map(e => edgeOver(e, 0, armsG)), [edgeOver(E.ring, 14)]),
     wheel: E.wheels.flatMap(w => [edgeOver(w.rim), edgeOver(w.hub), edgeOver(w.valve, 7)]) };
   // Every shape in the scene is marked as part of the rider or part of the bike, so that either can be hidden. The ground line and
   // the Incline control belong to neither and always show.
@@ -1749,7 +1788,7 @@ function drawStatic() {
     const va = rad(189); A(w.valve, { x1: r1(rs * Math.cos(va)), y1: r1(rs * Math.sin(va)), x2: r1((rs - 42) * Math.cos(va)), y2: r1((rs - 42) * Math.sin(va)) });
   });
 
-  const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 40) / g.su[1]));
+  const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 48) / g.su[1]));   // the post stops 8 mm under the rails, which lie 40 mm under the saddle's top
   const ssTop = along([0, 0], g.su, g.stLen - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
   setLine(E.chainstay, [0, 0], g.rear); setLine(E.seatstay, g.rear, ssTop);
   setLine(E.seatpost, seatTop, postTop); setLine(E.seattube, [0, 0], seatTop); setLine(E.toptube, g.stJ, g.htJ);
@@ -1794,34 +1833,43 @@ function drawStatic() {
   // Saddle: 280 mm from tip to tip, the length of a traditional road saddle. The nose stays at the entered setback and the length runs
   // back from there; the rails and clamp sit under its middle.
   const nose = -b.setback, sc = nose - 130, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
-  // The rails run level under the middle of the saddle and turn up at 45 degrees at each end, back at the rear and forward at the
-  // front, to meet it. Each turned-up end stops 22 mm up, inside the saddle's outline, which is drawn over it: nothing shows above the saddle.
-  setLine(E.clamp, postTop, [cx, sy - 32]);
-  A(E.rails, { d: 'M ' + [[sc - 70, sy - 10], [sc - 48, sy - 32], [sc + 48, sy - 32], [sc + 70, sy - 10]].map(pt).join(' L ') });
+  // The rails run level under the middle of the saddle, 40 mm below its top (level with its deepest part), and turn up at 45 degrees at
+  // each end, back at the rear and forward at the front, to meet it. Each turned-up end stops 22 mm up, inside the saddle's outline,
+  // which is drawn over it: nothing shows above the saddle.
+  setLine(E.clamp, postTop, [cx, sy - 40]);
+  A(E.rails, { d: 'M ' + [[sc - 70, sy - 18], [sc - 48, sy - 40], [sc + 48, sy - 40], [sc + 70, sy - 18]].map(pt).join(' L ') });
   // The saddle's outline, a plain road-saddle profile drawn as one solid shape: a slim nose, a top that runs nearly level and lifts a
   // little toward the tail, and sides that are deepest behind the middle. Points are given as [distance back from the nose tip, height
   // against the saddle-height line], so the top stays where saddle height is measured and the tip stays at the entered setback.
-  const sP = (dx, dy) => pt([nose + 6 - dx, sy + dy]), sC = (...c) => 'C ' + c.map(([dx, dy]) => sP(dx, dy)).join(' ');
+  // Every height is then drawn 1.25 times as large, measured from that line: the saddle is a quarter deeper than the figures below,
+  // 40 mm at its deepest in place of 32, and its top stays on the line.
+  const sP = (dx, dy) => pt([nose + 6 - dx, sy + 1.25 * dy]), sC = (...c) => 'C ' + c.map(([dx, dy]) => sP(dx, dy)).join(' ');
   A(E.saddle, { d: `M ${sP(0, -9)} ${sC([0, -4], [4, -2], [12, -2])} ${sC([70, -2], [120, -1], [170, 0])} ${sC([215, 1], [245, 5], [266, 7])} ${sC([274, 8], [280, 5], [280, 1])} ` +
     `${sC([280, -4], [276, -10], [268, -14])} ${sC([250, -24], [232, -32], [205, -32])} ${sC([170, -32], [140, -22], [100, -19])} ${sC([60, -17], [30, -17], [10, -16])} ${sC([4, -15.5], [0, -13], [0, -9])} Z` });
+  A(E.saddleClip, { d: E.saddle.getAttribute('d') });   // the saddle is cut to its own outline, which keeps its edge line inside it
   const bg = g.bg, q = pp => pt([g.bar[0] + pp[0], g.bar[1] + pp[1]]), br = r1(bg.r);
   // The bar is cut square at the end of the drops, where its rounded tip used to reach. The end at the stem stays round: the line has
   // flat ends, and a dot of the same width sits on that one. The pale-tape edge line closes across the square end as well.
   const bDir = unit(sub(bg.end, bg.bottom)), bEnd = along(bg.end, bDir, 11), bd = e => `M ${q([0, 0])} L ${q(bg.start)} A ${br} ${br} 0 0 1 ${q(bg.bottom)} L ${q(e)}`, bDot = `M ${q([0, 0])} h .01`;
   const [olLine, olDot, inLine, inDot] = E.barOL.children;
   [E.bar, olLine].forEach(e => e.setAttribute('d', bd(bEnd))); inLine.setAttribute('d', bd(along(bEnd, bDir, -3))); [E.barTop, olDot, inDot].forEach(e => e.setAttribute('d', bDot));
-  A(E.hood, { d: `M ${bg.hood.map(q).join(' L ')}` });
-  setLine(E.lever, [g.bar[0] + bg.lever[0][0], g.bar[1] + bg.lever[0][1]], [g.bar[0] + bg.lever[1][0], g.bar[1] + bg.lever[1][1]]);
+  // The shifter's three outlines, each a smooth curve through its points.
+  E.shift.forEach(({ k, e }) => A(e, { d: smooth(bg[k].map(p => [g.bar[0] + p[0], g.bar[1] + p[1], p[2]]), true) }));
   // Drops or the flat bar: one is shown and the other put away.
-  [E.bar, E.barTop, E.barOL, E.lever, E.hood].forEach(e => e.setAttribute('display', b.flat ? 'none' : 'inline')); E.flatG.setAttribute('display', b.flat ? 'inline' : 'none');
+  [E.bar, E.barTop, E.barOL, ...E.shift.map(o => o.e)].forEach(e => e.setAttribute('display', b.flat ? 'none' : 'inline')); E.flatG.setAttribute('display', b.flat ? 'inline' : 'none');
   setLine(E.riser, g.bar, g.grip); setDot(E.grip, g.grip); setLine(E.flatLever, [g.grip[0] + 16, g.grip[1] - 8], [g.grip[0] + 92, g.grip[1] - 42]);
 
   const rc = opt.ring * 12.7 / (2 * Math.PI), rg = opt.cog * 12.7 / (2 * Math.PI);
   // The chain is 5 mm wide on each sprocket's pitch circle; both sprockets end flush with the chain's outer edge.
-  setDot(E.ring, [0, 0], rc - 4.5); setDot(E.cog, g.rear, rg + 2.5);
+  // The chainring's band and its five arms are heavier on a larger ring: at the smallest (the Chainring slider's lowest) the band is
+  // 14 mm wide and the arms 18, at the largest a quarter as much again, and in between in proportion. The band thickens inward, so its
+  // outer edge stays flush with the chain, and each arm is shortened to keep its round end 1.5 mm inside that edge.
+  const ringIn = $('o-ring'), ringK = 1 + .25 * clamp((opt.ring - ringIn.min) / (ringIn.max - ringIn.min), 0, 1), ringW = r1(14 * ringK), armW = r1(18 * ringK);
+  setDot(E.ring, [0, 0], rc + 2.5 - ringW / 2); E.ring.setAttribute('stroke-width', ringW); E.ring.style.strokeWidth = ringW; setDot(E.cog, g.rear, rg + 2.5);
   // Solid chainring: the ring's circle filled in, in place of the five arms.
   const solid = opt.ringStyle === 'solid'; E.ring.classList.toggle('solid', solid); E.spider.setAttribute('display', solid ? 'none' : 'inline');
-  E.arms.forEach((l, k) => { const a = rad(k * 72 + 36); A(l, { x1: 0, y1: 0, x2: r1((rc - 8) * Math.cos(a)), y2: r1((rc - 8) * Math.sin(a)) }); });
+  // The five arms are set 36 degrees either side of the crank arm and on round from there: the crank arm lies midway between two of them.
+  E.arms.forEach((l, k) => { const a = rad(k * 72 + 18), armR = rc + 1 - armW / 2; A(l, { x1: 0, y1: 0, x2: r1(armR * Math.cos(a)), y2: r1(armR * Math.sin(a)), 'stroke-width': armW }); });
   const base = Math.atan2(g.rear[1], g.rear[0]), ph = Math.acos(clamp((rc - rg) / Math.hypot(g.rear[0], g.rear[1]), -1, 1));
   // Chain: one closed loop. Upper and lower runs are tangent to both sprockets; it wraps the back of the cog and the front of the chainring.
   const tU = [Math.cos(base - ph), Math.sin(base - ph)], tL = [Math.cos(base + ph), Math.sin(base + ph)];
@@ -2025,8 +2073,9 @@ function putLeg(o, L) {
 let theta = rad(115), wheelAng = 0, playing = true, last = 0, lastK = '', lastH = '';
 function drawFrame() {
   const n = leg(theta), f = leg(theta + Math.PI), d = r1(deg(theta));
-  // Crank arms taper from 40 mm wide at the bottom bracket to 30 mm at the pedal, with rounded ends.
+  // Crank arms taper from 40 mm wide at the bottom bracket to 30 mm at the pedal, with rounded ends. Each has a twin 3 mm smaller all round, for its edge line.
   E.crank.setAttribute('d', taper([0, 0], n.s, 20, 15)); E.farCrank.setAttribute('d', taper([0, 0], f.s, 20, 15)); E.spider.setAttribute('transform', `rotate(${d})`);
+  E.crankIn.setAttribute('d', taper([0, 0], n.s, 17, 12)); E.farCrankIn.setAttribute('d', taper([0, 0], f.s, 17, 12));
   putLeg(E.near, n); putLeg(E.far, f);
   const wa = r1(wheelAng); E.wheels.forEach(w => w.rot.setAttribute('transform', `rotate(${wa})`)); E.rotors.forEach(o => o.rot.setAttribute('transform', `rotate(${wa})`));
   setDot(E.j.knee, n.knee); setDot(E.j.ankle, n.ankle);
@@ -2140,10 +2189,6 @@ function hsb(h, s, v) { s /= 100; v /= 100;
   const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
   return '#' + [f(5), f(3), f(1)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const grayFull = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 255).toString(16).padStart(2, '0'); return '#' + x + x + x; };   // the wheels' and the components' scale: black to white
-// The crank arms and pedals are drawn 25% darker than the components colour, so they stand apart from the chainring, star or solid.
-// A colour in the darker half (black, by day) has no room to darken, so there it goes 25% lighter instead.
-const shade = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), dark = Math.max(...c) + Math.min(...c) < 255;
-  return '#' + c.map(x => Math.round(dark ? x + (255 - x) * .25 : x * .75).toString(16).padStart(2, '0')).join(''); };
 // Every colour chosen under Appearance is drawn as chosen, by day and in night mode alike: night mode changes the page, not the bike or
 // the rider. What does follow the page is the edge line, which fades in round any part whose colour comes close to the page's and would
 // otherwise be lost against it: close to white by day, close to black in night mode.
@@ -2168,9 +2213,10 @@ function applyColors() { const st = document.documentElement.style, night = docu
   $('grp-hair').style.setProperty('--pure', hsb(opt[hk + 'H'], 100, 100)); $('grp-hair').style.setProperty('--full', hsb(opt[hk + 'H'], opt[hk + 'S'], 100));
   st.setProperty('--frame', hsb(opt.frameH, opt.frameS, opt.frameB));
   st.setProperty('--tape', hsb(opt.tapeH, opt.tapeS, opt.tapeB));
+  st.setProperty('--saddle', hsb(opt.sdlH, opt.sdlS, opt.sdlB)); st.setProperty('--saddle-edge', paleness(opt.sdlS, opt.sdlB));   // the saddle, and its edge line by the same measure
   st.setProperty('--ftext', hsb(opt.textH, opt.textS, opt.textB));
   // Each colour group's saturation and brightness slots preview its own hue and saturation.
-  [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS], ['grp-text', opt.textH, opt.textS]].forEach(([id, h, sat]) => {
+  [['grp-rider', opt.riderH, opt.riderS], ['grp-frame', opt.frameH, opt.frameS], ['grp-tape', opt.tapeH, opt.tapeS], ['grp-saddle', opt.sdlH, opt.sdlS], ['grp-text', opt.textH, opt.textS]].forEach(([id, h, sat]) => {
     $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
   st.setProperty('--wheel', grayFull(opt.wheelGray)); st.setProperty('--comp', grayFull(opt.compGray));
   // The components and the wheels get the frame's edge line, by the frame's rule: it fades in as their colour nears the page's. Both
@@ -2193,7 +2239,7 @@ function applyColors() { const st = document.documentElement.style, night = docu
   const wk = opt.wallOwn ? 'wall' : 'tire'; st.setProperty('--tire', hsb(opt.tireH, opt.tireS, opt.tireB)); st.setProperty('--tirewall', hsb(opt[wk + 'H'], opt[wk + 'S'], opt[wk + 'B']));
   [['grp-tire', opt.tireH, opt.tireS], ['grp-wall', opt[wk + 'H'], opt[wk + 'S']]].forEach(([id, h, sat]) => { $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
   E.wheels.forEach(w => fade(w.ol, opt.tireS, opt.tireB));
-  st.setProperty('--crank', shade(grayFull(opt.compGray))); }
+  st.setProperty('--comp-edge-pct', paleness(0, opt.compGray) * 100 + '%'); }   // for the crank arms and pedals, which move, and carry their edge line as a second, smaller shape
 function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); save(); }
 
 /* ---------- boot ---------- */
