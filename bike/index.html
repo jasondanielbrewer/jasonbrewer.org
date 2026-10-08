@@ -109,43 +109,63 @@ h1,h2,h3,p,dl,dd{margin:0}
 .resizer:focus-visible{outline:none}
 
 /* ---------- control panel ---------- */
-.panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border-right:var(--ln) solid var(--rule);
-  padding-inline:16px;padding-block:6px 28px;display:flex;flex-direction:column}
-/* The panel's scroll bar is a thin black handle (white in night mode) with nothing behind it: no filled track and no edge lines, just the panel showing
+/* The panel is a column: its pages above, scrolling, and under them the navigation that picks the page, which stays put. */
+.panel{min-height:0;display:flex;flex-direction:column;background:var(--panel);border-right:var(--ln) solid var(--rule);overflow:hidden}
+.pages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-inline:16px;padding-block:0 28px;display:flex;flex-direction:column}
+/* The pages' scroll bar is a thin black handle (white in night mode) with nothing behind it: no filled track and no edge lines, just the panel showing
    through. Browsers that take the standard properties use those; the others (Safari, older Chrome) get the same look from the
    -webkit- rules, which only apply while the standard properties are left unset. */
-@supports (scrollbar-color:auto){ .panel{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
-.panel::-webkit-scrollbar{width:10px;height:10px;background:transparent}
-.panel::-webkit-scrollbar-track,.panel::-webkit-scrollbar-track-piece,.panel::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
-.panel::-webkit-scrollbar-button{display:none;width:0;height:0}
-.panel::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
-.panel>*{flex:none}
+@supports (scrollbar-color:auto){ .pages{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+.pages::-webkit-scrollbar{width:10px;height:10px;background:transparent}
+.pages::-webkit-scrollbar-track,.pages::-webkit-scrollbar-track-piece,.pages::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
+.pages::-webkit-scrollbar-button{display:none;width:0;height:0}
+.pages::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
+.pages>*{flex:none}
 
-/* Space between sections: 45px from the end of one to the next heading (36px when the one above is collapsed). */
-.sec + .sec{margin-top:15px}
-.sec:not([open]) + .sec{margin-top:12px}
-.sec>summary{display:flex;align-items:baseline;gap:10px;padding:12px 0;cursor:pointer;list-style:none;border-radius:4px}
-/* A section's title stays at the top of the panel while its controls scroll beneath it, and is carried off by the next section's title.
-   Behind it a strip of the panel's own colour, reaching to both edges of the panel and up over the 6px of space above the title,
-   hides what passes under. The panel keeps that height clear at its top when it scrolls a control into view (with the Tab key, say),
-   so nothing comes to rest behind a title. */
-.sec>summary{position:sticky;top:0;z-index:3}
-.sec>summary::after{content:"";position:absolute;inset:-6px -16px 0;z-index:-1;background:var(--panel)}
-.panel{scroll-padding-top:58px}
-.sec>summary::-webkit-details-marker{display:none}
-.sec>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--rule);border-bottom:2px solid var(--rule);
-  transform:translateY(-4px) rotate(-45deg);transition:transform .15s}
-.sec[open]>summary::before{transform:translateY(-5px) rotate(45deg)}
-.sec>summary h2{font:600 20px/1.1 var(--font);letter-spacing:-.01em}
-.sec>summary h2{flex:none;white-space:nowrap}   /* a section's title stays on one line; in a narrow panel its summary is cut short instead */
-/* Beside the Appearance title: one dot for each of its colours, in the order of the rows below. They show while the section is closed
-   and fade away when it is opened, where each row carries its own swatch. */
-.sec .dots{margin-left:auto;align-self:center;display:flex;gap:4px;transition:opacity .3s}
-.sec .dots .sw{width:12px;height:12px}
-.sec[open]>summary .dots{opacity:0}
-@media (prefers-reduced-motion:reduce){ .sec .dots{transition:none} }
+/* Each section is a page of its own; the one chosen below shows, the others are hidden. Its title stays at the top of the panel while
+   its controls scroll beneath it. The title and the summary at its right are both centred top to bottom in the 52px band between
+   the line above the panel and the line under the title. Each is trimmed to its capital letters (cap height to baseline) where the
+   browser can, so it is the letters themselves that sit in the middle, whatever the font's own spacing above and below them;
+   elsewhere their line boxes are centred, which comes within a pixel. Behind them a strip of the panel's own colour hides what
+   passes under. The panel keeps that height clear at its top when it scrolls a control into view (with the Tab
+   key, say), so nothing comes to rest behind the title. */
+.sec>.sechead{display:flex;align-items:center;gap:10px;padding:0;min-height:calc(52px + var(--ln));position:sticky;top:0;z-index:3}
+.sec>.sechead h2,.sec .sum{text-box:trim-both cap alphabetic}
+.sec .sum{padding-block:4px;margin-block:-4px}   /* the summary cuts off at its edges (for the …), so 4px each way keeps the tails of p, y and g in view; the margins take the same back */
+.sec>.sechead::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--panel)}
+/* Under each section title, a line across the whole panel, edge to edge, drawn as a border like the lines dividing the page, so it is
+   exactly as thick. The title reaches out over the panel's 16px side padding (and takes the same padding inside) for the line to do so.
+   The strip behind the title ends where the line begins. */
+.sec>.sechead{border-bottom:var(--ln) solid var(--rule);margin-inline:-16px;padding-inline:16px}
+.pages{scroll-padding-top:60px}
+.sec>.sechead h2{font:600 20px/1.1 var(--font);letter-spacing:-.01em}
+.sec>.sechead h2{flex:none;white-space:nowrap}   /* a section's title stays on one line; in a narrow panel its summary is cut short instead */
+
+/* The navigation: one button for each page, side by side across the bottom of the panel, under a line as thick as the page's other
+   dividing lines. Each is an icon over a short name. The buttons fill the bar from top to bottom and edge to edge, so the page
+   showing is a solid black rectangle (white in night mode) with its icon and name in the panel's colour, as a chosen option is shown
+   everywhere else in the panel; at either end it runs out to the bar's edge. The others are in the gray of unchosen options, and
+   darken under the pointer. */
+.tabs{flex:none;position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:var(--ln) solid var(--rule);background:var(--panel)}
+/* The rectangle is one shape under the buttons, a quarter of the bar wide; showPage() sets --i to the page's place, and it slides
+   there, as the highlight does in the panel's other rows of options. (It only slides once the page is up, so it does not glide into
+   place on load.) */
+.tabs::before{content:"";position:absolute;top:0;bottom:0;left:0;width:25%;background:var(--rule);transform:translateX(calc(var(--i,0) * 100%));
+  box-shadow:calc(max(0, var(--i,0) - 2) * 2px) 0 0 var(--rule)}   /* under the last button the rectangle runs 2px further, under the panel's edge line (the same colour), so no sliver of
+  the panel shows between them where the screen's pixels fall across the join; the panel cuts it off at its own edge */
+.ready .tabs::before{transition:transform .18s cubic-bezier(.3,.7,.3,1)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:8px 2px calc(8px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;
+  position:relative;background:none;color:var(--muted);font:500 12px/1.2 var(--font);cursor:pointer;transition:color .16s}
+.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .ic{display:grid;place-items:center;width:52px;height:28px}
+.tab svg{width:22px;height:22px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tab svg .dot{fill:currentColor;stroke:none}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent-ink)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}   /* inside the button: the buttons meet each other and the bar's edges */
+@media (prefers-reduced-motion:reduce){ .tab,.ready .tabs::before{transition:none} }
 .sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 12px var(--font);font-variant-numeric:tabular-nums}
-.sec-body{display:flex;flex-direction:column;gap:16px;padding:6px 0 18px}   /* 6px on top of the title's own 12px: 18px from a section title to its first line */
+.sec-body{display:flex;flex-direction:column;gap:16px;padding:14px 0 18px}   /* 14px from the line under a section title to its first control */
 
 .group{display:flex;flex-direction:column;gap:8px}
 .grp{font:500 16px/1.2 var(--font);color:var(--ink)}   /* a subsection's title: written as typed (first letter capital), in the page's ink: black, white in night mode */
@@ -589,9 +609,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 
 <div class="app">
   <aside class="panel" id="panel" aria-label="Fit controls">
+  <div class="pages" id="pages">
 
-    <details class="sec" id="sec-body" open>
-      <summary><h2>Your Body</h2><span class="sum" id="sum-body"></span></summary>
+    <section class="sec" id="sec-body" role="tabpanel" aria-labelledby="tab-body" tabindex="-1">
+      <div class="sechead"><h2>Your Body</h2><span class="sum" id="sum-body"></span></div>
       <div class="sec-body">
         <div class="row2">
           <div class="ctl"><span class="cap" id="cap-units">Units</span>
@@ -610,15 +631,15 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         <div class="stack" id="body-fields"></div>
         <p class="hint"><span id="body-hint"></span> <button class="btn link" id="body-reset" type="button" hidden>Reset to averages</button></p>
       </div>
-    </details>
+    </section>
 
-    <details class="sec" id="sec-bike" open>
-      <summary><h2>Bike Geometry</h2><span class="sum" id="sum-bike"></span></summary>
+    <section class="sec" id="sec-bike" role="tabpanel" aria-labelledby="tab-bike" tabindex="-1">
+      <div class="sechead"><h2>Bike Geometry</h2><span class="sum" id="sum-bike"></span></div>
       <div class="sec-body" id="bike-fields"></div>
-    </details>
+    </section>
 
-    <details class="sec" id="sec-options" open>
-      <summary><h2>Options</h2><span class="sum" id="sum-options"></span></summary>
+    <section class="sec" id="sec-options" role="tabpanel" aria-labelledby="tab-options" tabindex="-1">
+      <div class="sechead"><h2>Options</h2><span class="sum" id="sum-options"></span></div>
       <div class="sec-body">
         <details class="pick">
           <summary class="grphead"><h3 class="grp">Pedaling</h3></summary>
@@ -683,10 +704,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
         </details>
       </div>
-    </details>
+    </section>
 
-    <details class="sec" id="sec-appearance" open>
-      <summary><h2>Appearance</h2><span class="dots" aria-hidden="true"><i class="sw sw-rider"></i><i class="sw sw-frame"></i><i class="sw sw-tires"></i></span></summary>
+    <section class="sec" id="sec-appearance" role="tabpanel" aria-labelledby="tab-appearance" tabindex="-1">
+      <div class="sechead"><h2>Appearance</h2></div>
       <div class="sec-body">
         <details class="pick" id="grp-rider">
           <summary class="grphead"><h3 class="grp">Rider</h3><i class="sw sw-rider" aria-hidden="true"></i></summary>
@@ -879,13 +900,20 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
         </details>
       </div>
-    </details>
+    </section>
 
     <div class="foot" id="reset-foot">
       <button class="btn primary" id="reset-all" type="button">Reset to defaults</button>
       <button class="btn confirm" id="reset-yes" type="button" hidden>Confirm</button>
       <button class="btn cancel" id="reset-no" type="button" hidden>Cancel</button>
     </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Control panel pages">
+    <button class="tab" role="tab" id="tab-body" aria-controls="sec-body" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="3.5"/><path d="M5 20.5c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span><span>Body</span></button>
+    <button class="tab" role="tab" id="tab-bike" aria-controls="sec-bike" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g transform="translate(-.5 0)"><circle cx="5.25" cy="15.5" r="4.25"/><circle cx="19.75" cy="15.5" r="4.25"/><path d="M5.25 15.5 9.75 8.25h8M9.75 8.25l2.5 7.25 5.5-7.25 2 7.25M5.25 15.5h7M8.25 5.75h3M9.75 5.75v2.5M17.75 8.25 17.25 5.75h2.25"/></g></svg></span><span>Bike</span></button>
+    <button class="tab" role="tab" id="tab-options" aria-controls="sec-options" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/><circle class="dot" cx="9" cy="6" r="2.25"/><circle class="dot" cx="15.5" cy="12" r="2.25"/><circle class="dot" cx="7" cy="18" r="2.25"/></svg></span><span>Options</span></button>
+    <button class="tab" role="tab" id="tab-appearance" aria-controls="sec-appearance" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h2c2.6 0 4.5-2.1 4.5-4.6C21 7.1 17 3.5 12 3.5Z"/><circle class="dot" cx="7.5" cy="11.5" r="1.3"/><circle class="dot" cx="9.75" cy="7.5" r="1.3"/><circle class="dot" cx="14.25" cy="7" r="1.3"/><circle class="dot" cx="17.25" cy="10.5" r="1.3"/></svg></span><span>Appearance</span></button>
+  </nav>
   </aside>
   <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the control panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
 
@@ -963,7 +991,7 @@ const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe
 // dimmed and cannot be pressed on any rider profile, and the details are never drawn, whatever a remembered setup or a link says
 // (the remembered setting itself is left alone, so it is still there when this is set back to true).
 const BODY_DETAILS = false, detailsOn = () => BODY_DETAILS && opt.details;
-let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384;   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
+let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384, page = 'body';   // page: the control panel's page showing   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 // geo: which geometry the bike has: one recommended for the rider ('road', 'gravel' or 'mountain') or the user's 'own'. lastGeo: the
 // recommendation last used. ownBike: the user's own geometry, kept while a recommendation is showing.
 let geo = 'road', lastGeo = 'road', ownBike = null;
@@ -1007,6 +1035,7 @@ function restore(d) {
   if (d.own && typeof d.own === 'object' && PARTS.every(k => Number.isFinite(d.own[k]))) ownBody = Object.fromEntries(PARTS.map(k => [k, d.own[k]]));
   if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
+  if (PAGES.includes(d.page)) page = d.page;   // like the panel's width, the page showing belongs to the device: links leave it out
   // A bike saved before recommendations existed is the user's own. A saved recommendation keeps the bike it was saved with.
   geo = ['road', 'gravel', 'mountain', 'own'].includes(d.geo) ? d.geo : 'own'; lastGeo = ['road', 'gravel', 'mountain'].includes(d.lastGeo) ? d.lastGeo : geo === 'own' ? 'road' : geo;
   style = STYLES.includes(d.style) ? d.style : 'casual';   // saved before riding styles existed: Casual, the one the page opens on
@@ -1214,7 +1243,7 @@ function openLink() {
   return true;
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 9, bike, body, opt, units, bikeUnits, own: ownBody, panelW, geo, lastGeo, style, ownBike })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 9, bike, body, opt, units, bikeUnits, own: ownBody, panelW, page, geo, lastGeo, style, ownBike })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
@@ -1274,6 +1303,12 @@ const sliderHTML = (id, f) => `<div class="slider"><div class="top"><label class
   `<output id="${id}-out" for="${id}"></output></div><div class="rail"><input id="${id}" type="range"></div></div>`;
 
 const shows = [];
+// The control panel's pages, in the order of their buttons. Showing one hides the others; each keeps the place it was scrolled to.
+const PAGES = ['body', 'bike', 'options', 'appearance'], pageTop = {};
+function showPage(k, focus) { const sc = $('pages'); pageTop[page] = sc.scrollTop; page = k;
+  PAGES.forEach(p => { const on = p === k, t = $('tab-' + p); $('sec-' + p).hidden = !on; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+  document.querySelector('.tabs').style.setProperty('--i', PAGES.indexOf(k));   // the highlight slides under the page's button
+  sc.scrollTop = pageTop[k] || 0; if (focus) $('tab-' + k).focus(); save(); }
 // Typed entry. A slider listed here takes a typed value through its own set() (exactly as typed, in the units shown) and may read
 // and write it in a form of its own (feet and inches for height); any other slider is simply moved to the typed value.
 const typers = {};
@@ -1409,7 +1444,7 @@ function buildPanel() {
   radios('style', () => style, v => setStyle(v));
   shows.push(() => { const off = geo === 'own'; document.querySelectorAll('input[name="style"]').forEach(r => { r.disabled = off; }); $('style-ctl').classList.toggle('off', off); });
   shows.push(() => { $('geo-own').checked = geo === 'own';
-    $('geo-fit').innerHTML = geo === 'own' ? '' : `For ${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} with a ${(body.inseam / fac()).toFixed(1)}${NB}${units === 'in' ? 'in' : 'cm'} inseam, we recommend ` +
+    $('geo-fit').innerHTML = geo === 'own' ? '' : `For ${style} ${geo} biking at ${units === 'in' ? ftin() : r1(body.height / 10) + NB + 'cm'} with a ${(body.inseam / fac()).toFixed(1)}${NB}${units === 'in' ? 'in' : 'cm'} inseam, we recommend a bike with ` +   // style and geo are the words themselves: casual, balanced, aggressive; road, gravel, mountain
       `a <b>${Math.round(bike.topTube / 10)}${NB}cm top tube and a ${Math.round(bike.seatTube / 10)}${NB}cm seat tube.</b>`; $('geo-hint').hidden = geo === 'own'; });   // the size itself is in bold
   // Handlebar: drops or a flat bar. A flat bar has one place for the hands, so its drop-bar sliders and the Hand position switch are put away.
   radios('bar', () => bike.flat ? 'flat' : 'drop', v => { touchBike(); bike.flat = v === 'flat'; refresh(); update(); });
@@ -1495,9 +1530,13 @@ function buildPanel() {
 
   // A section closed from its title while the title is held at the top of the panel: with its controls gone the title would be left
   // out of sight above, so the panel scrolls back to keep the title where it was pressed.
-  document.querySelectorAll('.sec>summary').forEach(s => s.addEventListener('click', () => { const d = s.parentElement, y = s.getBoundingClientRect().top;
-    if (!d.open || d.getBoundingClientRect().top > y - .5) return;   // being opened, or not held at the top
-    requestAnimationFrame(() => { if (!d.open) $('panel').scrollTop += s.getBoundingClientRect().top - y; }); }));
+  // The navigation at the foot of the panel: a button for each page. A click shows that page; with a button in focus the arrow keys
+  // (and Home and End) go to the page beside it, as in any row of tabs.
+  PAGES.forEach((k, i) => { const t = $('tab-' + k);
+    t.addEventListener('click', () => showPage(k));
+    t.addEventListener('keydown', e => { const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: PAGES.length - 1 }[e.key]; if (j === undefined) return;
+      e.preventDefault(); showPage(PAGES[(j + PAGES.length) % PAGES.length], true); }); });
+  showPage(page);
 
   // Panel width: drag the edge, use the arrow keys on it, or double-click it to go back to the default.
   const rz = $('resizer'), app = rz.parentElement;
