@@ -6,7 +6,11 @@
 <meta name="theme-color" content="#ffffff">
 <title>Bike Fit Visualizer</title>
 <script>/* Night mode is off unless this device has switched it on (the same setting as the home page), decided before the first paint. */
-try { if (localStorage.getItem('night-mode') === '1') document.documentElement.classList.add('night'); } catch (e) {}</script>
+try { if (localStorage.getItem('night-mode') === '1') document.documentElement.classList.add('night'); } catch (e) {}
+/* The page theme is decided before the first paint too: the one remembered on this device, or green, the theme the page opens in
+   (THEME0 in the main script, which checks the name and has the last word). 'ink' is no theme: black, white in night mode. */
+(function () { var t = 'green'; try { var d = JSON.parse(localStorage.getItem('bike-fit-visualizer:v1') || 'null'); if (d && typeof d.theme === 'string' && /^[a-z0-9-]+$/.test(d.theme)) t = d.theme; } catch (e) {}
+  if (t !== 'ink') document.documentElement.setAttribute('data-theme', t); })();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>
@@ -15,7 +19,7 @@ img{max-width:100%}
 /* Layout: scrolling control rail on the left in plain white, black and gray; bike and rider drawn
    to scale on a clear stage on the right, with fit readouts along the bottom edge.
    Two looks: by day a white page; in night mode (the NIGHT MODE switch, upper right) a black one. Night mode changes the
-   page and its controls only. The colours chosen under Appearance are drawn exactly as chosen in both. */
+   page and its controls only. The colours chosen under Customize are drawn exactly as chosen in both. */
 :root{
   color-scheme:light;
   --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff;
@@ -24,8 +28,11 @@ img{max-width:100%}
   --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --saddle:#212121; --fixed:#333333; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dots on the warnings */
-  --info:#4875c2;                               /* the blue of the readouts' descriptive labels (moderate, endurance, stable...), fixed in both modes: a muted blue (half the saturation of a pure one) whose brightness sits midway between white and black, so it just clears the 4.5 to 1 minimum contrast for small text on either (4.57 to 1 on white, 4.60 on black) */
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
+  --knob:var(--ink);                            /* the sliders' lines and dots, and the panel's toggles: the page's ink, or the page theme's colour */
+  --t-gray:#757575; --t-tan:#946e3c; --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-purple:#8a3fd6;   /* the page themes (Options, Display options). Each is dark enough for white lettering on it (4.6 to 1 or better) and light enough to show on the black page of night mode (3.7 to 1 or better), so one colour serves both modes */
+  --t-yellow:#ad8224;                           /* the yellow page theme, by day. It is the one theme with a colour for each mode: in night mode it is #dea62e, a golden yellow, which is too light to show on a white page (2.2 to 1), so here it is the same hue and saturation at 68% brightness where that is 87% (3.5 to 1 on white). Lettering on it is black in both modes. Darker still, it could not be told from the tan */
+  --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-green:#39ff14; --t-neon-lime:#ccff00; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff; --t-gray-25:#bfbfbf; --t-gray-12:#dfdfdf;   /* the risky page themes: neon and pure colours, and 25% and 12.5% gray (a quarter and an eighth of the way from white to black), taken as they come and the same in both modes: none of them is given a second colour for night mode, as the yellow of the first row is. Most are too light to show on the white page, and pure blue is dim on the black one; that is the risk */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
@@ -44,7 +51,20 @@ img{max-width:100%}
   --accent:#ececec; --accent-ink:#000000; --slot:#292929;
   --metal:#717171; --part:#dddddd; --spin:#424242;
   --rule:#ffffff;
+  --t-yellow:#dea62e;   /* the yellow page theme at its full brightness, which shows well on black (9.6 to 1) */
 }
+/* Page theme: a colour chosen under Options, Display options, in place of black (white in night mode) for the page's own furniture:
+   the lines that divide it, the outlines and fills of its buttons, switches and boxes, the block under the page chosen in the
+   navigation, and the sliders' lines and dots. Lettering on a filled part is white. It is the same colour in both modes (these rules
+   come after night mode's, and take over from them). Text keeps the page's ink, and nothing in the drawing changes: the bike and the
+   rider have their own colours, under Customize. With no theme chosen, none of this applies. */
+:root[data-theme="yellow"]{--theme:var(--t-yellow)} :root[data-theme="gray"]{--theme:var(--t-gray)} :root[data-theme="tan"]{--theme:var(--t-tan)} :root[data-theme="red"]{--theme:var(--t-red)} :root[data-theme="orange"]{--theme:var(--t-orange)} :root[data-theme="green"]{--theme:var(--t-green)}
+:root[data-theme="blue"]{--theme:var(--t-blue)} :root[data-theme="purple"]{--theme:var(--t-purple)}
+:root[data-theme]{--rule:var(--theme);--accent:var(--theme);--accent-ink:#ffffff;--knob:var(--theme)}
+/* The risky themes (Risky page themes, under Page theme) work the same way. Lettering on the light ones is black, which is what
+   reads on them (and on the yellow of the first row); on pure red it is white, as on the Cancel button, which is the same red. */
+:root[data-theme="neon-yellow"]{--theme:var(--t-neon-yellow)} :root[data-theme="neon-orange"]{--theme:var(--t-neon-orange)} :root[data-theme="neon-green"]{--theme:var(--t-neon-green)} :root[data-theme="neon-lime"]{--theme:var(--t-neon-lime)} :root[data-theme="rgb-red"]{--theme:var(--t-rgb-red)} :root[data-theme="rgb-green"]{--theme:var(--t-rgb-green)} :root[data-theme="rgb-blue"]{--theme:var(--t-rgb-blue)} :root[data-theme="gray-25"]{--theme:var(--t-gray-25)} :root[data-theme="gray-12"]{--theme:var(--t-gray-12)}
+:root[data-theme="neon-yellow"],:root[data-theme="neon-orange"],:root[data-theme="neon-green"],:root[data-theme="neon-lime"],:root[data-theme="rgb-green"],:root[data-theme="gray-25"],:root[data-theme="gray-12"],:root[data-theme="yellow"]{--accent-ink:#000000}
 
 html{box-sizing:border-box;height:100%}
 *,*::before,*::after{box-sizing:inherit}
@@ -107,6 +127,13 @@ h1,h2,h3,p,dl,dd{margin:0}
 .resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:0;border-left:var(--ln) solid transparent;transition:border-color .12s}
 .resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{border-left-color:var(--rule);border-left-width:calc(var(--ln) + 1px)}   /* the panel's edge line thickens by 1px */
 .resizer:focus-visible{outline:none}
+/* The line between the drawing and the info panel is a handle of the same kind, lying on its side: it is dragged up and down, and
+   thickens by the same rule. It shares the info panel's place in the stage's grid and stands at the top of it, so it follows the
+   panel's top line wherever that is. */
+.hresizer{grid-area:2/1;align-self:start;position:relative;height:11px;margin-top:calc(var(--ln) - 11px);cursor:row-resize;touch-action:none;z-index:5}   /* it ends on the info panel's top line, which is --ln thick, and reaches up over the drawing */
+.hresizer::before{content:"";position:absolute;left:0;right:0;bottom:0;height:0;border-bottom:var(--ln) solid transparent;transition:border-color .12s}
+.hresizer:hover::before,.hresizer.drag::before,.hresizer:focus-visible::before{border-bottom-color:var(--rule);border-bottom-width:calc(var(--ln) + 1px)}   /* the info panel's top line thickens by 1px */
+.hresizer:focus-visible{outline:none}
 
 /* ---------- control panel ---------- */
 /* The panel is a column: its pages above, scrolling, and under them the navigation that picks the page, which stays put. */
@@ -157,17 +184,25 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:8px 2px calc(8px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;
   position:relative;background:none;color:var(--muted);font:500 12px/1.2 var(--font);cursor:pointer;transition:color .16s}
 .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tab .ic{display:grid;place-items:center;width:52px;height:28px}
+.tab .ic{position:relative;display:grid;place-items:center;width:52px;height:28px}
+/* Play is a fifth button, for narrow screens only (further down): there the drawing has a page of its own. While a warning shows
+   over the drawing and another page is up, Play's icon carries a dot of the warning's colour, since the warning itself is out of
+   sight. */
+#tab-play{display:none}
+.tab[data-alert="warn"][aria-selected="false"] .ic::after,.tab[data-alert="bad"][aria-selected="false"] .ic::after{content:"";position:absolute;top:0;right:9px;width:8px;height:8px;border-radius:50%;background:var(--caution)}
+.tab[data-alert="bad"][aria-selected="false"] .ic::after{background:var(--stop)}
 .tab svg{width:22px;height:22px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .tab svg .dot{fill:currentColor;stroke:none}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected="true"]{color:var(--accent-ink)}
 .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}   /* inside the button: the buttons meet each other and the bar's edges */
+.tab[aria-selected="true"]:focus-visible{outline-color:var(--accent-ink)}   /* on the page showing, the ring lies on the rectangle, so it takes the panel's colour, as the icon and name do; in the rectangle's own colour it would not show */
 @media (prefers-reduced-motion:reduce){ .tab,.ready .tabs::before{transition:none} }
 .sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 12px var(--font);font-variant-numeric:tabular-nums}
-.sec-body{display:flex;flex-direction:column;gap:16px;padding:14px 0 18px}   /* 14px from the line under a section title to its first control */
+.sec-body{display:flex;flex-direction:column;gap:16px;padding:20px 0 18px}   /* 20px from the line under a section title to its first control */
 
 .group{display:flex;flex-direction:column;gap:8px}
+.group>.tgl+.tgl,.group>.themes+.themes,.group>.themes+.tgl{margin-top:4px}   /* a run of switches, or of Display options' rows: 12px apart, which is easier on the eye and on the finger than 8 */
 .grp{font:500 16px/1.2 var(--font);color:var(--ink)}   /* a subsection's title: written as typed (first letter capital), in the page's ink: black, white in night mode */
 .cap{font-size:13px;font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:12px}
@@ -200,11 +235,11 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tgl input{position:absolute;opacity:0;pointer-events:none}
 .tgl .cap{min-width:0}
 .tgl .track{flex:none;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);box-sizing:border-box;
-  border:var(--ln) solid currentColor;border-radius:999px}   /* --ln: 0.12 of the height, as on the NIGHT MODE switch */
+  border:var(--ln) solid currentColor;border-radius:999px;color:var(--knob)}   /* --ln: 0.12 of the height, as on the NIGHT MODE switch. The toggle, not its name, takes the page theme's colour */
 .tgl .thumb{position:absolute;top:50%;left:calc(var(--sw) * 0.13);width:calc(var(--sw) * 0.5);height:calc(var(--sw) * 0.5);border-radius:50%;
   background:currentColor;transform:translateY(-50%);transition:left .15s}
 .tgl input:checked+.track{background:currentColor}
-.tgl input:checked+.track .thumb{left:calc(100% - var(--sw) * 0.63);background:var(--panel)}   /* as far from the right end as it was from the left */
+.tgl input:checked+.track .thumb{left:calc(100% - var(--sw) * 0.63);background:var(--accent-ink)}   /* as far from the right end as it was from the left; in the colour of lettering on a filled part: the panel's own, or what reads on the page theme's colour */
 .tgl:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .tgl:has(input:disabled){opacity:.35;cursor:default}
 @media (prefers-reduced-motion:reduce){ .tgl .thumb{transition:none} }
@@ -212,7 +247,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .hint b{font-weight:600}
 
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ctl{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ctl{display:flex;flex-direction:column;gap:8px;min-width:0}   /* a name over its row of buttons: 8px (a slider's name is 5px over its rail, whose line lies 11px further down) */
 .seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:var(--ln) solid var(--rule);border-radius:999px;
   background:var(--field) linear-gradient(var(--rule),var(--rule)) calc(var(--i,0)/(var(--n,2) - 1)*100%) 0/calc(100%/var(--n,2)) 100% no-repeat}
 .seg input{position:absolute;opacity:0;pointer-events:none}
@@ -231,6 +266,14 @@ h1,h2,h3,p,dl,dd{margin:0}
 .ready .seg.long{transition:background-position .18s cubic-bezier(.3,.7,.3,1),background-size .18s cubic-bezier(.3,.7,.3,1)}
 @media (prefers-reduced-motion:reduce){ .ready .seg,.ready .seg.long{transition:none} }
 .seg.long label{display:flex;align-items:center;justify-content:center;white-space:normal}
+/* A switch whose words are long for a third of a narrow panel (Road bike, Gravel bike, Mountain bike). Its parts stay equal thirds,
+   and the words keep to their own part: they give up their side padding first (they are centred, so with room to spare nothing
+   changes), and below that they are set smaller, just enough for the longest, "Mountain bike" (6.8em long, with 3px to spare each
+   side), to fit one part: 13px down to about 11px in the narrowest panel. The switch measures itself for this (100cqw is its own
+   width). Should the words still not fit (another font, or a browser without these units), they wrap inside their part. */
+.seg.fit{container-type:inline-size}
+.seg.fit label{display:flex;align-items:center;justify-content:center;padding-inline:3px;white-space:normal;font-size:min(13px,(100cqw / 3 - 6px) / 6.8);
+  min-height:calc(13px * 1.4 + 14px)}   /* the switch stays as tall as the others while its words are smaller */
 /* A block that opens and closes by sliding. It is pulled up over the gap above it, and carries that gap inside itself, so that
    closed it takes no room at all. The inner box is a little larger than its contents so focus rings are not clipped. */
 .fold{display:grid;grid-template-rows:0fr;margin:-16px -8px 0}
@@ -263,9 +306,10 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
   border-radius:999px;padding:6px 14px;cursor:pointer}   /* 999px: every button, box of choices and text box is a pill, its ends fully round */
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.link{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:500}
+.btn.link{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:2px;font-weight:500}
 :is(.btn,summary,input[type=range]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.group.sliders{gap:12px}
+.group.sliders{gap:16px}   /* Appearance's groups: 16px between their sliders and other controls, as in a run of plain sliders */
+.slider:has(>.slot){gap:8px}   /* a colour slider's name stands 8px over its bar, which is solid from top to bottom, where a plain slider's rail is mostly air */
 /* Bike and Options: 28px above each subsection title that follows other controls, the same as between Appearance's subsections. */
 #sec-bike .sec-body>*+.pick,#sec-options .sec-body>*+.pick{margin-top:12px}
 /* Appearance: 28px between subsections (16px elsewhere), so each colour group reads as its own block. */
@@ -278,9 +322,28 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .pick>summary>:first-child{margin-right:auto;display:flex;align-items:center;gap:7px}
 .pick>summary>:first-child::after{content:"";width:5px;height:5px;border-right:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule);transform:rotate(-45deg);transition:transform .15s}
 .pick[open]>summary>:first-child::after{transform:translateY(-2px) rotate(45deg)}
-.pick[open]>summary{margin-bottom:12px}
+.pick[open]>summary{margin-bottom:16px}   /* 16px from a subsection's title to its first control... */
+.pick>summary+.group>.stack:first-child>.slider:first-child:has(output),.pick>summary+.stack>.slider:first-child:has(output){margin-top:-2px}   /* ...whatever that control is: a slider's name sits 2px down in its row (the value beside it is in larger figures), so a slider that comes first is drawn up by that much */
 @media (prefers-reduced-motion:reduce){ .pick>summary>:first-child::after{transition:none} }
 .sw{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:1px solid var(--line)}
+/* Page theme: its name at the left and, at the right, a row of dots to choose from, each the colour it stands for (the first is the
+   page's own ink: no theme). A dot is 16px, like a slider's, in 24px of pressing room; the one chosen has a ring of its colour round
+   it, a toggle's outline thick, filling that room. The dots stand 22px apart (their pressing room overlaps by 2px). The row is
+   pulled 4px past each end, so the last dot lines up with the toggles; in a panel too narrow to hold the dots beside the name they
+   go under it instead, and there the first dot lines up with the name. */
+.themes{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;min-height:24px}
+.dots{position:relative;display:flex;margin-inline:-4px}
+.dots label+input+label{margin-left:-2px}
+.dots input{position:absolute;opacity:0;pointer-events:none}
+.dots label{position:relative;flex:none;width:24px;height:24px;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dots label::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--c)}
+.dots input:checked+label::after{content:"";position:absolute;inset:0;border-radius:50%;border:var(--ln) solid var(--c)}
+.dots input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+/* Risky page themes: a second row, of colours that may not show on the page. Its dots are the first row's in every way: the same
+   size, and the one chosen has the same ring of its own colour. Only its name differs: it is long, so it may run to two lines beside
+   its dots (never breaking inside the brackets), and gives way to them sooner. */
+.themes .cap.long{flex:1 1 120px}
+.themes .cap.long span{white-space:nowrap}
 .sw-text{background:var(--ftext)} .sw-rider{background:var(--rider)} .sw-hair{background:var(--hair)} .sw-tire{background:var(--tire)} .sw-wall{background:var(--tirewall,var(--tire))} .sw-tires{background:linear-gradient(to right,var(--tire) 50%,var(--tirewall,var(--tire)) 50%)} .sw-frame{background:var(--frame)} .sw-tape{background:var(--tape)} .sw-saddle{background:var(--saddle)} .sw-wheel{background:var(--wheel)} .sw-comp{background:var(--comp)}
 /* Colour sliders: a borderless slot filled with the range it selects, 3px larger all round than its 16px thumb.
    Gradients start and stop at the thumb's end positions (11px in) so the colour under the thumb is the colour chosen.
@@ -293,26 +356,32 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .slot-gray{background:linear-gradient(to right,var(--lo) 11px,var(--hi) calc(100% - 11px))}   /* Wheel color and Components color: black to white */
 /* The test dummy has no hair: there the Hair color sliders wait, dimmed. */
 #grp-hair.off .group{opacity:.35}
-#style-ctl,#geo-hint,.tgl[for=geo-own]{margin-top:8px}   /* room above My riding style, the note under it and Enter my own geometry: 16px with the group's own gap */
-#geo-hint{color:var(--info)}   /* the note on the recommended size, in the blue of the info panel's labels */
+#style-ctl,#geo-hint,.tgl[for=geo-own]{margin-top:16px}   /* room above My riding style, the note under it and Enter my own geometry: 24px with the group's own gap */
+#cap-geo,#cap-style{margin-bottom:2px}   /* and these two names, being larger, stand 10px over their buttons */
+#geo-hint{color:var(--ink)}   /* the note on the recommended size: in the page's ink, like the lines around it, where other notes are gray */
+#cap-geo,#cap-style,#geo-hint,.tgl[for=geo-own] .cap{font-size:16px}   /* the lines that open the Bike page (I'm looking for a..., My riding style is..., the note, Enter my own geometry) are the size of the subsection titles under them (Frame, Fork and wheels...) */
 .ctl.off{opacity:.35} .ctl.off .seg label{cursor:default} .ctl.off .seg input:not(:checked)+label:hover{color:var(--muted)}   /* My riding style, while the user's own geometry shows */
 .slot input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .slot input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .slot input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--ink)}
-.slot input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--ink)}
+.slot input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--knob)}
+.slot input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:var(--ln) solid var(--field);border-radius:50%;background:var(--knob)}
 .slot input[type=range]:focus-visible{outline-offset:5px}
-/* Plain sliders: a line as thick as a toggle's outline with a filled dot sitting on it, both in the page's ink. The line is drawn as a
+/* Plain sliders: a line as thick as a toggle's outline with a filled dot sitting on it, both in the page's ink (or the page theme's colour). The line is drawn as a
    border, so that the browser fits it to the screen's pixels exactly as it does the toggle's outline. */
 .rail{position:relative;display:flex;align-items:center;height:22px}
-.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - var(--ln) / 2);height:0;border-top:var(--ln) solid var(--ink)}
+.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - var(--ln) / 2);height:0;border-top:var(--ln) solid var(--knob)}
 .rail input[type=range]{-webkit-appearance:none;appearance:none;position:relative;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .rail input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
 .rail input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
-.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--ink)}
-.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--ink)}
+.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
+.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
 .rail input[type=range]:focus-visible{outline-offset:4px}
 .foot{padding-top:14px;display:flex;gap:8px}
+/* Two resets. "Reset this page to defaults", filled, closes every page. Under it on the Options page, 12px down, is "Reset all pages
+   to defaults": outlined, as Copy Link is, so the one that undoes the most is the quieter of the two. */
+#reset-all-foot{padding-top:12px}
+#reset-all{border-color:var(--rule)}
 .foot .btn{flex:1;text-align:center;padding-block:8px}
 /* Reset asks first: the button gives way to Confirm (green) and Cancel (red), side by side across the same width. */
 /* The two colours are fixed, the same in both modes, and so is the lettering: white in normal mode and in Night Mode alike. */
@@ -320,11 +389,14 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .btn.cancel{background:var(--stop);border-color:var(--stop);color:#ffffff}
 
 /* ---------- stage ---------- */
-.stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;background:var(--stage)}
-.canvas{position:relative;min-height:0;overflow:hidden}
+/* The stage is the drawing above the info panel. The info panel is as tall as its readouts until its top line is dragged; from then
+   on it is the height it was dragged to (--info-row, which the script sets): shorter than its readouts, and they scroll; taller,
+   and the panel's own colour fills the rest. Either way the drawing keeps at least 160px of the stage. */
+.stage{container-type:inline-size;min-width:0;min-height:0;display:grid;grid-template-rows:minmax(160px,1fr) var(--info-row,auto);background:var(--stage)}
+.canvas{grid-area:1/1;position:relative;min-height:0;overflow:hidden}
 .canvas svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 /* Over the drawing: a row with Play/Pause at the upper left, the speed to the right of it, and Copy Link at the upper right; any warnings beneath it. */
-.hud{position:absolute;top:12px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
+.hud{position:absolute;top:16px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .hud>.hudrow{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}   /* the gap between the buttons lets clicks through to the drawing */
 .hudrow>*{pointer-events:auto}
@@ -343,17 +415,50 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .speed{font:500 12.5px var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);
   border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}   /* no frame: it is a reading, not a button */
 
-.readouts{border-top:var(--ln) solid var(--rule);background:var(--panel);padding-inline:16px;padding-block:12px 14px;display:flex;flex-direction:column;gap:10px}
+.readouts{grid-area:2/1;min-height:0;overflow-y:auto;overscroll-behavior:contain;border-top:var(--ln) solid var(--rule);background:var(--panel);padding-inline:24px;padding-block:20px;display:flex;flex-direction:column;gap:18px}   /* 20px clear of the line above and of the window's foot, and 24px of the sides: a little more than the 18px between its own two blocks, so the readouts sit inside the panel and not against its edges. 18px between Bike and Rider, against 8px between the rows inside each, so they read as two blocks */
+.readouts>*{flex:none}
+/* Its scroll bar, when it has one, is the control panel's: a thin handle with nothing behind it. (Not on a narrow screen, where the
+   info panel is a single row that slides sideways and keeps the browser's own bar.) */
+@media (min-width:761px){
+  @supports (scrollbar-color:auto){ .readouts{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+  .readouts::-webkit-scrollbar{width:10px;height:10px;background:transparent}
+  .readouts::-webkit-scrollbar-track,.readouts::-webkit-scrollbar-track-piece,.readouts::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
+  .readouts::-webkit-scrollbar-button{display:none;width:0;height:0}
+  .readouts::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
+}
 .rogroup{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:baseline}   /* baseline: Bike and Rider stand on the same line as the first readout's name */
 .rogroup h3{font:500 16px/1.2 var(--font);color:var(--ink)}   /* Bike and Rider: set like the panel's subsection titles */
-/* Six readouts across; the last column is a little wider, for "18 mm ahead" with its label. */
-.rogroup dl{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.3fr);gap:8px 12px}
-.ro{display:flex;flex-direction:column;gap:1px;min-width:0}
+/* Eight readouts across where the window has the width for it; four, three or two where it has not (further down). The steps are set
+   so that a column is never much under 135px: room for a readout's name on one line, and for most values beside their labels. */
+.rogroup dl{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px 12px}
+.ro{display:flex;flex-direction:column;gap:3px;min-width:0}   /* 3px: clear of the dotted line under the name */
 .ro dt{font-size:12px;color:var(--muted);line-height:1.2}
+/* A readout's name is a button, and so is its label: a click shows what the name means, or what that label says about that readout,
+   in a few plain words, in a small box set like the warnings over the drawing. The dotted line under a name or a label says it can
+   be clicked; under the pointer, and while its box shows, the line is solid, and a name is in the page's ink (a label keeps its
+   colour, which is what it says). One box shows at a time; a click on the same words again or anywhere else, Escape, or scrolling
+   the panel puts it away. The script places the box (it is fixed to the window, so the info panel's own edges do not cut it off). */
+.what{font:inherit;color:inherit;background:none;border:0;border-radius:2px;padding:0;margin:0;cursor:pointer;text-align:left;
+  text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .16s}
+.what:hover,.what[aria-expanded="true"]{text-decoration-style:solid}
+.ro dt .what:hover,.ro dt .what[aria-expanded="true"]{color:var(--ink)}
+.what:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rotip{position:fixed;z-index:30;width:max-content;max-width:min(300px,100vw - 16px);background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:6px;
+  padding:8px 10px;font-size:13px;line-height:1.35}
 /* A value and its label sit on one line; where a column is too narrow for both, the label drops under the value (the value itself never breaks). */
-.ro dd{font:500 15px/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px}
+.ro dd{font:500 15px/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:7px}
 .tag{font:500 11px var(--font);letter-spacing:.04em;text-transform:uppercase}
-.tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--info)}   /* plain: a description, not a verdict of good or bad: blue */
+.tag.ok{color:var(--go)} .tag.warn{color:var(--caution)} .tag.bad{color:var(--stop)} .tag.plain{color:var(--muted)}   /* plain: a description, not a verdict of good or bad: gray, as the readouts' names are */
+/* A coloured label is led by a disc of its colour, a little taller than the label's capitals and centred on them, with a white mark
+   in it: a tick in the green, an exclamation mark in the yellow, a cross in the red, so the three can be told apart by shape as well
+   as by colour. All three marks are drawn alike (a 1.5 line with round ends). Like the colours themselves the discs are the same in
+   both modes. A disc is part of its label, so it goes with it where the label drops under its value. */
+.tag:is(.ok,.warn,.bad)::before{content:"";display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-2px;border-radius:50%;background:currentColor}
+.tag.ok::before,.ro dd.plain::after{background:var(--go) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.3 6.3 5.2 8.2 8.8 4.1' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+.ro dd.plain{color:var(--ink)} .ro dd.warn{color:var(--caution)} .ro dd.bad{color:var(--stop)}   /* Fit assessment, whose value is a word and nothing else: Casual, Balanced or Aggressive is in the page's ink, as any value is; At risk and Does not fit take the colour a label would */
+.ro dd:is(.plain,.warn,.bad)::after{content:"";flex:none;width:12px;height:12px;border-radius:50%;transform:translateY(2px)}   /* and a label's disc after it, to the right of the word: a green tick while the fit is sound (Casual, Balanced, Aggressive), the yellow or the red mark otherwise. The same size as the others, the same 7px from the word as theirs are from a value, and 2px down, where theirs sit (a label's disc hangs 2px under its line) */
+.tag.warn::before,.ro dd.warn::after{background:var(--caution) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 3.1v3.5M6 8.9v.01' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}   /* these two come after the rules above, which set the discs' size and place */
+.tag.bad::before,.ro dd.bad::after{background:var(--stop) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.9 3.9l4.2 4.2M8.1 3.9l-4.2 4.2' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
 
 /* ---------- drawing ---------- */
 svg .ftext{fill:var(--ftext);font-family:var(--font);white-space:pre;pointer-events:none}   /* the lettering on the downtube */
@@ -455,18 +560,33 @@ svg.real .hand{stroke:var(--oline,#000);stroke-width:var(--oline-w,6px)}
 svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
 
-@container (max-width:975px){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr)) minmax(0,1.3fr)} }
-@container (max-width:520px){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@container (max-width:1295px){ .rogroup dl{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@container (max-width:675px){ .rogroup dl{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@container (max-width:535px){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Narrow screens (phones): one thing at a time. The navigation gains a fifth button, Play, first in the row. Its page is the drawing
+   with the info panel under it, and nothing else: together they fill the screen, the drawing keeping at least half of it and the info
+   panel scrolling in the rest. On the other four pages the drawing is a small picture pinned over the page: still live, so a slider
+   can be watched at work, but with no buttons or warnings laid over it and no info panel, which leaves the settings most of the
+   screen. A touch on the small picture goes to Play. (.app's data-page is the page showing; showPage() sets it.) */
+@container (max-width:359px){ .rogroup{grid-template-columns:minmax(0,1fr)} }   /* the narrowest phones: Bike and Rider stand over their readouts, not beside them, so two columns still fit */
 @media (max-width:760px){
-  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(250px,47%) minmax(0,1fr)}
-  .stage{grid-row:1}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:min(160px,24vh) minmax(0,1fr)}
+  .app[data-page="play"]{grid-template-rows:minmax(0,1fr) auto}
+  .stage{grid-row:1;grid-template-rows:minmax(0,1fr)}
+  .app[data-page="play"] .stage{grid-template-rows:minmax(50%,1fr) auto}
   .panel{grid-row:2;border-right:0;border-top:var(--ln) solid var(--rule)}
-  .readouts{flex-direction:row;gap:22px;overflow-x:auto;padding-block:8px 10px}
-  .rogroup{display:flex;gap:14px;flex:none}
-  .rogroup dl{display:flex;gap:16px}
-  .ro{flex:none}
+  .app[data-page="play"] .panel{border-top:0}   /* only the navigation is left of the panel here, and it has a line of its own */
+  .app[data-page="play"] .pages{display:none}
+  .app:not([data-page="play"]) :is(.readouts,.hud){display:none}
+  .app:not([data-page="play"]) .canvas{cursor:pointer}
+  .app:not([data-page="play"]) .canvas svg{pointer-events:none}   /* the small picture is one thing to touch: its parts do not answer on their own */
+  .app:not([data-page="play"]) svg :is(.ground,.inc,.incdot){display:none}   /* and it is the bike and rider alone: no ground line under them, nor the hill's angle marked on it, nor the handle that tilts it (which could not be worked there) */
+  .readouts{padding:16px}
+  #tab-play{display:flex}
+  .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .tabs::before{width:20%;transform:translateX(calc(var(--im,0) * 100%));box-shadow:none}   /* --im: the page's place among the five */
   .speed{display:none}
-  .resizer{display:none}
+  .resizer,.hresizer{display:none}
 }
 </style>
 </head>
@@ -703,11 +823,43 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             <label class="tgl" for="o-showBike"><span class="cap">Bike</span><input id="o-showBike" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
           </div>
         </details>
+        <details class="pick">
+          <summary class="grphead"><h3 class="grp">Display options</h3></summary>
+          <div class="group">
+            <div class="themes"><span class="cap" id="cap-theme">Page theme</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme">
+                <input type="radio" name="theme" id="theme-ink" value="ink" aria-label="Black and white"><label for="theme-ink" title="Black and white" style="--c:var(--ink)"></label>
+                <input type="radio" name="theme" id="theme-yellow" value="yellow" aria-label="Yellow"><label for="theme-yellow" title="Yellow" style="--c:var(--t-yellow)"></label>
+                <input type="radio" name="theme" id="theme-gray" value="gray" aria-label="Gray"><label for="theme-gray" title="Gray" style="--c:var(--t-gray)"></label>
+                <input type="radio" name="theme" id="theme-tan" value="tan" aria-label="Tan"><label for="theme-tan" title="Tan" style="--c:var(--t-tan)"></label>
+                <input type="radio" name="theme" id="theme-red" value="red" aria-label="Red"><label for="theme-red" title="Red" style="--c:var(--t-red)"></label>
+                <input type="radio" name="theme" id="theme-orange" value="orange" aria-label="Orange"><label for="theme-orange" title="Orange" style="--c:var(--t-orange)"></label>
+                <input type="radio" name="theme" id="theme-green" value="green" aria-label="Green"><label for="theme-green" title="Green" style="--c:var(--t-green)"></label>
+                <input type="radio" name="theme" id="theme-blue" value="blue" aria-label="Blue"><label for="theme-blue" title="Blue" style="--c:var(--t-blue)"></label>
+                <input type="radio" name="theme" id="theme-purple" value="purple" aria-label="Purple"><label for="theme-purple" title="Purple" style="--c:var(--t-purple)"></label>
+              </div>
+            </div>
+            <div class="themes"><span class="cap long" id="cap-risky">Risky page themes <span>(experimental)</span></span>
+              <div class="dots risky" role="radiogroup" aria-labelledby="cap-risky">
+                <input type="radio" name="theme" id="theme-gray-12" value="gray-12" aria-label="12.5% gray"><label for="theme-gray-12" title="12.5% gray" style="--c:var(--t-gray-12)"></label>
+                <input type="radio" name="theme" id="theme-gray-25" value="gray-25" aria-label="25% gray"><label for="theme-gray-25" title="25% gray" style="--c:var(--t-gray-25)"></label>
+                <input type="radio" name="theme" id="theme-neon-yellow" value="neon-yellow" aria-label="Neon yellow"><label for="theme-neon-yellow" title="Neon yellow" style="--c:var(--t-neon-yellow)"></label>
+                <input type="radio" name="theme" id="theme-neon-orange" value="neon-orange" aria-label="Neon orange"><label for="theme-neon-orange" title="Neon orange" style="--c:var(--t-neon-orange)"></label>
+                <input type="radio" name="theme" id="theme-neon-green" value="neon-green" aria-label="Neon green"><label for="theme-neon-green" title="Neon green" style="--c:var(--t-neon-green)"></label>
+                <input type="radio" name="theme" id="theme-neon-lime" value="neon-lime" aria-label="Neon yellow green"><label for="theme-neon-lime" title="Neon yellow green" style="--c:var(--t-neon-lime)"></label>
+                <input type="radio" name="theme" id="theme-rgb-red" value="rgb-red" aria-label="Pure red"><label for="theme-rgb-red" title="Pure red" style="--c:var(--t-rgb-red)"></label>
+                <input type="radio" name="theme" id="theme-rgb-green" value="rgb-green" aria-label="Pure green"><label for="theme-rgb-green" title="Pure green" style="--c:var(--t-rgb-green)"></label>
+                <input type="radio" name="theme" id="theme-rgb-blue" value="rgb-blue" aria-label="Pure blue"><label for="theme-rgb-blue" title="Pure blue" style="--c:var(--t-rgb-blue)"></label>
+              </div>
+            </div>
+            <label class="tgl" for="o-night"><span class="cap">Night mode</span><input id="o-night" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          </div>
+        </details>
       </div>
     </section>
 
     <section class="sec" id="sec-appearance" role="tabpanel" aria-labelledby="tab-appearance" tabindex="-1">
-      <div class="sechead"><h2>Appearance</h2></div>
+      <div class="sechead"><h2>Customize</h2></div>
       <div class="sec-body">
         <details class="pick" id="grp-rider">
           <summary class="grphead"><h3 class="grp">Rider</h3><i class="sw sw-rider" aria-hidden="true"></i></summary>
@@ -903,21 +1055,27 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
     </section>
 
     <div class="foot" id="reset-foot">
-      <button class="btn primary" id="reset-all" type="button">Reset to defaults</button>
-      <button class="btn confirm" id="reset-yes" type="button" hidden>Confirm</button>
-      <button class="btn cancel" id="reset-no" type="button" hidden>Cancel</button>
+      <button class="btn primary" id="reset-page" type="button">Reset this page to defaults</button>
+      <button class="btn confirm" type="button" hidden>Confirm</button>
+      <button class="btn cancel" type="button" hidden>Cancel</button>
+    </div>
+    <div class="foot" id="reset-all-foot" hidden>   <!-- shown on the Options page only -->
+      <button class="btn" id="reset-all" type="button">Reset all pages to defaults</button>
+      <button class="btn confirm" type="button" hidden>Confirm</button>
+      <button class="btn cancel" type="button" hidden>Cancel</button>
     </div>
   </div>
-  <nav class="tabs" role="tablist" aria-label="Control panel pages">
+  <nav class="tabs" role="tablist" aria-label="Pages">
+    <button class="tab" role="tab" id="tab-play" aria-controls="stage" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.25v13.5L19 12Z"/></svg></span><span>Play</span></button>
     <button class="tab" role="tab" id="tab-body" aria-controls="sec-body" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="3.5"/><path d="M5 20.5c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></span><span>Body</span></button>
     <button class="tab" role="tab" id="tab-bike" aria-controls="sec-bike" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g transform="translate(-.5 0)"><circle cx="5.25" cy="15.5" r="4.25"/><circle cx="19.75" cy="15.5" r="4.25"/><path d="M5.25 15.5 9.75 8.25h8M9.75 8.25l2.5 7.25 5.5-7.25 2 7.25M5.25 15.5h7M8.25 5.75h3M9.75 5.75v2.5M17.75 8.25 17.25 5.75h2.25"/></g></svg></span><span>Bike</span></button>
     <button class="tab" role="tab" id="tab-options" aria-controls="sec-options" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/><circle class="dot" cx="9" cy="6" r="2.25"/><circle class="dot" cx="15.5" cy="12" r="2.25"/><circle class="dot" cx="7" cy="18" r="2.25"/></svg></span><span>Options</span></button>
-    <button class="tab" role="tab" id="tab-appearance" aria-controls="sec-appearance" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h2c2.6 0 4.5-2.1 4.5-4.6C21 7.1 17 3.5 12 3.5Z"/><circle class="dot" cx="7.5" cy="11.5" r="1.3"/><circle class="dot" cx="9.75" cy="7.5" r="1.3"/><circle class="dot" cx="14.25" cy="7" r="1.3"/><circle class="dot" cx="17.25" cy="10.5" r="1.3"/></svg></span><span>Appearance</span></button>
+    <button class="tab" role="tab" id="tab-appearance" aria-controls="sec-appearance" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h2c2.6 0 4.5-2.1 4.5-4.6C21 7.1 17 3.5 12 3.5Z"/><circle class="dot" cx="7.5" cy="11.5" r="1.3"/><circle class="dot" cx="9.75" cy="7.5" r="1.3"/><circle class="dot" cx="14.25" cy="7" r="1.3"/><circle class="dot" cx="17.25" cy="10.5" r="1.3"/></svg></span><span>Customize</span></button>
   </nav>
   </aside>
   <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the control panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
 
-  <main class="stage">
+  <main class="stage" id="stage">
     <div class="canvas">
       <svg id="view" role="img" aria-label="Side view of the rider pedaling the bike" preserveAspectRatio="xMidYMax meet"></svg>
       <div class="hud">
@@ -932,26 +1090,32 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
         <span class="said" id="copy-said" role="status"></span>
       </div>
     </div>
-    <div class="readouts">
+    <div class="hresizer" id="info-resizer" role="separator" aria-orientation="horizontal" aria-label="Resize the info panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
+    <div class="readouts" id="info">
       <section class="rogroup"><h3>Bike</h3><dl>
-        <div class="ro"><dt title="Ground to the top of the top tube, halfway along it. Against your inseam: 26 mm or more to spare is clear, 1 to 25 mm is snug, none is too tall.">Standover height</dt><dd id="r-standover"></dd></div>
-        <div class="ro"><dt id="t-drop">Saddle-to-bar drop</dt><dd id="r-drop"></dd></div>
-        <div class="ro"><dt title="Worked out from the seat tube, stack and reach">Top tube slope</dt><dd id="r-slope"></dd></div>
-        <div class="ro"><dt title="Stack divided by reach. Under 1.45 is race geometry, 1.45 to 1.55 is endurance, over 1.55 is relaxed.">Stack to reach ratio</dt><dd id="r-ratio"></dd></div>
-        <div class="ro"><dt title="How far the tire’s contact point sits behind the steering axis. 57 mm or more is stable, 50 to 56 mm is responsive, under 50 mm is twitchy.">Trail</dt><dd id="r-trail"></dd></div>
-        <div class="ro"><dt>Wheelbase</dt><dd id="r-wb"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The whole fit in one word. Casual, Balanced or Aggressive tells you how upright or how low you sit on this bike. If a warning is showing over the drawing, it says At risk or Does not fit instead.">Fit assessment</button></dt><dd id="r-fit"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How high the top tube is off the ground. It needs to be lower than your inseam so you can stand over the bike. Clear means plenty of room, snug means a little, and too tall means none.">Standover height</button></dt><dd id="r-standover"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far the handlebars sit below the saddle. A bigger drop puts you lower and more stretched out. A smaller one sits you more upright. A rise means the bars are higher than the saddle.">Saddle-to-bar drop</button></dt><dd id="r-drop"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How tall the frame is compared with how long it is. A high number is a tall, short frame that sits you upright. A low number is a long, low race frame. Under 1.45 is race and over 1.55 is relaxed.">Stack to reach ratio</button></dt><dd id="r-ratio"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far behind the steering line the front tire touches the ground. More trail helps the bike hold a straight line. Less makes it quicker to turn.">Trail</button></dt><dd id="r-trail"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The distance between the centers of the two wheels. A longer bike feels steadier. A shorter one turns more quickly.">Wheelbase</button></dt><dd id="r-wb"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Whether your shoe can touch the front tire. With a gap, it can’t. With overlap, it can in a slow, tight turn. A little overlap is common on smaller road bikes.">Toe overlap</button></dt><dd id="r-toe"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How much the top tube slopes down from the front of the bike to the seat. More slope gives you more room to stand over the bike.">Top tube slope</button></dt><dd id="r-slope"></dd></div>
       </dl></section>
       <section class="rogroup"><h3>Rider</h3><dl>
-        <div class="ro"><dt title="The knee’s angle where the leg is straightest. 135° to 155° is typical; more means the saddle is high, less means it is low.">Knee, leg extended</dt><dd id="r-kmax"></dd></div>
-        <div class="ro"><dt title="The knee’s angle where it is most bent. 65° to 72° is typical, under 65° is tight, over 72° is open.">Knee, top of stroke</dt><dd id="r-kmin"></dd></div>
-        <div class="ro"><dt title="Shoulder to hip to knee, where the thigh comes closest to the torso. 45° to 65° is typical, under 45° is tight, over 65° is open.">Hip, most closed</dt><dd id="r-hip"></dd></div>
-        <div class="ro"><dt title="Hip to shoulder, measured from the ground line, so a hill does not change it by tilting the bike. 50° or more is casual, 40° to 49° is balanced, under 40° is aggressive.">Back angle</dt><dd id="r-back"></dd></div>
-        <div class="ro"><dt title="Between the torso and the upper arm. 75° to 100° is typical, under 75° is compact, over 100° is stretched.">Shoulder angle</dt><dd id="r-sh"></dd></div>
-        <div class="ro"><dt title="Measured with the crank level and forward, at 3 o’clock. From 20 mm behind the axle to 10 mm ahead is neutral.">Knee vs pedal axle</dt><dd id="r-kops"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How straight your leg gets at the bottom of the pedal stroke. 135° to 155° is typical. Straighter means the saddle is too high. More bent means it is too low.">Knee, leg extended</button></dt><dd id="r-kmax"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How bent your knee gets at the top of the pedal stroke. 65° to 72° is typical. A tighter bend is hard on the knee, and usually means the saddle is low or the cranks are long.">Knee, top of stroke</button></dt><dd id="r-kmin"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How close your thigh comes to your chest at the top of the pedal stroke. 45° to 65° is typical. Under 45° is tight, which makes it harder to breathe and to pedal.">Hip, most closed</button></dt><dd id="r-hip"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far your back leans forward, measured up from level. 50° or more is an upright, casual position. Under 40° is a low, aggressive one.">Back angle</button></dt><dd id="r-back"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The angle between your body and your upper arm. 75° to 100° is typical. Less means the bars are close to you. More means you are reaching a long way.">Shoulder angle</button></dt><dd id="r-sh"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Where your knee sits compared with the pedal when the pedal is level and forward. Directly over the pedal, or just behind it, is the usual starting point. Moving the saddle forward or back changes it.">Knee vs pedal axle</button></dt><dd id="r-kops"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The distance from the pedal at the bottom of its stroke up to the top of the saddle, compared with your inseam. A common rule sets it at 109%.">Pedal to saddle top</button></dt><dd id="r-ped"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Saddle height, from the center of the cranks (the bottom bracket, or BB) to the top of the saddle, compared with your inseam. A common rule sets it at 88.3%.">BB to saddle top</button></dt><dd id="r-bbs"></dd></div>
       </dl></section>
     </div>
   </main>
 </div>
+<div id="ro-tip" role="status"></div>   <!-- the explanation of a readout, put here when its name is clicked, so that it is read out too -->
 
 <script>
 (() => {
@@ -991,6 +1155,14 @@ const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe
 // dimmed and cannot be pressed on any rider profile, and the details are never drawn, whatever a remembered setup or a link says
 // (the remembered setting itself is left alone, so it is still there when this is set back to true).
 const BODY_DETAILS = false, detailsOn = () => BODY_DETAILS && opt.details;
+let infoH = null;   // the info panel's height in px, once its top line has been dragged; null: as tall as its readouts
+// The page theme (Options, Display options): 'ink' for none, or the name of one of the colours in the style sheet. Like NIGHT MODE it
+// is how this device shows the page, not part of the setup: it is remembered here and left out of links.
+const THEMES = ['ink', 'yellow', 'gray', 'tan', 'red', 'orange', 'green', 'blue', 'purple', 'neon-yellow', 'neon-orange', 'neon-green', 'neon-lime', 'rgb-red', 'rgb-green', 'rgb-blue', 'gray-25', 'gray-12'];   // the last nine are the risky ones
+const THEME0 = 'green';   // the theme the page opens in, and goes back to on Reset to defaults (the script in the head names it too)
+let theme = THEME0;
+function applyTheme() { const r = document.documentElement; if (theme === 'ink') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', theme); }
+const INFO_MIN = 80;   // the least it can be dragged to: one row of readouts, with the panel's 20px above and below it
 let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384, page = 'body';   // page: the control panel's page showing   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
 // geo: which geometry the bike has: one recommended for the rider ('road', 'gravel' or 'mountain') or the user's 'own'. lastGeo: the
 // recommendation last used. ownBike: the user's own geometry, kept while a recommendation is showing.
@@ -998,11 +1170,25 @@ let geo = 'road', lastGeo = 'road', ownBike = null;
 // style: the riding style a recommended bike is set up for. Casual sits the rider most upright, Aggressive lowest, Balanced between.
 const STYLES = ['casual', 'balanced', 'aggressive']; let style = 'casual';
 const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
+const BODY0 = () => ({ sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') });   // the rider the page opens on: 6 ft 0 in, male, average measurements
 function defaults() {
   ownBody = null; ownBike = null; geo = lastGeo = 'road'; style = 'casual';
   opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
-  body = { sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') };
-  recommend('road');   // the page opens on the road geometry recommended for this rider, 6 ft 0 in
+  body = BODY0();
+  recommend('road');   // the page opens on the road geometry recommended for this rider
+}
+// One page of the panel put back as it first opens, leaving the other pages as they are ("Reset this page to defaults").
+//  - Your Body: the rider and the units. A recommended bike is then worked out again for that rider, as it is whenever the body changes.
+//  - Bike Geometry: the road bike recommended for the rider as they are now, in the Casual style, with the user's own geometry forgotten.
+//  - Options: its own controls (OPTION_KEYS) and the page theme. Night mode stays: it is the home page's setting too.
+//  - Customize (the page called 'appearance' in here, as it was first named): every other option that has a control there. Tire size is shown there but is part of the bike, so it stays; the
+//    hill and the smiley (OFF_PAGE) are set on the drawing, not on a page, and only "Reset all pages to defaults" puts them back.
+const OPTION_KEYS = ['cadence', 'hands', 'ring', 'cog', 'elbow', 'toe', 'angles', 'joints', 'hideRider', 'hideBike'], OFF_PAGE = ['incline', 'smiley'];
+function resetPage(p) {
+  if (p === 'body') { ownBody = null; units = 'in'; body = BODY0(); fitBike(); }
+  else if (p === 'bike') { ownBike = null; geo = lastGeo = 'road'; style = 'casual'; bikeUnits = 'mm'; recommend('road'); }
+  else { (p === 'options' ? OPTION_KEYS : Object.keys(DEF_OPT).filter(k => !OPTION_KEYS.includes(k) && !OFF_PAGE.includes(k))).forEach(k => { opt[k] = DEF_OPT[k]; });
+    if (p === 'options') { theme = THEME0; applyTheme(); } }
 }
 function restore(d) {
   if (!d || typeof d !== 'object') return;
@@ -1035,7 +1221,9 @@ function restore(d) {
   if (d.own && typeof d.own === 'object' && PARTS.every(k => Number.isFinite(d.own[k]))) ownBody = Object.fromEntries(PARTS.map(k => [k, d.own[k]]));
   if (d.bikeUnits === 'mm' || d.bikeUnits === 'in') bikeUnits = d.bikeUnits;
   if (Number.isFinite(d.panelW)) panelW = d.panelW;
-  if (PAGES.includes(d.page)) page = d.page;   // like the panel's width, the page showing belongs to the device: links leave it out
+  if (Number.isFinite(d.infoH)) infoH = Math.max(INFO_MIN, d.infoH);   // the info panel's height belongs to the device too
+  if (THEMES.includes(d.theme)) theme = d.theme;   // and so does the page theme
+  if (TABS.includes(d.page)) { page = d.page; pageSaved = true; }   // like the panel's width, the page showing belongs to the device: links leave it out
   // A bike saved before recommendations existed is the user's own. A saved recommendation keeps the bike it was saved with.
   geo = ['road', 'gravel', 'mountain', 'own'].includes(d.geo) ? d.geo : 'own'; lastGeo = ['road', 'gravel', 'mountain'].includes(d.lastGeo) ? d.lastGeo : geo === 'own' ? 'road' : geo;
   style = STYLES.includes(d.style) ? d.style : 'casual';   // saved before riding styles existed: Casual, the one the page opens on
@@ -1204,7 +1392,7 @@ function setStyle(v) { style = v; if (geo !== 'own') recommend(geo); refresh(); 
 // Copy Link puts the settings into the page's address, after a #, so the page can be opened as it is now. Only what differs from
 // LINK_BASE is written, which keeps the address short. LINK_BASE is a fixed reference, not the live defaults: it must never be edited,
 // or links made earlier would open differently. If the reference ever has to change, add another under a new number and keep this one.
-// The panel's width and NIGHT MODE belong to the device, not the setup, so they are left out.
+// The panel's width, NIGHT MODE and the page theme belong to the device, not the setup, so they are left out.
 const LINK_URL = 'https://www.jasonbrewer.org/bike';
 const LINK_BASE = { 1: { units: 'in', bikeUnits: 'mm', geo: 'road', lastGeo: 'road',
   bike: { seatTube: 520, topTube: 560, sta: 73.5, hta: 72.5, chainstay: 420, bbDrop: 75, headLen: 170, reach: 385.45, stack: 589.27, pinTT: 'topTube', pinHT: 'fork', fork: 375, rake: 47, rim: 622, tire: 30, saddleH: 765, autoSaddle: true, setback: 100, crank: 172.5, spacers: 25, stem: 110, stemAngle: -6, barReach: 80, barDrop: 125, barAngle: 0, flat: false },
@@ -1243,7 +1431,7 @@ function openLink() {
   return true;
 }
 let saveT = 0;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 9, bike, body, opt, units, bikeUnits, own: ownBody, panelW, page, geo, lastGeo, style, ownBike })); } catch (e) {} }, 300); }
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 9, bike, body, opt, units, bikeUnits, own: ownBody, panelW, infoH, theme, page, geo, lastGeo, style, ownBike })); } catch (e) {} }, 300); }
 
 /* ---------- control panel ---------- */
 const BIKE = [
@@ -1304,10 +1492,19 @@ const sliderHTML = (id, f) => `<div class="slider"><div class="top"><label class
 
 const shows = [];
 // The control panel's pages, in the order of their buttons. Showing one hides the others; each keeps the place it was scrolled to.
-const PAGES = ['body', 'bike', 'options', 'appearance'], pageTop = {};
-function showPage(k, focus) { const sc = $('pages'); pageTop[page] = sc.scrollTop; page = k;
-  PAGES.forEach(p => { const on = p === k, t = $('tab-' + p); $('sec-' + p).hidden = !on; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
-  document.querySelector('.tabs').style.setProperty('--i', PAGES.indexOf(k));   // the highlight slides under the page's button
+// On a narrow screen there is a fifth page before them, 'play': the drawing and the info panel, which there are not on show beside
+// the panel (see the style sheet). TABS is the navigation on such a screen; lastPanel, the panel page last shown, is where a
+// window goes that is widened while on Play.
+const PAGES = ['body', 'bike', 'options', 'appearance'], TABS = ['play', ...PAGES], pageTop = {};
+const phone = () => !!window.matchMedia && matchMedia('(max-width:760px)').matches;
+let lastPanel = 'body', pageSaved = false;   // pageSaved: this device remembers a page (if not, a phone opens on Play)
+function showPage(k, focus) { const sc = $('pages'), tabs = document.querySelector('.tabs'); pageTop[page] = sc.scrollTop; page = k; if (k !== 'play') lastPanel = k;
+  PAGES.forEach(p => { $('sec-' + p).hidden = p !== k; });
+  TABS.forEach(p => { const on = p === k, t = $('tab-' + p); t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+  $('reset-all-foot').hidden = k !== 'options';   // "Reset all pages to defaults" is on the Options page only
+  tabs.style.setProperty('--i', Math.max(0, PAGES.indexOf(k))); tabs.style.setProperty('--im', TABS.indexOf(k));   // the highlight slides under the page's button: its place among the four, and among the five of a narrow screen
+  tabs.parentElement.parentElement.dataset.page = k;   // .app: the narrow layout goes by this
+  if (BND) fit();   // and so does the drawing's place in its frame
   sc.scrollTop = pageTop[k] || 0; if (focus) $('tab-' + k).focus(); save(); }
 // Typed entry. A slider listed here takes a typed value through its own set() (exactly as typed, in the units shown) and may read
 // and write it in a form of its own (feet and inches for height); any other slider is simply moved to the typed value.
@@ -1373,7 +1570,7 @@ function setBodyMode(own) {
 }
 function buildPanel() {
   $('bike-fields').innerHTML = `<div class="group"><div class="ctl"><span class="cap" id="cap-geo">I'm looking for a...</span>` +
-    `<div class="seg" role="radiogroup" aria-labelledby="cap-geo">${[['road', 'Road bike'], ['gravel', 'Gravel bike'], ['mountain', 'Mountain bike']].map(([v, l]) => `<input type="radio" name="geo" id="geo-${v}" value="${v}"><label for="geo-${v}">${l}</label>`).join('')}</div></div>` +
+    `<div class="seg fit" role="radiogroup" aria-labelledby="cap-geo">${[['road', 'Road bike'], ['gravel', 'Gravel bike'], ['mountain', 'Mountain bike']].map(([v, l]) => `<input type="radio" name="geo" id="geo-${v}" value="${v}"><label for="geo-${v}">${l}</label>`).join('')}</div></div>` +
     `<div class="ctl" id="style-ctl"><span class="cap" id="cap-style">My riding style is...</span><div class="seg" role="radiogroup" aria-labelledby="cap-style">${[['casual', 'Casual'], ['balanced', 'Balanced'], ['aggressive', 'Aggressive']].map(([v, l]) => `<input type="radio" name="style" id="style-${v}" value="${v}"><label for="style-${v}">${l}</label>`).join('')}</div></div>` +
     `<p class="hint" id="geo-hint"><span id="geo-fit"></span><span id="geo-tight" hidden> The top tube stands above this inseam; a real frame this size often dips its top tube lower than the straight one drawn here.</span><span> Take a look at the detailed dimensions below, or enter your own custom geometry.</span></p><label class="tgl" for="geo-own"><span class="cap">Enter my own geometry</span><input id="geo-own" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>` + BIKE.map(([name, fs]) =>   // the note on the recommended size sits between the three and Enter my own geometry
     `<details class="pick"><summary class="grphead"><h3 class="grp">${name}</h3></summary><div class="group"><div class="stack">` +
@@ -1451,6 +1648,12 @@ function buildPanel() {
   shows.push(() => { ['barReach', 'barDrop', 'barAngle'].forEach(k => { $('b-' + k).closest('.slider').hidden = bike.flat; }); $('cap-hands').closest('.ctl').hidden = bike.flat; });
   radios('sex', () => body.sex, v => { body.sex = v; setHeight(body.height); });
   radios('hands', () => opt.hands, v => { opt.hands = v; update(); });
+  radios('theme', () => theme, v => { theme = v; applyTheme(); save(); });
+  // Night mode, under Display options: one switch with NIGHT MODE in the title bar. That one keeps the setting (and remembers it, as
+  // the home page does), so this one works it by pressing it, and follows it whenever it changes.
+  const nm = $('o-night'), nightNow = () => document.documentElement.classList.contains('night'), nmShow = () => { nm.checked = nightNow(); };
+  nm.addEventListener('change', () => { if (nm.checked !== nightNow()) $('night').click(); });
+  document.addEventListener('nightchange', nmShow); shows.push(nmShow);
   radios('profile', () => opt.profile, v => { opt.profile = v; refresh(); update(); });
   // Body Details draws on the Male and Female builds; the test dummy has none, so there the button waits, dimmed.
   // Hair is one of the Body Details, so the Hair color subsection is put away while the button is off, and for the test dummy, which has no hair.
@@ -1514,29 +1717,39 @@ function buildPanel() {
     clearTimeout(cpT); cpT = setTimeout(() => { cp.textContent = 'Copy Link'; cp.style.minWidth = ''; $('copy-said').textContent = ''; }, 1600); });
   // A link pasted into the address bar while the page is already open: take its settings without a reload.
   window.addEventListener('hashchange', () => { if (openLink()) { unitUI(); refresh(); update(); } });
-  // Reset to defaults asks first. Pressing it swaps it for Confirm and Cancel; Cancel, Escape, or going on to anything else on the
-  // page puts it back. Confirm ignores presses for the first moment, so a double-click on Reset can't run straight through it.
-  // The buttons change hands in an order that never hides the one holding the focus, and 'asking' is only on once they have.
-  const foot = $('reset-foot'); let asking = false, resetAt = 0;
-  const resetAsk = (on, focus) => { asking = false;
-    if (on) { $('reset-yes').hidden = $('reset-no').hidden = false; $('reset-no').focus(); $('reset-all').hidden = true; }
-    else { $('reset-all').hidden = false; if (focus) $('reset-all').focus(); $('reset-yes').hidden = $('reset-no').hidden = true; }
-    asking = on; };
-  $('reset-all').addEventListener('click', () => { resetAsk(true); resetAt = performance.now(); });
-  $('reset-yes').addEventListener('click', () => { if (performance.now() - resetAt < 400) return; resetAsk(false, true); defaults(); unitUI(); refresh(); update(); });
-  $('reset-no').addEventListener('click', () => resetAsk(false, true));
-  foot.addEventListener('keydown', e => { if (e.key === 'Escape' && asking) resetAsk(false, true); });
-  ['pointerdown', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (asking && !foot.contains(e.target)) resetAsk(false); }));
+  // The resets: each page's own, and on the Options page one for all pages. Both ask first. Pressing one swaps it for Confirm and
+  // Cancel; Cancel, Escape, or going on to anything else on the page puts it back. Confirm ignores presses for the first moment, so a
+  // double-click on a reset can't run straight through it. The buttons change hands in an order that never hides the one holding the
+  // focus, and 'asking' is only on once they have. (foot: a row holding the button, then its Confirm and Cancel. go: what Confirm does.)
+  const asker = (foot, go) => { const [btn, yes, no] = foot.children; let asking = false, at = 0;
+    const ask = (on, focus) => { asking = false;
+      if (on) { yes.hidden = no.hidden = false; no.focus(); btn.hidden = true; }
+      else { btn.hidden = false; if (focus) btn.focus(); yes.hidden = no.hidden = true; }
+      asking = on; };
+    btn.addEventListener('click', () => { ask(true); at = performance.now(); });
+    yes.addEventListener('click', () => { if (performance.now() - at < 400) return; ask(false, true); go(); unitUI(); refresh(); update(); });
+    no.addEventListener('click', () => ask(false, true));
+    foot.addEventListener('keydown', e => { if (e.key === 'Escape' && asking) ask(false, true); });
+    ['pointerdown', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (asking && !foot.contains(e.target)) ask(false); })); };
+  asker($('reset-foot'), () => resetPage(page));
+  asker($('reset-all-foot'), () => { defaults(); theme = THEME0; applyTheme(); });   // the page theme is a control in the panel, so it goes back too
 
-  // A section closed from its title while the title is held at the top of the panel: with its controls gone the title would be left
-  // out of sight above, so the panel scrolls back to keep the title where it was pressed.
   // The navigation at the foot of the panel: a button for each page. A click shows that page; with a button in focus the arrow keys
   // (and Home and End) go to the page beside it, as in any row of tabs.
-  PAGES.forEach((k, i) => { const t = $('tab-' + k);
+  // (The row is the four panel pages, or the five of a narrow screen, with Play first.)
+  TABS.forEach(k => { const t = $('tab-' + k);
     t.addEventListener('click', () => showPage(k));
-    t.addEventListener('keydown', e => { const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: PAGES.length - 1 }[e.key]; if (j === undefined) return;
-      e.preventDefault(); showPage(PAGES[(j + PAGES.length) % PAGES.length], true); }); });
+    t.addEventListener('keydown', e => { const row = phone() ? TABS : PAGES, i = row.indexOf(k), j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: row.length - 1 }[e.key]; if (j === undefined) return;
+      e.preventDefault(); showPage(row[(j + row.length) % row.length], true); }); });
+  // A phone's first visit opens on Play, the drawing. Play is no page of a wide window: one that is on it shows a panel page instead,
+  // now or when it is widened.
+  if (!pageSaved && phone()) page = 'play';
+  if (page === 'play' && !phone()) page = 'body';
   showPage(page);
+  const mq = window.matchMedia && matchMedia('(max-width:760px)'), widened = () => { if (!mq.matches && page === 'play') showPage(lastPanel); };
+  if (mq) { if (mq.addEventListener) mq.addEventListener('change', widened); else mq.addListener(widened); }
+  // On a narrow screen the small picture over a panel page is a way to Play.
+  $('stage').firstElementChild.addEventListener('click', () => { if (phone() && page !== 'play') showPage('play'); });
 
   // Panel width: drag the edge, use the arrow keys on it, or double-click it to go back to the default.
   const rz = $('resizer'), app = rz.parentElement;
@@ -1546,10 +1759,44 @@ function buildPanel() {
   rz.addEventListener('pointerup', endDrag); rz.addEventListener('pointercancel', endDrag);
   rz.addEventListener('dblclick', () => { setPanelW(384); save(); });
   rz.addEventListener('keydown', e => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); setPanelW(panelW + (e.key === 'ArrowRight' ? 16 : -16)); save(); });
+
+  // Info panel height: its top line is dragged the same way, up and down (with the up and down arrow keys on it), and a double-click
+  // lets it go back to the height of its readouts. The line stays under the pointer at the point it was taken hold of.
+  const hz = $('info-resizer'), info = $('info'); let grab = 0;
+  hz.addEventListener('pointerdown', e => { hz.setPointerCapture(e.pointerId); hz.classList.add('drag'); grab = e.clientY - info.getBoundingClientRect().top; document.body.style.userSelect = 'none'; e.preventDefault(); });
+  hz.addEventListener('pointermove', e => { if (hz.classList.contains('drag')) setInfoH(info.getBoundingClientRect().bottom - e.clientY + grab); });
+  const endDragH = () => { if (!hz.classList.contains('drag')) return; hz.classList.remove('drag'); document.body.style.userSelect = ''; save(); };
+  hz.addEventListener('pointerup', endDragH); hz.addEventListener('pointercancel', endDragH);
+  hz.addEventListener('dblclick', () => { setInfoH(null); save(); });
+  hz.addEventListener('keydown', e => { if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault(); setInfoH(info.offsetHeight + (e.key === 'ArrowUp' ? 16 : -16)); save(); });
+
+  // Explanations: a click on a readout's name or on its label shows what it means (showTip, further down).
+  info.addEventListener('click', e => { const b = e.target.closest('.what'); if (b) { if (b === tipFor) hideTip(); else showTip(b); } });
+  document.addEventListener('pointerdown', e => { if (tipFor && !e.target.closest('.what, .rotip')) hideTip(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && tipFor) { tipFor.focus(); hideTip(); } });
+  // Scrolling the panel carries the name away from its box, so the box goes (once the name has really moved: the scroll that brought a
+  // name into view may only be reported after the click on it).
+  info.addEventListener('scroll', () => { if (!tipFor) return; const r = tipFor.getBoundingClientRect(); if (Math.abs(r.left - tipAt[0]) > 1 || Math.abs(r.top - tipAt[1]) > 1) hideTip(); });
+  window.addEventListener('resize', hideTip);
 }
 function setPanelW(w) {
   panelW = clamp(Math.round(w), 280, Math.max(280, window.innerWidth - 340));
   document.documentElement.style.setProperty('--panel-w', panelW + 'px'); $('resizer').setAttribute('aria-valuenow', panelW);
+}
+// The info panel's height, as dragged. Left alone (null) it is as tall as its readouts, and follows them when the window's width
+// changes how many rows they take. Dragged, it keeps the height it was dragged to: shorter than its readouts (they scroll) or
+// taller, up to where the drawing is left its last 160px. Within 6px of its readouts' own height it catches there and is left alone
+// again, so that height is easy to find by hand; a double-click on the line goes straight to it.
+function setInfoH(h) {
+  const r = $('info'), box = r.getBoundingClientRect(), end = r.lastElementChild.getBoundingClientRect();
+  const full = end.bottom - box.top + r.scrollTop + parseFloat(getComputedStyle(r).paddingBottom);   // its readouts' own height, with the line above them and the space below
+  infoH = h === null || Math.abs(h - full) <= 6 ? null : clamp(Math.round(h), INFO_MIN, Math.max(INFO_MIN, r.parentElement.clientHeight - 160));
+  applyInfoH();
+}
+function applyInfoH() {
+  const st = $('info').parentElement.style;   // the stage keeps the drawing's 160px even if the window has got shorter since
+  if (infoH === null) st.removeProperty('--info-row'); else st.setProperty('--info-row', `min(${infoH}px, 100% - 160px)`);
+  $('info-resizer').setAttribute('aria-valuenow', $('info').offsetHeight);
 }
 // The sliders' scales in the chosen units. Body (its own switch): 0.5 in for height and 0.1 in for the measurements, or 0.5 cm for both.
 // Bike lengths and wheel depth (the bike's switch): 0.05 in, or each field's own step in mm.
@@ -1631,24 +1878,25 @@ function solve() {
   const stemBase = along(headTop, u, 32 + b.spacers), steerTop = along(headTop, u, 52 + b.spacers);
   const stA = rad(90 - b.hta + b.stemAngle);
   const bar = [stemBase[0] + b.stem * Math.cos(stA), stemBase[1] + b.stem * Math.sin(stA)];
-  const bg = barGeom(b), off = b.flat ? FLAT_GRIP : bg.grips[opt.hands];
-  const grip = [bar[0] + off[0], bar[1] + off[1]];
+  const bg = barGeom(b), gripAt = k => { const off = b.flat ? FLAT_GRIP : bg.grips[k]; return [bar[0] + off[0], bar[1] + off[1]]; };
+  const grip = gripAt(opt.hands);
   const saddleY = b.saddleH * Math.sin(sa), ankleH = .039 * H;
   // The hip joint sits a little above the saddle, toward its back.
   const seat = [-b.setback - 155, saddleY + clamp(.62 * (body.thigh + body.shank + ankleH - body.inseam), 20, 130)];
   const T = body.torso, U = body.upperArm, F = body.forearm, hr = .06 * H;
   // Torso, arm and head from a hip position: the shoulder is where the torso arc meets the arm arc at the wanted elbow bend
   // (less, if the hands would not reach). neck: how far the neck is lifted from the line of the back, in degrees.
-  const upper = (hip, bend0, neck) => {
-    const dHG = dist(hip, grip), dir = unit(sub(grip, hip));
+  // (to: the hand position reached for, where it is not the one chosen.)
+  const upper = (hip, bend0, neck, to = grip) => {
+    const dHG = dist(hip, to), dir = unit(sub(to, hip));
     let bend = bend0, D;
     for (;;) { D = Math.sqrt(U * U + F * F + 2 * U * F * Math.cos(rad(bend))); if (dHG < T + D - 2 || bend <= 0) break; bend = Math.max(0, bend - 1); }
-    let arm = 'ok', shoulder, elbow, wrist = grip, elbowAng = 180 - bend;
+    let arm = 'ok', shoulder, elbow, wrist = to, elbowAng = 180 - bend;
     if (dHG >= T + D - 2) { arm = 'fail'; shoulder = along(hip, dir, T); elbow = along(shoulder, dir, U); wrist = along(elbow, dir, F); elbowAng = 180; }
     else {
       const a = clamp((T * T - D * D + dHG * dHG) / (2 * dHG), -T, T), h = Math.sqrt(Math.max(0, T * T - a * a));
       shoulder = [hip[0] + a * dir[0] - h * dir[1], hip[1] + a * dir[1] + h * dir[0]];
-      elbow = ik(shoulder, grip, U, F, -1).j; if (bend < Math.min(bend0, opt.elbow) - .5) arm = 'straight';   // straighter than the Elbow bend setting asks for
+      elbow = ik(shoulder, to, U, F, -1).j; if (bend < Math.min(bend0, opt.elbow) - .5) arm = 'straight';   // straighter than the Elbow bend setting asks for
     }
     const tA = Math.atan2(shoulder[1] - hip[1], shoulder[0] - hip[0]), nA = clamp(tA + rad(neck), rad(35), rad(86));
     return { hip, shoulder, elbow, wrist, arm, elbowAng, tA, headC: along(shoulder, [Math.cos(nA), Math.sin(nA)], .105 * H),
@@ -1657,6 +1905,9 @@ function solve() {
   G = { R, u, su, stJ, stLen, htJ, headTop, headBot, headLen, slope: deg(Math.atan2(htJ[1] - stJ[1], htJ[0] - stJ[0])), rear, front, foot, crown, stemBase, steerTop, bar, bg, grip, saddleY, ankleH,
     hr, H, groundY: b.bbDrop - R, crank: b.crank, vx: .47 * body.foot, vy: -(ankleH + 25), ...upper(seat, opt.elbow, 26) };
   G.seatedHead = G.headC[1];   // the seated rider's head height frames the flat view
+  // The back angle the fit assessment goes by: seated on flat ground with the hands on the shifters (or a flat bar's grips), which is
+  // how the riding styles' back angles are set. Moving the hands or tilting the hill changes how the rider sits, not how the bike fits.
+  G.seatedBack = deg(b.flat || opt.hands === 'hoods' ? G.tA : upper(seat, opt.elbow, 26, gripAt('hoods')).tA);
   if (opt.incline > 0) {
     // a: how far along the whole range the hill is, which sets the elbows and the head. t: how far the hips are from the saddle (0, up
     // to SEATED degrees) to the STEEP stance (1). There the hips are forward, at the height at which the knee reaches the stance's angle
@@ -1687,14 +1938,25 @@ function leg(th) {
   return { s, phi, ankle, knee: r.j, kneeAng: r.ang, state, out: Math.hypot(out[0], out[1]) > 2 ? unit(out) : [1, 0],
     hipAng: angBetween(sub(g.shoulder, g.hip), sub(r.j, g.hip)) };
 }
+// The toe of the shoe, as points round the ankle with the foot level: the two curves the shoe's outline is drawn with there (see the
+// foot in drawStatic), sampled closely enough to measure to.
+function toeCap() {
+  const tx = .75 * body.foot + 8, so = -(G.ankleH + 10), P = [], bez = (a, b, c, d, t) => { const u = 1 - t; return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d; };
+  [[[tx - 40, so], [tx - 14, so], [tx, so + 4], [tx, so + 18]], [[tx, so + 18], [tx, so + 34], [tx - 16, so + 42], [tx - 40, so + 44]]].forEach(c => {
+    for (let t = 0; t <= 1; t += .125) P.push([0, 1].map(i => bez(c[0][i], c[1][i], c[2][i], c[3][i], t))); });
+  return P;
+}
 function cycle() {
-  let kmax = 0, kmin = 999, hmin = 999, worst = 'ok';
+  let kmax = 0, kmin = 999, hmin = 999, worst = 'ok', toe = Infinity; const cap = toeCap();
   for (let d = 0; d < 360; d += 5) {
     const L = leg(rad(d)); kmax = Math.max(kmax, L.kneeAng); kmin = Math.min(kmin, L.kneeAng); hmin = Math.min(hmin, L.hipAng);
     if (L.state === 'fail') worst = 'fail'; else if (L.state === 'stretch' && worst !== 'fail') worst = 'stretch';
+    // The toe against the front tire: the foot is turned about the ankle by its angle (as it is drawn), and the nearest point of its toe is measured from the front axle.
+    const c = Math.cos(rad(-L.phi)), sn = Math.sin(rad(-L.phi));
+    for (const q of cap) toe = Math.min(toe, dist([L.ankle[0] + q[0] * c - q[1] * sn, L.ankle[1] + q[0] * sn + q[1] * c], G.front) - G.R);
   }
   const L = leg(Math.PI / 2);
-  C = { kmax, kmin, hmin, worst, kops: L.knee[0] + L.out[0] * .025 * G.H - G.crank };
+  C = { kmax, kmin, hmin, worst, toe, kops: L.knee[0] + L.out[0] * .025 * G.H - G.crank };   // toe: the smallest gap between the shoe and the front tire over the stroke (under zero: they overlap)
 }
 
 /* ---------- drawing ---------- */
@@ -1741,7 +2003,7 @@ function makeLeg(far) {
 }
 function buildScene() {
   // The hill's angle: a level line from the ground line's left end, the arc between the two, and its label. These stay level, outside the tilted scene.
-  E.inc = N('g', '', svg, { display: 'none' });
+  E.inc = N('g', 'inc', svg, { display: 'none' });
   E.level = N('line', 'ground level', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
   E.scene = root = N('g', '', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
   E.ground = N('line', 'ground');
@@ -1843,10 +2105,16 @@ function fit() {
     // view's 80 mm margin beyond each end) and the rider (with the flat view's 150 mm above the head) fit. The ground line still starts
     // pad above the bottom. At the faintest slope this is exactly the flat view, so the picture never jumps as the slope comes on.
     // When there are alerts, room is kept for them above the rider (up to 45% of the frame's height); that room comes in over the first 5 degrees.
-    const hud = $('alerts').childElementCount ? Math.min(r.height * .45, $('alerts').parentElement.offsetHeight + 18) * clamp(opt.incline / 5, 0, 1) : 0;
+    const hud = $('alerts').childElementCount ? Math.min(r.height * .45, $('alerts').parentElement.offsetHeight + 22) * clamp(opt.incline / 5, 0, 1) : 0;
     const half = Math.max(BND.hill.mid - (BND.hill.x - 80), BND.hill.x + BND.hill.w - BND.hill.mid);   // from the bike's middle to the further side
     s = Math.max(.01, Math.min(s, r.width / (2 * half), (r.height - pad) / (BND.hill.top + 150 - BND.ground), (r.height - pad - hud) / (BND.hill.top - BND.ground)));
     vb = [BND.hill.mid - r.width / s / 2, -BND.ground - (r.height - pad) / s, r.width / s, r.height / s];
+  }
+  // The small picture pinned over a panel page on a narrow screen has no ground line to stand on, so there the bike and rider are
+  // centred in the frame, top to bottom and side to side, as large as leaves 12px clear of every edge.
+  if (phone() && page !== 'play') { const o = BND.own, m = 12;
+    s = Math.max(.01, Math.min((r.width - 2 * m) / o.span, (r.height - 2 * m) / (o.hi - o.lo)));
+    vb = [o.mid - r.width / s / 2, -(o.hi + o.lo) / 2 - r.height / s / 2, r.width / s, r.height / s];
   }
   A(svg, { viewBox: vb.map(v => v.toFixed(2)).join(' ') });
   E.incDot.setAttribute('r', r1(8 / s));   // the handle is 16px across, like the other sliders'
@@ -1864,6 +2132,9 @@ const upright = t => t.setAttribute('transform', opt.incline ? `rotate(${opt.inc
 function drawStatic() {
   const g = G, b = bike, H = g.H, u = g.u;
   BND = { x: g.rear[0] - g.R - 230, w: g.front[0] - g.rear[0] + 2 * g.R + 460, top: Math.max(g.seatedHead + g.hr + 150, g.saddleY + 220), ground: g.groundY };
+  // The bike and rider alone, for the small picture of a narrow screen (see fit): from the tires' foot to the top of the head (or of
+  // the bike, with the rider hidden), and from the back of one tire to the front of the other.
+  BND.own = { lo: g.groundY, hi: opt.hideRider ? Math.max(g.saddleY, g.bar[1] + 50) : g.seatedHead + g.hr, mid: (g.rear[0] + g.front[0]) / 2, span: g.front[0] - g.rear[0] + 2 * g.R };
   const gL = [g.rear[0] - g.R - 150, g.groundY - 3], gR = [g.front[0] + g.R + 150, g.groundY - 3];
   setLine(E.ground, gL, gR); E.ground.classList.toggle('level', !opt.incline);
   // The Incline handle: at the line's left end on the flat, at its right end at the steepest, and in proportion between.
@@ -1886,9 +2157,10 @@ function drawStatic() {
     A(E.incArc, { d: `M ${pt(on(da * .8))} A ${r1(rA)} ${r1(rA)} 0 0 0 ${pt(on(ang - da * .8))}` });
     A(E.incHeads, { d: head(0, -1) + ' ' + head(ang, 1) });
     A(E.incLab, { x: r1(gL[0] + rA + 30), y: r1(-(gL[1] + rA * Math.sin(ang) / 2)) }); E.incLab.textContent = +opt.incline.toFixed(1) + '°';
-    let x1 = gR[0], y1 = -Infinity;   // the level line reaches furthest right
-    [[gR, 0], [g.rear, g.R], [g.front, g.R], [g.headC, g.hr], [g.shoulder, 90], [g.hip, 100], [g.elbow, 50], [g.grip, 70]].forEach(([p, r]) => {
-      const q = up(p); x1 = Math.max(x1, q[0] + r); y1 = Math.max(y1, q[1] + r); });
+    let x1 = gR[0], y1 = -Infinity, peak = -Infinity;   // the level line reaches furthest right. peak: the highest the bike and rider reach themselves, the ground line aside
+    [[gR, 0], [g.rear, g.R], [g.front, g.R], [g.headC, g.hr], [g.shoulder, 90], [g.hip, 100], [g.elbow, 50], [g.grip, 70]].forEach(([p, r], i) => {
+      const q = up(p); x1 = Math.max(x1, q[0] + r); y1 = Math.max(y1, q[1] + r); if (i && !(opt.hideRider && i > 2)) peak = Math.max(peak, q[1] + r); });
+    BND.own = { lo: Math.min(up(g.rear)[1], up(g.front)[1]) - g.R, hi: peak, mid: (up(g.rear)[0] + up(g.front)[0]) / 2, span: up(g.front)[0] - up(g.rear)[0] + 2 * g.R };   // the same, as tilted
     // From the ground line's left end: room needed to the right, how high the rider reaches, and the middle of the bike (halfway between the outer edges of its wheels).
     BND.hill = { x: gL[0], w: x1 - gL[0] + 80, top: y1, mid: (up(g.rear)[0] - g.R + up(g.front)[0] + g.R) / 2 };
   }
@@ -2230,12 +2502,63 @@ function wheelBlur() {
 }
 
 /* ---------- readouts ---------- */
+// What each label says about its readout, as plainly and as briefly as it can be said: shown when the label is clicked. Listed by
+// readout, then by the label as it is written. (What the readouts themselves mean is in the markup, on their names.)
+const INSEAM = 'Your inseam is the height from the floor to your crotch. This is the distance as a percentage of it.';
+const SAYS = {
+  fit: { Casual: 'You sit upright. Easy on your back and neck.', Balanced: 'Between upright and low. Suits most riding.',
+    Aggressive: 'You sit low and stretched out. Faster, but harder on your back and neck.',
+    'At risk': 'A yellow warning is showing over the drawing. Something needs adjusting.',
+    'Does not fit': 'A red warning is showing over the drawing. You can’t ride the bike this way.' },
+  standover: { clear: 'The top tube won’t touch your crotch when you stand over the bike.',
+    snug: 'The top tube only just clears your crotch when you stand over the bike.',
+    'too tall': 'The top tube hits your crotch when you stand over the bike.' },
+  drop: { upright: 'The bars are about level with the saddle, or higher. You sit up, with little weight on your hands.',
+    moderate: 'The bars are a little below the saddle. A middle position that suits most riding.',
+    deep: 'The bars are well below the saddle. You sit low, with more weight on your hands.' },
+  ratio: { race: 'A long, low frame. You sit low, for speed.', endurance: 'Between a race frame and a relaxed one. Made for long rides.',
+    relaxed: 'A tall, short frame. You sit upright.' },
+  trail: { stable: 'Holds a straight line easily and turns steadily.', responsive: 'Turns quickly and still holds a line. Usual on race bikes.',
+    twitchy: 'Turns very quickly. It takes care to hold a straight line.' },
+  toe: { clear: 'Your shoe can’t touch the front tire.',
+    overlap: 'Your shoe can touch the front tire in a slow, tight turn. At riding speed the wheel never turns that far.' },
+  kmax: { typical: 'Your leg is almost straight at the bottom of the stroke. The saddle height is right.',
+    'saddle high': 'Your leg nearly locks straight at the bottom of the stroke. Lower the saddle.',
+    'saddle low': 'Your knee stays well bent at the bottom of the stroke. Raise the saddle.',
+    'out of reach': 'Your foot can’t reach the pedal at the bottom of the stroke. Lower the saddle.' },
+  kmin: { tight: 'Your knee bends sharply at the top of the stroke, which strains it. Raise the saddle or fit shorter cranks.',
+    typical: 'A normal knee bend at the top of the stroke.', open: 'Less knee bend than usual at the top of the stroke. That is fine.' },
+  hip: { tight: 'Your thigh crowds your chest at the top of the stroke. It is harder to breathe and to pedal.',
+    typical: 'Normal room between your thigh and chest at the top of the stroke.', open: 'Plenty of room between your thigh and chest. That is fine.' },
+  back: { casual: 'An upright back. Easy on your back and neck.', balanced: 'A moderate lean forward. Suits most riding.',
+    aggressive: 'A low, flat back. Faster, but harder on your back and neck.' },
+  sh: { compact: 'The bars are close, so your arms are tucked in. A longer stem gives more room.', typical: 'A normal reach to the bars.',
+    stretched: 'A long reach to the bars. A shorter stem brings them closer.' },
+  kops: { neutral: 'Your knee is over the pedal, or just behind it. That is the usual starting point.' },
+  ped: { 'of inseam': INSEAM }, bbs: { 'of inseam': INSEAM }
+};
+// The box an explanation shows in. b: the button clicked, a readout's name (its words are in its data-tip) or its label (in SAYS).
+// The box stands just above the readout, so the name and the value stay in view, lined up with the left end of the words clicked
+// and kept inside the window; below the readout where there is no room above. A box that would sit across the info panel's top line
+// is moved up clear of it, onto the drawing.
+let tipFor = null, tipAt = [0, 0];   // tipFor: the button whose box shows; tipAt: where that button was when the box opened
+function hideTip() { if (!tipFor) return; tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; $('ro-tip').textContent = ''; }
+function showTip(b) {
+  const ro = b.closest('.ro'), say = b.dataset.tip || (SAYS[ro.querySelector('dd').id.slice(2)] || {})[b.textContent];
+  hideTip(); if (!say) return;
+  tipFor = b; b.setAttribute('aria-expanded', 'true');
+  const t = document.createElement('div'); t.className = 'rotip'; t.textContent = say; $('ro-tip').appendChild(t);
+  const r = b.getBoundingClientRect(), o = ro.getBoundingClientRect(), line = $('info').getBoundingClientRect().top, w = t.offsetWidth, h = t.offsetHeight; tipAt = [r.left, r.top];
+  let foot = o.top - 8; if (foot > line - 6 && foot < line + 24) foot = line - 6;
+  t.style.left = clamp(r.left, 8, Math.max(8, window.innerWidth - w - 8)) + 'px'; t.style.top = (foot - h >= 8 ? foot - h : o.bottom + 6) + 'px';
+}
 const ftin = () => { const t = Math.round(body.height / 25.4 * 10) / 10, ft = Math.floor(t / 12 + 1e-9); return `${ft}′${NB}${r1(t - ft * 12)}″`; };
 function readouts() {
   const g = G, b = bike, ha = rad(b.hta);
   // A value with its label. Green, yellow and red are verdicts: something fits, is marginal, or is wrong. Labels that only place the
   // bike or the rider on a scale (race to relaxed, twitchy to stable, upright to deep, casual to aggressive) are plain gray.
-  const tag = (v, t) => `${v}<span class="tag ${t[0]}">${t[1]}</span>`;
+  // A label is a button: a click on it says what it means for this readout (SAYS).
+  const tag = (v, t) => `${v}<button class="tag ${t[0]} what" type="button" aria-expanded="false">${t[1]}</button>`;
   // Out of the saddle (above SEATED degrees of incline) the readouts that judge the seated position say less: the joint angles are still
   // shown, without their labels, and the knee's place over the pedal axle, which is a measure of where the saddle sits, shows a dash.
   const seated = opt.incline <= SEATED, sit = (v, t) => seated ? tag(v, t) : v;
@@ -2247,20 +2570,24 @@ function readouts() {
   // It is labelled against the rider's inseam (floor to crotch), in whole millimetres: 26 or more to spare is clear, 1 to 25 is snug, none is too tall.
   const standover = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)) - g.groundY, spare = Math.round(body.inseam) - Math.round(standover);
   const so = spare >= 26 ? ['ok', 'clear'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
-  $('r-standover').innerHTML = `${len(standover)}<span class="tag ${so[0]}">${so[1]}</span>`;
+  $('r-standover').innerHTML = tag(len(standover), so);
   $('geo-tight').hidden = geo === 'own' || spare >= 1;   // a recommended frame that still reads too tall says why under the switch
   const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');   // always a number, 0.0° included
   $('r-wb').textContent = len(g.front[0] - g.rear[0]);
+  // Toe overlap: how far the toe of the shoe reaches past the front tire's edge at the closest point of the pedal stroke, seen from the
+  // side with the wheel straight. It only matters with the bars turned far at walking pace, and smaller road frames commonly have
+  // some, so the label describes it and is not coloured as good or bad. With none, the gap is given instead.
+  const tg = Math.round(C.toe);
+  $('r-toe').innerHTML = tag(tg > 0 ? len(tg) + NB + 'gap' : len(-tg), ['plain', tg > 0 ? 'clear' : 'overlap']);
   // Trail: how far the tire's contact point sits behind the steering axis. Road bikes run from about 50 to 63 mm, with 57 or 58 widely
   // given as the point where steering is both steady and agile; race bikes sit below that for quicker steering, and under 50 is outside
   // the usual road range. The label follows those bands, in whole millimetres.
   const trail = (g.R * Math.cos(ha) - b.rake) / Math.sin(ha), tr = ['plain', Math.round(trail) >= 57 ? 'stable' : Math.round(trail) >= 50 ? 'responsive' : 'twitchy'];
-  $('r-trail').innerHTML = `${len(trail)}<span class="tag ${tr[0]}">${tr[1]}</span>`;
+  $('r-trail').innerHTML = tag(len(trail), tr);
   // Saddle-to-bar drop is judged against saddle height, so a tall rider is not marked down for a drop that suits the frame: under 4%
   // of it (about 3 cm on a mid-size bike) is upright, the recreational range; over 12% (about 9 cm) is deep, the top of the racing range.
   const drop = Math.round(g.saddleY - (b.flat ? g.grip[1] + 17 : g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
   $('r-drop').innerHTML = tag(drop >= 0 ? len(drop) : len(-drop) + NB + 'rise', ['plain', drop < dLo ? 'upright' : drop <= dHi ? 'moderate' : 'deep']);
-  $('t-drop').title = `Top of the saddle down to the top of the bars. For this saddle height, under ${len(dLo)} is upright, up to ${len(dHi)} is moderate, more is deep.`;
   const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'saddle high'] : C.kmax < 135 ? ['warn', 'saddle low'] : ['ok', 'typical'];
   $('r-kmax').innerHTML = sit(Math.round(C.kmax) + '°', ks);
   // Knee at the top of the stroke: fitters aim for about 65 to 70 degrees (110 to 115 of bend). Tighter than that the knee is over-bent,
@@ -2273,7 +2600,7 @@ function readouts() {
   // just because the bike is tilted. Fitting guides put relaxed, recreational riding at about 50 to 55 degrees with the
   // hands on the hoods, experienced riders at 40 to 50, and racers from 40 down toward 30; the label follows those bands.
   const back = Math.round(deg(g.tA)), bk = ['plain', back >= 50 ? 'casual' : back >= 40 ? 'balanced' : 'aggressive'];
-  $('r-back').innerHTML = `${back}°<span class="tag ${bk[0]}">${bk[1]}</span>`;
+  $('r-back').innerHTML = tag(back + '°', bk);
   // Shoulder angle, torso to upper arm: 75 to 100 degrees is the span fitters see as normal (their targets, 80 to 95, sit inside it).
   // Less is a short reach to the bars, more a long one.
   const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = b.flat ? sh + '°' : sit(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
@@ -2283,6 +2610,12 @@ function readouts() {
   const k = Math.round(C.kops), kv = Math.abs(k) < 3 ? 'level' : len(Math.abs(k)) + NB + (k > 0 ? 'ahead' : 'behind');
   $('r-kops').innerHTML = !seated ? '—' : k > 10 || k < -20 ? kv : tag(kv, ['plain', 'neutral']);
   $('r-kops').title = seated ? '' : 'Only measured while the rider is seated';
+  // Saddle height against inseam (floor to crotch), the two ways the common rules give it: from the pedal axle at the bottom of the
+  // stroke, crank in line with the seat tube (saddle height plus crank length; the 109% rule), and from the centre of the bottom
+  // bracket (the saddle height itself; the 88.3% rule). To one decimal place, as 88.3 is. They say how the bike is set up, so they
+  // are shown out of the saddle too, and they carry no verdict: the knee angles are what judge the saddle's height.
+  const share = v => tag((100 * v / body.inseam).toFixed(1) + '%', ['plain', 'of inseam']);
+  $('r-ped').innerHTML = share(b.saddleH + b.crank); $('r-bbs').innerHTML = share(b.saddleH);
 
   const al = [];
   if (g.headLen < 60) al.push(['bad', 'This fork is too long for the frame. There is no room left for a head tube.']);
@@ -2295,6 +2628,16 @@ function readouts() {
   if (g.arm === 'fail') al.push(['bad', 'The hands can’t reach this bar position. Shorten the reach or raise the bars.']);
   else if (g.arm === 'straight') al.push(['warn', 'The arms have to straighten to reach this hand position.']);
   $('alerts').innerHTML = al.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
+  $('tab-play').dataset.alert = al.some(a => a[0] === 'bad') ? 'bad' : al.length ? 'warn' : '';   // the dot on Play's button, for a narrow screen on another page
+  // Fit assessment: the whole fit in a word. While a warning shows over the drawing it is the worst of them: Does not fit for a red
+  // one, At risk for a yellow one. Otherwise it names the riding style the position comes nearest, in gray, as a description: the
+  // style, for this kind of bike, whose back angle (in GEO) is closest to the rider's, in whole degrees. A custom bike is read as the
+  // kind it started from, or as a mountain bike once it has a flat bar.
+  const kind = b.flat ? 'mountain' : GEO[lastGeo].flat ? 'road' : lastGeo, F = GEO[kind].fit, fb = Math.round(g.seatedBack);
+  const cut = [Math.ceil((F.casual.back + F.balanced.back) / 2), Math.ceil((F.balanced.back + F.aggressive.back) / 2)];
+  const fa = al.some(a => a[0] === 'bad') ? ['bad', 'Does not fit'] : al.length ? ['warn', 'At risk'] : ['plain', fb >= cut[0] ? 'Casual' : fb >= cut[1] ? 'Balanced' : 'Aggressive'];
+  $('r-fit').innerHTML = `<button class="what" type="button" aria-expanded="false">${fa[1]}</button>`; $('r-fit').className = fa[0];   // the word is the whole value, so it is set at a value's size, in a label's colour; like a label, it can be clicked
+  if (tipFor && !tipFor.isConnected) hideTip();   // a label whose explanation was showing has just been written again, and may say something else now
   if (opt.incline > 0) fit();   // on a hill the view makes room for the alerts, so it is fitted again now that they are known
 
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
@@ -2312,7 +2655,7 @@ function hsb(h, s, v) { s /= 100; v /= 100;
   const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
   return '#' + [f(5), f(3), f(1)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const grayFull = t => { const x = Math.round(clamp(t, 0, 100) / 100 * 255).toString(16).padStart(2, '0'); return '#' + x + x + x; };   // the wheels' and the components' scale: black to white
-// Every colour chosen under Appearance is drawn as chosen, by day and in night mode alike: night mode changes the page, not the bike or
+// Every colour chosen under Customize is drawn as chosen, by day and in night mode alike: night mode changes the page, not the bike or
 // the rider. What does follow the page is the edge line, which fades in round any part whose colour comes close to the page's and would
 // otherwise be lost against it: close to white by day, close to black in night mode.
 function applyColors() { const st = document.documentElement.style, night = document.documentElement.classList.contains('night');
@@ -2369,10 +2712,10 @@ function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); 
 function start() {
   defaults();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
-  restore(saved); openLink(); setPanelW(panelW);   // settings from a link come before the ones remembered on this device
+  restore(saved); openLink(); setPanelW(panelW); applyTheme();   // settings from a link come before the ones remembered on this device
   buildPanel(); buildScene(); unitUI(); refresh();
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { playing = false; $('play').textContent = 'Play'; }
-  update();
+  update(); applyInfoH();   // the info panel's height, if it was dragged on this device
   document.addEventListener('nightchange', applyColors);   // the NIGHT MODE switch
   if (window.ResizeObserver) new ResizeObserver(fit).observe(svg);
   // --ln, the thickness of the toggles' outlines and the sliders' lines. A browser draws a border in whole screen pixels, rounding down; the
