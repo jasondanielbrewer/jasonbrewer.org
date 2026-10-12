@@ -1,1 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Black Hole Descent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Layout: a title bar; under it a scrolling control rail on the left in plain white, black and gray, and the view from the
+   falling camera on the right, with the timeline and the readouts along its bottom edge. Lines in the page's theme colour
+   divide the parts. Two looks: by day a white page, in night mode a black one. The view itself is the sky, and is always dark. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --panel:#ffffff; --field:#ffffff;
+  --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc; --slot:#d6d6d6;
+  --rule:#000000; --accent:var(--ink); --accent-ink:#ffffff; --knob:var(--ink);   /* the page's own furniture with no theme chosen: black, white in night mode */
+  --theme:var(--ink);                             /* the page theme's colour, set below by the theme chosen under Options, Display options */
+  --ts:1;                                         /* Text size: what every size of text is multiplied by, from 0.9 for Extra small to 1.3 for Extra large. The title bar keeps its own size */
+  --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;   /* each dark enough for white lettering and light enough to show on black, so one colour serves both modes */
+  --t-yellow:#dea62e;                             /* a golden yellow: strong on black, faint on white. Lettering on it is black */
+  --t-gray-10:#e6e6e6; --t-gray-20:#cccccc; --t-gray-30:#b3b3b3; --t-gray-40:#999999; --t-gray-50:#808080; --t-gray-60:#666666; --t-gray-70:#4d4d4d; --t-gray-80:#333333; --t-gray-90:#1a1a1a;
+  --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-lime:#ccff00; --t-neon-pink:#ff10f0; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff;
+  --go:#00af00; --caution:#d2a500; --stop:#ff0000; /* fixed in both modes: verdicts, warnings, Confirm and Cancel */
+  --sky:#000000;                                  /* behind the view */
+  --ln:1.92px;                                    /* every dividing line, outline, slider line and toggle outline; the script takes it down to whole screen pixels */
+  --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
+  --home-font:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;   /* the home page's font stack */
+  --lab-fs:14px; --cap:0.72;                      /* NIGHT MODE switch: font size and capital height, set by the title bar's script as on the home page */
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){color-scheme:dark; --bg:#000000; --panel:#000000; --field:#000000; --ink:#ececec; --muted:#949494; --line:#2e2e2e; --slot:#292929; --rule:#ffffff; --accent-ink:#000000}
+}
+:root[data-theme="dark"]{color-scheme:dark; --bg:#000000; --panel:#000000; --field:#000000; --ink:#ececec; --muted:#949494; --line:#2e2e2e; --slot:#292929; --rule:#ffffff; --accent-ink:#000000}
 
+/* Soft background: the page is not pure white or pure black. By day a warm off-white, in night mode a slightly lighter, warmer black,
+   with the faint lines lifted by as much. Only the page changes: everything on it keeps its colour. */
+:root.soft{--bg:#fcfcfa; --panel:#fcfcfa; --field:#fcfcfa}
+@media (prefers-color-scheme:dark){
+  :root.soft:not([data-theme="light"]){--bg:#191918; --panel:#191918; --field:#191918; --line:#3a3a39; --slot:#353534}
+}
+:root.soft[data-theme="dark"]{--bg:#191918; --panel:#191918; --field:#191918; --line:#3a3a39; --slot:#353534}
+/* Page theme: a colour in place of black (white in night mode) for the page's own furniture: the lines that divide it, the outlines
+   and fills of its buttons, switches and boxes, the block under the page chosen in the navigation, and the sliders' lines and dots.
+   It is the same colour in both modes (these rules come after night mode's, and take over from them). Text keeps the page's ink, and
+   nothing in the view changes. The attribute is data-accent; data-theme is day or night. */
+:root[data-accent="red"]{--theme:var(--t-red)} :root[data-accent="orange"]{--theme:var(--t-orange)} :root[data-accent="yellow"]{--theme:var(--t-yellow)} :root[data-accent="green"]{--theme:var(--t-green)}
+:root[data-accent="blue"]{--theme:var(--t-blue)} :root[data-accent="indigo"]{--theme:var(--t-indigo)} :root[data-accent="violet"]{--theme:var(--t-violet)}
+:root[data-accent="gray-10"]{--theme:var(--t-gray-10)} :root[data-accent="gray-20"]{--theme:var(--t-gray-20)} :root[data-accent="gray-30"]{--theme:var(--t-gray-30)} :root[data-accent="gray-40"]{--theme:var(--t-gray-40)} :root[data-accent="gray-50"]{--theme:var(--t-gray-50)} :root[data-accent="gray-60"]{--theme:var(--t-gray-60)} :root[data-accent="gray-70"]{--theme:var(--t-gray-70)} :root[data-accent="gray-80"]{--theme:var(--t-gray-80)} :root[data-accent="gray-90"]{--theme:var(--t-gray-90)}
+:root[data-accent="neon-yellow"]{--theme:var(--t-neon-yellow)} :root[data-accent="neon-orange"]{--theme:var(--t-neon-orange)} :root[data-accent="neon-lime"]{--theme:var(--t-neon-lime)} :root[data-accent="neon-pink"]{--theme:var(--t-neon-pink)} :root[data-accent="rgb-red"]{--theme:var(--t-rgb-red)} :root[data-accent="rgb-green"]{--theme:var(--t-rgb-green)} :root[data-accent="rgb-blue"]{--theme:var(--t-rgb-blue)}
+:root[data-accent]{--rule:var(--theme);--accent:var(--theme);--accent-ink:#ffffff;--knob:var(--theme)}
+:root[data-accent="neon-yellow"],:root[data-accent="neon-orange"],:root[data-accent="neon-lime"],:root[data-accent="neon-pink"],:root[data-accent="rgb-green"],:root[data-accent="yellow"],:root[data-accent="gray-10"],:root[data-accent="gray-20"],:root[data-accent="gray-30"],:root[data-accent="gray-40"],:root[data-accent="gray-50"]{--accent-ink:#000000}   /* lettering on the light ones is black, which is what reads on them */
+
+html{height:100%}
+*,*::before,*::after{box-sizing:border-box}   /* set outright: inheriting it does not reach inside a folded subsection in every browser */
+body{display:flex;flex-direction:column;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font:400 calc(14px * var(--ts))/1.4 var(--font)}
+h1,h2,h3,p,dl,dd{margin:0}
+button,input{font:inherit;color:inherit}
+
+/* ---------- title bar ---------- */
+/* Site title: the same letters at the same size and in the same place as on the home page (jasonbrewer.org), whatever the window's
+   size or shape. The script just after the header repeats the home page's own sums and sets the size and position; the letters are
+   SVG text, as they are there, with an unseen link to the home page laid over them. The font size given here is only a stand-in
+   until that script has run. The bar is 32px plus .89 of the font size tall. (Copied from the Bike Fit Visualizer.) */
+.site{position:relative;flex:none;background:var(--panel);border-bottom:var(--ln) solid var(--rule);
+  height:calc(env(safe-area-inset-top,0px) + 32px + .89em);
+  font:400 clamp(9px,calc(.0694*min(33.333vh,100vw - 2*max(24px,6vw))),40px)/1 var(--font)}
+.site svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;user-select:none;-webkit-user-select:none}
+.site text{font-family:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-weight:400;fill:var(--ink);text-anchor:start;text-rendering:geometricPrecision}
+.site a{position:absolute;color:var(--ink);border-radius:6px;-webkit-tap-highlight-color:transparent}
+.site a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+/* The NIGHT MODE switch, as on the home page: its words the size of the home page's labels, its toggle 16px from the top and right
+   edges, sized in the words' own units to the height of their capitals and standing on their baseline. */
+.switch{--sw:calc(var(--cap) * 1em);position:fixed;right:calc(env(safe-area-inset-right,0px) + 8px);display:block;margin:0;padding:10px 8px;border:0;background:none;color:var(--ink);
+  font:400 var(--lab-fs)/1 var(--home-font);text-rendering:geometricPrecision;white-space:nowrap;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#night{top:calc(env(safe-area-inset-top,0px) + 6px);z-index:10}
+.switch:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:6px}
+.switch .track{display:inline-block;vertical-align:baseline;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);border:calc(var(--sw) * .12) solid currentColor;border-radius:999px}
+.switch .thumb{position:absolute;top:50%;left:calc(var(--sw) * .13);width:calc(var(--sw) * .5);height:calc(var(--sw) * .5);border-radius:50%;background:currentColor;transform:translateY(-50%);transition:transform .15s}
+.switch .words + .track{margin-left:calc(var(--sw) * .8)}
+.switch[aria-checked="true"] .track{background:currentColor}
+.switch[aria-checked="true"] .thumb{background:var(--panel);transform:translate(calc(var(--sw) * .75),-50%)}
+
+.app{position:relative;flex:1;min-height:0;display:grid;--pw:max(calc(280px * var(--ts)),min(384px,100% - 340px));grid-template-columns:var(--pw) minmax(0,1fr)}
+
+/* ---------- control panel ---------- */
+/* A column: its pages above, scrolling, and under them the navigation that picks the page, which stays put. */
+.panel{min-height:0;display:flex;flex-direction:column;background:var(--panel);border-right:var(--ln) solid var(--rule);overflow:hidden}
+.pages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-inline:16px;padding-block:0 28px;display:flex;flex-direction:column;scroll-padding-top:60px}
+@supports (scrollbar-color:auto){ .pages,.readouts{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+.pages>*{flex:none}
+.sec>.sechead{display:flex;align-items:center;gap:10px;min-height:calc(52px + var(--ln));position:sticky;top:0;z-index:3;
+  border-bottom:var(--ln) solid var(--rule);margin-inline:-16px;padding-inline:16px;background:var(--panel)}
+.sec>.sechead h2{flex:none;white-space:nowrap;font:600 calc(20px * var(--ts))/1.1 var(--font);letter-spacing:-.01em}
+.sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 calc(12px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}
+.sec-body{display:flex;flex-direction:column;gap:16px;padding:20px 0 18px}
+
+/* The navigation: one button for each page across the bottom of the panel. The page showing is a solid block of the theme colour
+   that slides under its button; the others are gray, and darken under the pointer. */
+.tabs{flex:none;position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:var(--ln) solid var(--rule);background:var(--panel)}
+.tabs::before{content:"";position:absolute;top:0;bottom:0;left:0;width:33.3334%;background:var(--rule);transform:translateX(calc(var(--i,0) * 100%))}
+.ready .tabs::before{transition:transform .18s cubic-bezier(.3,.7,.3,1)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:8px 2px;border:0;border-radius:0;position:relative;background:none;color:var(--muted);
+  font:500 calc(12px * var(--ts))/1.2 var(--font);cursor:pointer;transition:color .16s}
+.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .ic{display:grid;place-items:center;width:52px;height:28px}
+.tab svg{width:22px;height:22px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tab svg .dot{fill:currentColor;stroke:none}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent-ink)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.tab[aria-selected="true"]:focus-visible{outline-color:var(--accent-ink)}
+#tab-play{display:none}
+
+.group{display:flex;flex-direction:column;gap:8px}
+.group>:is(.tgl,.themes,.slider)+:is(.tgl,.themes,.slider){margin-top:4px}   /* a run of switches, or of Display options' rows: 12px apart */
+.grp{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
+.cap{font-size:calc(13px * var(--ts));font-weight:500;line-height:1.2}
+.note{color:var(--muted);font-weight:400;font-size:calc(12px * var(--ts))}
+.hint{color:var(--muted);font-size:calc(12.5px * var(--ts));line-height:1.35}
+.hint b{font-weight:600;color:var(--ink)}
+.ctl{display:flex;flex-direction:column;gap:8px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* On/off pills: an outlined box when off, filled when on. Here they are a set of radio buttons, two to a row. */
+.togs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.tog{position:relative;display:block;min-width:0;cursor:pointer}
+.tog input{position:absolute;opacity:0;pointer-events:none}
+.tog span{display:block;padding:7px 8px;border:var(--ln) solid var(--rule);border-radius:999px;background:var(--field);color:var(--ink);
+  font-size:calc(13px * var(--ts));font-weight:500;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .16s,color .16s}
+.tog input:checked+span{background:var(--rule);color:var(--accent-ink)}
+.tog input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Switches: the name at the left and, at the right edge, a toggle drawn like the NIGHT MODE switch, 16px tall. The whole row is the switch. */
+.tgl{--sw:16px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:24px;color:var(--ink);cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent}
+.tgl input{position:absolute;opacity:0;pointer-events:none}
+.tgl .cap{min-width:0}
+.tgl .track{flex:none;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);border:var(--ln) solid currentColor;border-radius:999px;color:var(--knob)}
+.tgl .thumb{position:absolute;top:50%;left:calc(var(--sw) * .13);width:calc(var(--sw) * .5);height:calc(var(--sw) * .5);border-radius:50%;background:currentColor;transform:translateY(-50%);transition:left .15s}
+.tgl input:checked+.track{background:currentColor}
+.tgl input:checked+.track .thumb{left:calc(100% - var(--sw) * .63);background:var(--accent-ink)}
+.tgl>.tglsw{flex:1;align-self:stretch;display:flex;align-items:center;justify-content:flex-end;min-height:24px;cursor:pointer}   /* where the name is a button that explains itself, the rest of the row is the switch */
+.tgl:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* Page theme: a line with that name, and under it three rows, each with its name at the left and a row of dots at the right, each dot
+   the colour it stands for (the first of Basic is the page's own ink: no theme). A dot is 16px in 24px of pressing room; the one
+   chosen has a ring of its colour round it. In a panel too narrow for the dots beside the name they go under it. */
+.themes{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;min-height:24px}
+.dots{position:relative;display:flex;margin-inline:-4px;--faint:color-mix(in srgb,var(--ink) 25%,var(--bg))}
+.dots label+input+label{margin-left:-2px}
+.dots input{position:absolute;opacity:0;pointer-events:none}
+.dots label{position:relative;flex:none;width:24px;height:24px;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dots label::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--c)}
+.dots input:checked+label::after{content:"";position:absolute;inset:0;border-radius:50%;border:var(--ln) solid var(--c)}
+.dots input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.dots input:disabled+label{opacity:.35;cursor:default}   /* 90% gray, in night mode: it is all but the page's own colour there */
+/* One dot in each mode can hardly be told from the page (10% gray by day, 90% gray in night mode): it carries a hairline inside it. */
+:root:not(.is-night) .dots label[for=theme-gray-10]::before,:root.is-night .dots label[for=theme-gray-90]::before{box-shadow:inset 0 0 0 1px var(--faint)}
+:root:not(.is-night) .dots input:checked+label[for=theme-gray-10]::after,:root.is-night .dots input:checked+label[for=theme-gray-90]::after{border-color:var(--faint)}
+
+/* A box of choices: the highlight is one block, painted as the box's own background, that slides to the chosen option (--i of --n). */
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:var(--ln) solid var(--rule);border-radius:999px;
+  background:var(--field) linear-gradient(var(--rule),var(--rule)) calc(var(--i,0)/(var(--n,2) - 1)*100%) 0/calc(100%/var(--n,2)) 100% no-repeat}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.ready .seg{transition:background-position .18s cubic-bezier(.3,.7,.3,1)}
+.seg label{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;padding:7px 3px;text-align:center;cursor:pointer;
+  font-size:calc(13px * var(--ts));min-height:calc(13px * var(--ts) * 1.4 + 14px);font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;transition:color .16s}
+.seg label:hover{color:var(--ink)}
+.seg input:checked+label{color:var(--accent-ink)}
+.seg:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+/* Sliders: a line as thick as a toggle's outline with a filled dot sitting on it, both in the theme colour. */
+.slider{display:flex;flex-direction:column;gap:5px}
+.slider .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.slider output{flex:none;white-space:nowrap;font:500 calc(14px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}
+.rail{position:relative;display:flex;align-items:center;height:22px}
+.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - var(--ln) / 2);height:0;border-top:var(--ln) solid var(--knob)}
+.rail input[type=range]{-webkit-appearance:none;appearance:none;position:relative;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer;box-shadow:none;filter:none}
+.rail input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent;box-shadow:none}
+.rail input[type=range]::-moz-range-track{height:16px;border:0;background:transparent;box-shadow:none}
+.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
+.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
+.rail input[type=range]:focus-visible{outline-offset:4px}
+
+.btn{font:500 calc(13.5px * var(--ts)) var(--font);color:var(--ink);background:var(--field);border:var(--ln) solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.link{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:2px;font-weight:500;font-size:inherit}
+:is(.btn,summary,input[type=range]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.confirm{background:var(--go);border-color:var(--go);color:#ffffff}
+.btn.cancel{background:var(--stop);border-color:var(--stop);color:#ffffff}
+.foot{padding-top:14px;display:flex;gap:8px;margin-top:auto}
+.foot .btn{flex:1;text-align:center;padding-block:8px}
+
+/* A subsection folds down to one row: its name, with a small caret that points down when it is open. */
+.pick>summary{display:flex;align-items:center;list-style:none;cursor:pointer;border-radius:4px;min-height:18px}
+.pick>summary::-webkit-details-marker{display:none}
+.pick>summary>:first-child{margin-right:auto;display:flex;align-items:center;gap:7px}
+.pick>summary>:first-child::after{content:"";width:5px;height:5px;border-right:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule);transform:rotate(-45deg);transition:transform .15s}
+.pick[open]>summary>:first-child::after{transform:translateY(-2px) rotate(45deg)}
+.pick[open]>summary{margin-bottom:16px}
+#sec-options .sec-body>*+.pick,#sec-camera .sec-body>*+.pick{margin-top:12px}
+
+/* The path figure: a top-down map of the fall, at the top of the Trajectory page. It stays in view while the controls scroll under it. */
+.mapwrap{position:sticky;top:calc(52px + var(--ln));z-index:2;height:clamp(150px,24vh,220px);margin:-8px -16px;padding:8px 16px;background:var(--panel)}
+#map{display:block;width:100%;height:100%}
+
+/* ---------- stage ---------- */
+.stage{container-type:inline-size;font-size:calc(16px * var(--ts));min-width:0;min-height:0;display:grid;grid-template-rows:minmax(160px,1fr) auto;background:var(--sky)}
+.stage>*{font-size:calc(14px * var(--ts))}   /* the stage's own font size is only a measure, for the steps of the readouts' columns; what is in it starts from the page's size */
+.canvas{grid-area:1/1;position:relative;min-height:0;overflow:hidden;background:var(--sky)}
+#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#view.dragging{cursor:grabbing}
+/* Over the view, at the upper left: the pace, and any warnings beneath it. */
+.hud{position:absolute;top:16px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
+.hud>*{pointer-events:auto}
+/* Along the bottom of the view: the hint in the middle and full screen at the right. In full screen the timeline, with Play and
+   Restart at its left, leaves the readouts (which are put away) and lies here straight on the picture, with nothing around it: the
+   hint goes to a line above. Its line, knob and marks turn white with a dark halo, so they read over black sky and bright disk alike.
+   The row sits lower by what the marks' names hang below the buttons, so all three buttons keep 16px from the view's edge. */
+.dock{position:absolute;left:16px;right:16px;bottom:16px;z-index:4;display:grid;grid-template-columns:minmax(34px,1fr) minmax(0,auto) minmax(34px,1fr);grid-template-areas:". hint full";align-items:end;gap:10px;pointer-events:none}
+.dock>*{pointer-events:auto}
+.app.full .dock{bottom:4px;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"hint hint" "bar full";align-items:start;column-gap:16px}
+.dock .scrub{grid-area:bar}
+.dock .tline{--knob:#fff;--muted:#e2e2e2;--accent:#fff;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px rgba(0,0,0,.9)) drop-shadow(0 0 6px rgba(0,0,0,.55))}
+.dock .btn.primary{box-shadow:0 0 0 var(--ln) var(--panel)}   /* a ring of the page's colour, so the button keeps its shape against the sky when the theme is black or a dark gray */
+.speed{font:500 calc(12.5px * var(--ts)) var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}
+.alerts{display:flex;flex-direction:column;gap:6px;max-width:440px;min-width:0}
+.alert{display:flex;gap:8px;align-items:baseline;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:calc(13px * var(--ts));line-height:1.3}
+.alert::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--caution);transform:translateY(-1px)}
+.alert.bad::before{background:var(--stop)}
+/* Full screen, at the lower right of the view: the panel at the left and the readouts along the bottom are put away and the view
+   takes their room. The same button brings them back; its arrows point outward to open and inward to close. */
+#b-full{grid-area:full;justify-self:end;display:grid;place-items:center;width:34px;height:34px;padding:0;border-color:var(--rule)}
+#b-full svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+#b-full .shrink,#b-full[aria-pressed="true"] .grow{display:none}
+#b-full[aria-pressed="true"] .shrink{display:inline}
+.app.full{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.app.full .panel,.app.full .readouts{display:none}
+/* Full screen is for the picture. The pace at the upper left goes (warnings stay), and the bar along the bottom (Play, Restart, the
+   timeline, speed, Full screen) keeps out of sight until the pointer comes down to it; the script says when. Put away, it cannot be
+   pressed by accident, but the keyboard still reaches it, and it shows itself when it does. */
+.app.full #speed{display:none}
+.app.full .dock>:not(#hint){transition:opacity .25s}
+.app.full .dock.away>:not(#hint){opacity:0;pointer-events:none}
+.app.full .stage{grid-row:1;grid-template-rows:minmax(0,1fr)}
+#hint{grid-area:hint;justify-self:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .6s}
+/* The card at the end lies over everything else in the view. Where the view is too short for it, its words scroll and its buttons stay put. */
+.endwrap{position:absolute;z-index:5;inset:8px 16px;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.endwrap::before{content:"";flex:42 0 0}
+.endwrap::after{content:"";flex:58 0 0}
+.endcard{flex:0 1 auto;min-height:0;pointer-events:auto;width:min(420px,100%);overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+  background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:16px 18px 0}
+.endcard h2{font:600 calc(20px * var(--ts))/1.1 var(--font);letter-spacing:-.01em;text-wrap:balance}
+.endcard p{font-size:calc(13px * var(--ts));line-height:1.35}
+.endcard .kick{color:var(--muted);font-size:calc(12px * var(--ts))}
+.endcard .row{position:sticky;bottom:0;display:flex;gap:8px;flex-wrap:wrap;padding:4px 0 16px;background:var(--panel)}
+#fatal{position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:16px;background:var(--panel);color:var(--ink)}
+#fatal>div{max-width:52ch;display:flex;flex-direction:column;gap:10px}
+#fatal h2{font:600 calc(20px * var(--ts))/1.1 var(--font)}
+#fatal pre{margin:0;white-space:pre-wrap;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);max-height:40vh;overflow:auto}
+
+/* Along the bottom: the timeline, then the readouts in two blocks. */
+.readouts{grid-area:2/1;min-height:0;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;border-top:var(--ln) solid var(--rule);background:var(--panel);color:var(--ink);
+  padding-inline:24px;padding-block:14px 20px;display:flex;flex-direction:column;gap:18px}
+.readouts>*{flex:none}
+/* The timeline: Play (or Pause) and Restart at its left, as round buttons with a sign each and no words, then a slider like the
+   others. Marks on its line show where the path crosses the radii that matter. The line runs level with the middle of the buttons. */
+.scrub{display:flex;align-items:flex-start;gap:12px}
+.transport{flex:none;display:flex;gap:8px}
+.tline{flex:1;min-width:0;position:relative;margin-top:6px;padding-bottom:18px}
+.btn.icon{display:grid;place-items:center;width:34px;height:34px;padding:0}
+.btn.icon svg{width:18px;height:18px}
+#b-play svg{fill:currentColor;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+#b-play .i-pause,#b-play[data-state="playing"] .i-play{display:none}
+#b-play[data-state="playing"] .i-pause{display:block}
+#b-restart{border-color:var(--rule)}
+#b-restart svg{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+/* Playback speed: a round button at the right of the timeline, a speedometer's dial on it. A click and it grows upward into a tall capsule
+   with a slider in it: up is faster, and a mark half way shows the ordinary speed. The capsule is laid over the button from outside
+   the page's flow, so nothing clips it; the button at its foot is the same button, and puts it away again. A small box beside the
+   knob says the speed. Under the view, the row reaches 8px further each way, so this button stands right under Full screen. */
+.readouts .scrub{margin-inline:-8px}
+#b-rate{border-color:var(--rule)}
+#b-rate svg,#b-rate-close svg{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ratepop{position:fixed;z-index:30;width:34px;visibility:hidden;pointer-events:none;transition:visibility 0s .18s}
+.ratepop.open{visibility:visible;pointer-events:auto;transition:none}
+.ratepop .cap{position:absolute;left:0;right:0;bottom:0;height:34px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+  background:var(--field);color:var(--ink);border-radius:17px;transition:height .18s ease}
+/* The capsule's outline is drawn over it, not as its own border, so the button at its foot is the full 34px and lies exactly on the
+   button beneath, whatever a border's thickness comes to on this screen. */
+.ratepop .cap::after{content:"";position:absolute;inset:0;border:var(--ln) solid var(--rule);border-radius:inherit;pointer-events:none}
+.ratepop.open .cap{height:100%}
+.vrail{flex:none;position:relative;width:100%;height:var(--len,124px);margin-top:7px}
+.vrail::before{content:"";position:absolute;left:calc(50% - 6px);width:12px;top:calc(50% - var(--ln) / 2);border-top:var(--ln) solid var(--muted)}
+.vrail .rail{position:absolute;left:50%;top:50%;width:var(--len,124px);transform:translate(-50%,-50%) rotate(-90deg)}
+.vrail input[type=range]{touch-action:none}
+.vrail input[type=range]:focus-visible{outline:none}   /* the keyboard's ring goes round the whole capsule instead */
+.ratepop .cap:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+#b-rate-close{flex:none;width:34px;height:34px;border:0;background:transparent}
+.ratepop output{position:absolute;right:calc(100% + 8px);top:var(--y,50%);transform:translateY(-50%);opacity:0;transition:opacity .1s;
+  font:500 calc(12.5px * var(--ts)) var(--font);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--panel);border-radius:6px;padding:6px 10px;white-space:nowrap}
+.ratepop.open output{opacity:1;transition:opacity .16s .1s}
+#ticks{position:absolute;left:8px;right:8px;top:0;bottom:0;pointer-events:none}
+#ticks i{position:absolute;top:4px;width:0;height:14px;border-left:var(--ln) solid var(--muted)}
+#ticks i span{position:absolute;top:19px;left:0;transform:translateX(-50%);font:500 calc(11px * var(--ts))/1 var(--font);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+#ticks i.h{border-left-color:var(--stop)}
+#ticks i.h span{color:var(--stop)}
+.rogroup{display:grid;grid-template-columns:calc(44px * var(--ts)) minmax(0,1fr);gap:12px;align-items:baseline}
+.rogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 12px}   /* the path's own figures, under its map */
+.rogroup h3{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
+.rogroup dl{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px 12px}
+.ro{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ro dt{font-size:calc(12px * var(--ts));color:var(--muted);line-height:1.2}
+/* A readout's name is a button: a click says what it means, in a small box set like the warnings over the view. */
+.what{font:inherit;color:inherit;background:none;border:0;border-radius:2px;padding:0;margin:0;cursor:pointer;text-align:left;
+  text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .16s}
+.what:hover,.what[aria-expanded="true"]{text-decoration-style:solid;color:var(--ink)}
+.what:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rotip{position:fixed;z-index:30;width:max-content;max-width:min(300px,100vw - 16px);background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font-size:calc(13px * var(--ts));line-height:1.35}
+.ro dd{margin-top:auto;font:500 calc(15px * var(--ts))/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;align-items:baseline;column-gap:7px;min-width:0}
+.ro dd>span:first-child{flex:none}
+.ro dd .sub{min-width:0;overflow:hidden;text-overflow:ellipsis}   /* the second reading gives way where a column is narrow, so a readout is always one line and the band under the view keeps its height */
+.ro dd sub,.slider output sub,.hint sub,.endcard sub,.alert sub{font-size:.72em;line-height:0}
+.sub{font:400 calc(12px * var(--ts)) var(--font);color:var(--muted)}                 /* a second reading of the same value, in other units */
+.tag{font:500 calc(11px * var(--ts)) var(--font);letter-spacing:.04em;text-transform:uppercase}
+.tag.plain{color:var(--muted)}
+/* Where you are is a verdict: a word, and after it a disc with a mark in it (a tick, an exclamation mark, a cross), so the three
+   can be told apart by shape as well as by colour. */
+.ro dd.plain{color:var(--ink)} .ro dd.warn{color:var(--caution)} .ro dd.bad{color:var(--stop)}
+.ro dd:is(.plain,.warn,.bad)::after{content:"";flex:none;width:12px;height:12px;border-radius:50%;transform:translateY(2px)}
+.ro dd.plain::after{background:var(--go) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.3 6.3 5.2 8.2 8.8 4.1' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+.ro dd.warn::after{background:var(--caution) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 3.1v3.5M6 8.9v.01' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+.ro dd.bad::after{background:var(--stop) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.9 3.9l4.2 4.2M8.1 3.9l-4.2 4.2' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+
+@container (max-width:80.94em){ .rogroup dl{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@container (max-width:42.19em){ .rogroup dl{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@container (max-width:33.44em){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@container (max-width:22.44em){ .rogroup{grid-template-columns:minmax(0,1fr)} }
+
+/* Narrow screens: one thing at a time. The navigation gains a fourth button, Play, first in the row: its page is the view with the
+   timeline and readouts under it. On the other pages the view is a small picture pinned over the page, still live; a touch on it goes to Play. */
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:min(200px,30vh) minmax(0,1fr)}
+  .app[data-page="play"]{grid-template-rows:minmax(0,1fr) auto}
+  .stage{grid-row:1;grid-template-rows:minmax(0,1fr)}
+  .app[data-page="play"] .stage{grid-template-rows:minmax(50%,1fr) auto}
+  .panel{grid-row:2;border-right:0;border-top:var(--ln) solid var(--rule)}
+  .app[data-page="play"] .panel{border-top:0}
+  .app[data-page="play"] .pages{display:none}
+  .app:not([data-page="play"]) :is(.readouts,.hud,#hint,.endcard){display:none}
+  .app:not([data-page="play"]) #view{cursor:pointer}
+  .speed:not(.hintbox){display:none}
+  .readouts{padding:14px 16px 16px;max-height:none}
+  .readouts .scrub{margin-inline:0}
+  #tab-play{display:flex}
+  .tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tabs::before{width:25%;transform:translateX(calc(var(--im,0) * 100%))}
+  .app.full,.app.full[data-page]{grid-template-rows:minmax(0,1fr)}
+  .app.full .stage,.app.full[data-page] .stage{grid-template-rows:minmax(0,1fr)}
+  .app.full .panel{display:none}
+  #ticks i:not(.h) span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .switch .thumb,.tgl .thumb,.tog span,.tab,.ready .tabs::before,.ready .seg,.pick>summary>:first-child::after,#hint,.what,.app.full .dock>:not(#hint),.ratepop,.ratepop .cap,.ratepop output,.ratepop.open output{transition:none}
+}
+</style>
+</head>
+<body>
+<script>/* Decided before the first paint, from what this device remembers: night mode (on unless switched off here), the page theme
+   (pure RGB green unless another was chosen; 'ink' is no theme), Soft background and the text size. The main script checks them again and has the last word. */
+(function () { var r = document.documentElement, d = null;
+  var n = null; try { n = localStorage.getItem('black-hole-descent:night'); } catch (e) {}
+  r.setAttribute('data-theme', n === '0' ? 'light' : 'dark');
+  try { d = JSON.parse(localStorage.getItem('black-hole-descent:display') || 'null'); } catch (e) {}
+  var t = d && typeof d.theme === 'string' && /^[a-z0-9-]+$/.test(d.theme) ? d.theme : 'rgb-green';
+  if (t !== 'ink') r.setAttribute('data-accent', t);
+  if (d && d.soft === true) r.classList.add('soft');
+  var z = d && [.9, 1, 1.1, 1.2, 1.3][d.textSize]; if (z && z !== 1) r.style.setProperty('--ts', z); })();</script>
+
+<header class="site" id="site-bar">
+  <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
+  <a id="site-link" href="https://www.jasonbrewer.org/static" aria-label="jasonbrewer.org"></a>
+  <button id="night" class="switch" type="button" role="switch" aria-checked="false"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+  <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
+</header>
+<script>
+/* Site title: sized and placed by the home page's own sums, so the name neither moves nor changes size when going between pages.
+   On the home page every text size is a fixed fraction of its square, so this works out how big that square would be in this
+   window and takes the same fraction of it. It mirrors measure(), mobileFit(), layout() and layoutText() in /index.html, as the
+   Bike Fit Visualizer's copy does; if the sizing there changes, change it here too. The NIGHT MODE switch is sized and placed the
+   same way. (Switching night mode itself is done by the main script below: setNight.) */
+(function () {
+  var bar  = document.getElementById('site-bar');
+  var name = document.getElementById('site-name');
+  var link = document.getElementById('site-link');
+  var safe = document.getElementById('site-safe');
+  var root = document.documentElement;
+  var nightBtn = document.getElementById('night');
+
+  var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  var TITLE = 'How are you feeling?';   // the home page's heading: as wide as its square
+  var PAD = 16, GAP_TOP = 12, GAP_BOTTOM = 14, NEAR = 0.09, BLOCK_GAP = 0.10;
+  var mctx = document.createElement('canvas').getContext('2d');
+
+  // Ink metrics of a string, as fractions of the font size.
+  function measure(text, weight) {
+    mctx.font = weight + ' 100px ' + FAMILY;
+    var m = mctx.measureText(text);
+    return {
+      left:  m.actualBoundingBoxLeft / 100,
+      right: m.actualBoundingBoxRight / 100,
+      asc:   m.actualBoundingBoxAscent / 100,
+      desc:  m.actualBoundingBoxDescent / 100
+    };
+  }
+
+  // The largest square the home page's mobile arrangement can hold.
+  function mobileFit(W, edgeTop, edgeBottom, edgeLeft) {
+    var t = measure(TITLE, 400), u = 1 / (t.left + t.right);
+    var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
+    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 700).asc;
+    var ten = measure('10', 400), site = measure(name.textContent, 400);
+    var fsL = 0.5625 * u, fsK = fsL * 2 / 3;
+    var clear = (0.05 + fsL * 0.35) * 2 / 3;
+    var keySide = clear + (ten.left + ten.right) * fsK + 0.7 * fsK + capH * fsK;
+    var keyDown = clear + digitH * fsK + 0.7 * fsK + capH * fsK;
+    var blockH  = digitH * 3 * u + 2.25 * capB * 0.45 * u + capB * fsL;
+    var above = { k: NEAR + (t.asc + t.desc) * u + (site.asc + site.desc) * 0.65625 * u, px: PAD + GAP_TOP };
+    var below = { k: BLOCK_GAP + keyDown + blockH + capH * fsL, px: PAD + GAP_BOTTOM };
+    return {
+      byWidth:  (W - 2 * (edgeLeft + PAD)) / (1 + 2 * keySide),
+      byHeight: (edgeBottom - edgeTop - above.px - below.px) / (1 + above.k + below.k)
+    };
+  }
+
+  function layout() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var cs = getComputedStyle(safe);
+    var edgeTop = parseFloat(cs.paddingTop) || 0;
+    var edgeBottom = H - (parseFloat(cs.paddingBottom) || 0);
+    var edgeLeft = parseFloat(cs.paddingLeft) || 0;
+
+    // the home page's square: 1/3 of the height on wide windows, fitted to the width on tall ones, blended in between
+    var k = Math.min(1, Math.max(0, (1 - W / H) / 0.25));
+    var mobile = k * k * (3 - 2 * k);
+    var margin = Math.max(24, W * 0.06);
+    var desk = Math.min(H / 3, W - 2 * margin);
+    var fit = mobileFit(W, edgeTop, edgeBottom, edgeLeft);
+    var mob = Math.min(fit.byWidth, fit.byHeight, Math.max(H / 3, 400));
+    var size = Math.max(21, Math.round(desk + (mob - desk) * mobile));
+
+    // the name's size as a fraction of that square
+    var t = measure(TITLE, 400);
+    var fs1 = size / (t.left + t.right);
+    var fsS = fs1 * (7 / 8) * 0.75;
+
+    // its ink sits 16px from the top and left edges; the link covers the letters and 8px around them
+    var site = measure(name.textContent, 400);
+    bar.style.fontSize = fsS + 'px';              // sets the bar's height
+    var r = bar.getBoundingClientRect();          // the SVG and the link are placed from the bar's corner
+    name.setAttribute('x', edgeLeft + 16 + site.left * fsS - r.left);
+    name.setAttribute('y', edgeTop + 16 + site.asc * fsS - r.top);
+    name.style.fontSize = fsS + 'px';
+    link.style.left   = (edgeLeft + 16 - 8 - r.left) + 'px';
+    link.style.top    = (edgeTop + 16 - 8 - r.top) + 'px';
+    link.style.width  = ((site.left + site.right) * fsS + 16) + 'px';
+    link.style.height = ((site.asc + site.desc) * fsS + 16) + 'px';
+
+    // the switch's words are the size of the home page's labels, and its toggle as tall as their capitals
+    var fsL = fs1 * 0.45 * 1.25;
+    root.style.setProperty('--lab-fs', fsL + 'px');
+    root.style.setProperty('--cap', measure('H', 400).asc);
+    // the toggle sits the same distance from the top edge as from the right edge
+    var EDGE = 16;
+    nightBtn.style.top = '';
+    var nt = nightBtn.querySelector('.track').getBoundingClientRect();
+    nightBtn.style.top = (nightBtn.getBoundingClientRect().top + (edgeTop + EDGE) - nt.top) + 'px';
+  }
+
+  layout();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', layout);
+
+  // measure again once Geist has arrived
+  if (document.fonts && document.fonts.load) {
+    var sample = TITLE + '0123456789MOODENERGYNIGHTH' + name.textContent;
+    ['400', '700'].forEach(function (w) {
+      document.fonts.load(w + ' 16px "Geist"', sample).then(layout, function () {});
+    });
+    if (document.fonts.ready) document.fonts.ready.then(layout);
+  }
+})();
+</script>
+
+<div class="app" id="app" data-page="path">
+  <aside class="panel" id="panel" aria-label="Controls">
+  <div class="pages" id="pages">
+
+    <section class="sec" id="sec-path" role="tabpanel" aria-labelledby="tab-path" tabindex="-1">
+      <div class="sechead"><h2>Trajectory</h2><span class="sum" id="sum-path"></span></div>
+      <div class="sec-body">
+        <div class="mapwrap"><canvas id="map" role="img" aria-label="Top-down map of your path around the black hole, with rings at 1, 1.5 and 3 horizon radii"></canvas></div>
+        <dl class="rogrid">
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Where this start leads: captured by the black hole, past it and away again, or into an orbit that never falls in.">Outcome</button></dt><dd id="r-out"></dd></div>
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The nearest this path comes to the centre.">Closest approach</button></dt><dd id="r-min"></dd></div>
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Time on your own clock from the start to the event horizon.">Horizon after</button></dt><dd id="r-th"></dd></div>
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Time on your own clock from the horizon to the centre. Nothing can stretch it beyond about 1.57 times the light-crossing time of the horizon radius.">Horizon to centre</button></dt><dd id="r-tc"></dd></div>
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Your total energy divided by your rest energy. It stays the same along the whole path. Exactly 1 is a fall from rest far away. Under 1 means you are bound to the black hole.">Energy</button></dt><dd id="r-e"></dd></div>
+          <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How much sideways motion the path carries, which also stays the same throughout. A fall from rest far away is captured if this is under 2.">Angular momentum</button></dt><dd id="r-l"></dd></div>
+        </dl>
+        <div class="ctl"><span class="cap" id="cap-preset">Start from</span>
+          <div class="togs" id="presets" role="radiogroup" aria-labelledby="cap-preset"></div>
+        </div>
+        <div class="stack">
+          <div class="slider">
+            <div class="top"><label class="cap" for="c-r0">Starting distance</label><output id="o-r0" for="c-r0"></output></div>
+            <div class="rail"><input id="c-r0" type="range" min="2" max="60" step="0.5" value="20"></div>
+          </div>
+          <div class="slider">
+            <div class="top"><label class="cap" for="c-speed">Starting speed</label><output id="o-speed" for="c-speed"></output></div>
+            <div class="rail"><input id="c-speed" type="range" min="0" max="0.99" step="0.001" value="0.224"></div>
+            <p class="hint">As measured by someone hovering there. <button class="btn link" id="b-rain" type="button">Use free-fall speed</button></p>
+          </div>
+          <div class="slider">
+            <div class="top"><label class="cap" for="c-angle">Aim, off straight-in</label><output id="o-angle" for="c-angle"></output></div>
+            <div class="rail"><input id="c-angle" type="range" min="0" max="120" step="0.05" value="0"></div>
+            <p class="hint">0° dives at the centre. 90° moves sideways, the way the disk turns.</p>
+          </div>
+          <div class="slider">
+            <div class="top"><label class="cap" for="c-lat">Height above the disk</label><output id="o-lat" for="c-lat"></output></div>
+            <div class="rail"><input id="c-lat" type="range" min="0" max="85" step="1" value="10"></div>
+          </div>
+        </div>
+        <div class="ctl"><span class="cap" id="cap-mass">Black hole</span>
+          <div class="seg" role="radiogroup" aria-labelledby="cap-mass">
+            <input type="radio" name="mass" id="mass-1" value="10"><label for="mass-1">Stellar</label>
+            <input type="radio" name="mass" id="mass-2" value="4.3e6"><label for="mass-2">Sgr A*</label>
+            <input type="radio" name="mass" id="mass-3" value="6.5e9"><label for="mass-3">M87*</label>
+            <input type="radio" name="mass" id="mass-4" value="6.6e10"><label for="mass-4">TON 618</label>
+          </div>
+          <p class="hint" id="o-mass"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-camera" role="tabpanel" aria-labelledby="tab-camera" tabindex="-1" hidden>
+      <div class="sechead"><h2>Camera</h2><span class="sum" id="sum-camera"></span></div>
+      <div class="sec-body">
+        <div class="ctl"><span class="cap" id="cap-look">Keep centred on</span>
+          <div class="seg" role="radiogroup" aria-labelledby="cap-look">
+            <input type="radio" name="look" id="look-hole" value="hole"><label for="look-hole">Black hole</label>
+            <input type="radio" name="look" id="look-ahead" value="ahead"><label for="look-ahead">Travel</label>
+            <input type="radio" name="look" id="look-back" value="back"><label for="look-back">Behind</label>
+          </div>
+        </div>
+        <div class="slider">
+          <div class="top"><label class="cap" for="c-fov">Field of view</label><output id="o-fov" for="c-fov"></output></div>
+          <div class="rail"><input id="c-fov" type="range" min="30" max="300" step="1" value="80"></div>
+          <p class="hint">Past about 120° the lens bends into a fisheye.</p>
+        </div>
+        <div class="group">
+          <label class="tgl" for="c-widen"><span class="cap">Widen the view as the shadow grows</span><input id="c-widen" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          <label class="tgl" for="c-disk"><span class="cap">Accretion disk</span><input id="c-disk" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          <label class="tgl" for="c-shift"><span class="cap">Colour shifts</span><input id="c-shift" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          <label class="tgl" for="c-glow"><span class="cap">Glow</span><input id="c-glow" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+        </div>
+        <div class="slider">
+          <div class="top"><label class="cap" for="c-temp">Disk temperature</label><output id="o-temp" for="c-temp"></output></div>
+          <div class="rail"><input id="c-temp" type="range" min="2500" max="20000" step="100" value="5600"></div>
+        </div>
+        <details class="pick" open>
+          <summary><h3 class="grp">Realism</h3></summary>
+          <div class="group">
+            <div class="tgl"><span class="cap" id="cap-x-exp"><button class="what" type="button" aria-expanded="false" data-tip="The view adjusts to how bright the scene is, as an eye or a camera does: it darkens as the disk fills the frame and brightens for a dim sky. With it on, the disk is drawn at its true contrast, so its receding side and outer parts are far dimmer than the side coming toward you.">Automatic exposure</button></span><label class="tglsw"><input id="x-exp" type="checkbox" role="switch" aria-labelledby="cap-x-exp" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-limb"><button class="what" type="button" aria-expanded="false" data-tip="Hot gas looks dimmer seen edge-on than face-on. This shades each part of the disk by the angle its light left at, as the gas itself would measure it.">Limb darkening</button></span><label class="tglsw"><input id="x-limb" type="checkbox" role="switch" aria-labelledby="cap-x-limb" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-delay"><button class="what" type="button" aria-expanded="false" data-tip="Light from the far side of the disk set out earlier than light from the near side. Each part is shown as it was when its light left, so features on the far side run behind.">Light-travel delay</button></span><label class="tglsw"><input id="x-delay" type="checkbox" role="switch" aria-labelledby="cap-x-delay" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-plunge"><button class="what" type="button" aria-expanded="false" data-tip="Inside 3 horizon radii gas can no longer circle. It falls in, speeding up and thinning out as it goes. Off, the disk simply stops there.">Gas inside the inner edge</button></span><label class="tglsw"><input id="x-plunge" type="checkbox" role="switch" aria-labelledby="cap-x-plunge" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-turb"><button class="what" type="button" aria-expanded="false" data-tip="Gives the gas the uneven brightness real turbulence has: a few bright knots among wide dim stretches.">Natural turbulence</button></span><label class="tglsw"><input id="x-turb" type="checkbox" role="switch" aria-labelledby="cap-x-turb" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-bb"><button class="what" type="button" aria-expanded="false" data-tip="Takes each colour from the full spectrum of a glowing body at that temperature, as the eye would see it. Off, a rougher formula is used.">Accurate blackbody colours</button></span><label class="tglsw"><input id="x-bb" type="checkbox" role="switch" aria-labelledby="cap-x-bb" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-still"><button class="what" type="button" aria-expanded="false" data-tip="While the picture is held, it is traced 32 times over, a fraction of a pixel apart, and the results averaged. That smooths fine detail such as the thin ring at the shadow’s edge.">Sharpen while still</button></span><label class="tglsw"><input id="x-still" type="checkbox" role="switch" aria-labelledby="cap-x-still" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-blur"><button class="what" type="button" aria-expanded="false" data-tip="Lays each frame over the last, as an open shutter does, so fast motion smears a little and does not stutter.">Shutter blur</button></span><label class="tglsw"><input id="x-blur" type="checkbox" role="switch" aria-labelledby="cap-x-blur" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-lens"><button class="what" type="button" aria-expanded="false" data-tip="What a real lens adds: faint spikes on the brightest points, corners a little darker, and a trace of colour fringing toward the edges.">Lens character</button></span><label class="tglsw"><input id="x-lens" type="checkbox" role="switch" aria-labelledby="cap-x-lens" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="tgl"><span class="cap" id="cap-x-edge"><button class="what" type="button" aria-expanded="false" data-tip="The shadow’s edge holds detail finer than a pixel: thin rings of light that circled the hole, and the edge itself. With one ray a pixel these sparkle as you move. This sends sixteen rays through each pixel along the edge and averages them, and softens the squeezed copies of the disk that lie beside it.">Smooth the shadow’s edge</button></span><label class="tglsw"><input id="x-edge" type="checkbox" role="switch" aria-labelledby="cap-x-edge" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-options" role="tabpanel" aria-labelledby="tab-options" tabindex="-1" hidden>
+      <div class="sechead"><h2>Options</h2><span class="sum" id="sum-options"></span></div>
+      <div class="sec-body">
+        <details class="pick" open>
+          <summary><h3 class="grp">Playback</h3></summary>
+          <div class="group">
+            <div class="slider">
+              <div class="top"><label class="cap" for="c-rate">Speed</label><output id="o-rate" for="c-rate"></output></div>
+              <div class="rail"><input id="c-rate" type="range" min="-3" max="3" step="0.1" value="0"></div>
+            </div>
+            <label class="tgl" for="c-slow"><span class="cap">Slow near the hole</span><input id="c-slow" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          </div>
+        </details>
+        <details class="pick" open>
+          <summary><h3 class="grp">Display options</h3></summary>
+          <div class="group">
+            <label class="tgl" for="o-night"><span class="cap">Night mode</span><input id="o-night" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <div class="tgl"><span class="cap" id="cap-soft"><button class="what" type="button" aria-expanded="false" data-tip="Applies a softer, warmer background.">Soft background</button></span><label class="tglsw"><input id="o-soft" type="checkbox" role="switch" aria-labelledby="cap-soft"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-textSize">Text size</label><output id="o-textSize-out" for="o-textSize"></output></div>
+              <div class="rail"><input id="o-textSize" type="range" min="0" max="4" step="1" value="1"></div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-theme"><button class="what" type="button" aria-expanded="false" data-tip="Changes the color of buttons, sliders, toggles, and site accents.">Page theme</button></span></div>
+            <div class="themes"><span class="cap" id="cap-basic">Basic</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-basic">
+                <input type="radio" name="theme" id="theme-ink" value="ink" aria-label="Black and white"><label for="theme-ink" title="Black and white" style="--c:var(--ink)"></label>
+                <input type="radio" name="theme" id="theme-red" value="red" aria-label="Red"><label for="theme-red" title="Red" style="--c:var(--t-red)"></label>
+                <input type="radio" name="theme" id="theme-orange" value="orange" aria-label="Orange"><label for="theme-orange" title="Orange" style="--c:var(--t-orange)"></label>
+                <input type="radio" name="theme" id="theme-yellow" value="yellow" aria-label="Yellow"><label for="theme-yellow" title="Yellow" style="--c:var(--t-yellow)"></label>
+                <input type="radio" name="theme" id="theme-green" value="green" aria-label="Green"><label for="theme-green" title="Green" style="--c:var(--t-green)"></label>
+                <input type="radio" name="theme" id="theme-blue" value="blue" aria-label="Blue"><label for="theme-blue" title="Blue" style="--c:var(--t-blue)"></label>
+                <input type="radio" name="theme" id="theme-indigo" value="indigo" aria-label="Indigo"><label for="theme-indigo" title="Indigo" style="--c:var(--t-indigo)"></label>
+                <input type="radio" name="theme" id="theme-violet" value="violet" aria-label="Violet"><label for="theme-violet" title="Violet" style="--c:var(--t-violet)"></label>
+              </div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-grays">Grayscale</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-grays">
+                <input type="radio" name="theme" id="theme-gray-10" value="gray-10" aria-label="10% gray"><label for="theme-gray-10" title="10% gray" style="--c:var(--t-gray-10)"></label>
+                <input type="radio" name="theme" id="theme-gray-20" value="gray-20" aria-label="20% gray"><label for="theme-gray-20" title="20% gray" style="--c:var(--t-gray-20)"></label>
+                <input type="radio" name="theme" id="theme-gray-30" value="gray-30" aria-label="30% gray"><label for="theme-gray-30" title="30% gray" style="--c:var(--t-gray-30)"></label>
+                <input type="radio" name="theme" id="theme-gray-40" value="gray-40" aria-label="40% gray"><label for="theme-gray-40" title="40% gray" style="--c:var(--t-gray-40)"></label>
+                <input type="radio" name="theme" id="theme-gray-50" value="gray-50" aria-label="50% gray"><label for="theme-gray-50" title="50% gray" style="--c:var(--t-gray-50)"></label>
+                <input type="radio" name="theme" id="theme-gray-60" value="gray-60" aria-label="60% gray"><label for="theme-gray-60" title="60% gray" style="--c:var(--t-gray-60)"></label>
+                <input type="radio" name="theme" id="theme-gray-70" value="gray-70" aria-label="70% gray"><label for="theme-gray-70" title="70% gray" style="--c:var(--t-gray-70)"></label>
+                <input type="radio" name="theme" id="theme-gray-80" value="gray-80" aria-label="80% gray"><label for="theme-gray-80" title="80% gray" style="--c:var(--t-gray-80)"></label>
+                <input type="radio" name="theme" id="theme-gray-90" value="gray-90" aria-label="90% gray"><label for="theme-gray-90" title="90% gray" style="--c:var(--t-gray-90)"></label>
+              </div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-neon">Neon &amp; RGB</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-neon">
+                <input type="radio" name="theme" id="theme-neon-yellow" value="neon-yellow" aria-label="Neon yellow"><label for="theme-neon-yellow" title="Neon yellow" style="--c:var(--t-neon-yellow)"></label>
+                <input type="radio" name="theme" id="theme-neon-orange" value="neon-orange" aria-label="Neon orange"><label for="theme-neon-orange" title="Neon orange" style="--c:var(--t-neon-orange)"></label>
+                <input type="radio" name="theme" id="theme-neon-lime" value="neon-lime" aria-label="Neon yellow green"><label for="theme-neon-lime" title="Neon yellow green" style="--c:var(--t-neon-lime)"></label>
+                <input type="radio" name="theme" id="theme-neon-pink" value="neon-pink" aria-label="Neon pink"><label for="theme-neon-pink" title="Neon pink" style="--c:var(--t-neon-pink)"></label>
+                <input type="radio" name="theme" id="theme-rgb-red" value="rgb-red" aria-label="Pure red"><label for="theme-rgb-red" title="Pure red" style="--c:var(--t-rgb-red)"></label>
+                <input type="radio" name="theme" id="theme-rgb-green" value="rgb-green" aria-label="Pure green"><label for="theme-rgb-green" title="Pure green" style="--c:var(--t-rgb-green)"></label>
+                <input type="radio" name="theme" id="theme-rgb-blue" value="rgb-blue" aria-label="Pure blue"><label for="theme-rgb-blue" title="Pure blue" style="--c:var(--t-rgb-blue)"></label>
+              </div>
+            </div>
+            <label class="tgl" for="c-mono"><span class="cap">Monochrome</span><input id="c-mono" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <div class="slider">
+              <div class="top"><label class="cap" for="c-grain">Grain</label><output id="o-grain" for="c-grain"></output></div>
+              <div class="rail"><input id="c-grain" type="range" min="0" max="100" step="1" value="50"></div>
+            </div>
+            <div class="slider">
+              <div class="top"><label class="cap" for="c-shake">Camera shake</label><output id="o-shake" for="c-shake"></output></div>
+              <div class="rail"><input id="c-shake" type="range" min="0" max="100" step="1" value="50"></div>
+              <p class="hint">Only what would shake a ship: gas, when you pass through the disk, and tides flexing a 20 m hull. Still everywhere else, the horizon included.</p>
+            </div>
+            <div class="ctl" style="margin-top:4px"><span class="cap" id="cap-quality">Sharpness</span>
+              <div class="seg" role="radiogroup" aria-labelledby="cap-quality">
+                <input type="radio" name="quality" id="q-auto" value="auto"><label for="q-auto">Auto</label>
+                <input type="radio" name="quality" id="q-full" value="1"><label for="q-full">Full</label>
+                <input type="radio" name="quality" id="q-mid" value="0.7"><label for="q-mid">Medium</label>
+                <input type="radio" name="quality" id="q-low" value="0.45"><label for="q-low">Low</label>
+              </div>
+            </div>
+          </div>
+        </details>
+        <details class="pick">
+          <summary><h3 class="grp">What is exact here</h3></summary>
+          <div class="group">
+            <p class="hint"><b>Exact:</b> every pixel is a light ray traced through Schwarzschild spacetime, so the shadow, the bent disk, the Einstein ring and the colour shifts follow general relativity for a black hole that does not spin. Your fall is a true geodesic on your own clock, computed in coordinates that stay regular at the horizon.</p>
+            <p class="hint"><b>Simplified:</b> the disk is a thin sheet of gas on circular orbits ending at 3 r<sub>s</sub>, brightness is compressed to fit a screen, the stars are generated and not real ones, and the picture stops just above the centre.</p>
+            <p class="hint"><b>Realism switches:</b> the gas inside the inner edge is given a fixed temperature and thins as it falls, turbulence is shaped to look like the real thing and is not simulated, and the lens effects imitate a camera, not the physics. Light-travel delay and limb darkening follow from the paths of the light.</p>
+            <p class="hint"><b>Camera shake:</b> its strength follows the ram pressure of the disk's gas on the ship and the tidal load on its hull, both worked out from your path. Three figures are assumed: a ship 20 m long, a hull that flexes in 0.2 s, and a disk a twentieth as thick as it is wide. Its timing runs on your clock, not the ship's.</p>
+            <p class="hint">Distances are in r<sub>s</sub>, the horizon radius. Space, R, F and the arrow keys work too.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <div class="foot" id="reset-foot">
+      <button class="btn primary" id="reset-page" type="button">Reset this page to defaults</button>
+      <button class="btn confirm" id="reset-yes" type="button" hidden>Confirm</button>
+      <button class="btn cancel" id="reset-no" type="button" hidden>Cancel</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Pages">
+    <button class="tab" role="tab" id="tab-play" data-page="play" aria-controls="stage" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.25v13.5L19 12Z"/></svg></span><span>Play</span></button>
+    <button class="tab" role="tab" id="tab-path" data-page="path" aria-controls="sec-path" aria-selected="true" tabindex="0" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 5.5c8.5-2.5 17 1.5 17 8 0 4.5-3.6 7-7.2 7-3 0-5.3-2-5.3-4.6 0-2.2 1.7-3.9 3.9-3.9"/><circle class="dot" cx="12.4" cy="15.4" r="2.1"/></svg></span><span>Trajectory</span></button>
+    <button class="tab" role="tab" id="tab-camera" data-page="camera" aria-controls="sec-camera" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3.25"/></svg></span><span>Camera</span></button>
+    <button class="tab" role="tab" id="tab-options" data-page="options" aria-controls="sec-options" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/><circle class="dot" cx="9" cy="6" r="2.25"/><circle class="dot" cx="15.5" cy="12" r="2.25"/><circle class="dot" cx="7" cy="18" r="2.25"/></svg></span><span>Options</span></button>
+  </nav>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="canvas" id="canvas-box">
+      <canvas id="view" aria-label="View from the falling camera. Drag to look around."></canvas>
+      <div class="hud">
+        <span class="speed" id="speed" title="Time passing on your own clock for each second you watch"></span>
+        <div class="alerts" id="alerts" aria-live="polite"><div class="alert" id="al-phase" hidden></div><div class="alert" id="al-gas" hidden></div><div class="alert" id="al-tide" hidden></div></div>
+      </div>
+      <div class="dock" id="dock">
+        <span class="speed hintbox" id="hint">Drag to look around · scroll to zoom</span>
+        <button class="btn" id="b-full" type="button" aria-pressed="false" aria-label="Full screen" title="Full screen (F)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="grow" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="shrink" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
+      </div>
+      <div class="endwrap"><div class="endcard" id="endcard" role="status" hidden>
+        <span class="kick" id="end-kicker"></span>
+        <h2 id="end-title"></h2>
+        <p id="end-body"></p>
+        <div class="row">
+          <button class="btn primary" id="b-again" type="button">Fall again</button>
+          <button class="btn" id="b-review" type="button">Scrub back</button>
+        </div>
+      </div></div>
+      <div id="fatal" hidden><div><h2 id="fatal-title">This needs WebGL 2</h2><p id="fatal-body">Your browser or graphics driver did not provide a WebGL 2 context, which the ray tracer needs. A current version of Chrome, Edge, Firefox or Safari on a device with a GPU will run it.</p><pre id="fatal-log"></pre></div></div>
+    </div>
+    <div class="readouts" id="info">
+      <div class="scrub" id="scrub-box">
+        <div class="transport">
+          <button class="btn primary icon" id="b-play" type="button" data-state="paused" aria-label="Begin descent" title="Begin descent (Space)"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.5 5.5v13L19 12Z"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.25 6h2.5v12h-2.5ZM14.25 6h2.5v12h-2.5Z"/></svg></button>
+          <button class="btn icon" id="b-restart" type="button" aria-label="Restart" title="Restart (R)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 7.5-7.5c-2.1 0-4 .85-5.4 2.2L4.5 8.8"/><path d="M4.5 4.5v4.3h4.3"/></svg></button>
+        </div>
+        <div class="tline">
+          <div class="rail"><input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Position along the path"></div>
+          <div id="ticks"></div>
+        </div>
+        <button class="btn icon" id="b-rate" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="rate-pop" aria-label="Playback speed" title="Playback speed"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.77 16.75a9.5 9.5 0 1 1 16.46 0M12 12l4-4"/></svg></button>
+      </div>
+      <section class="rogroup"><h3>You</h3><dl>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Which of the black hole's boundaries you are inside. Inside the last stable orbit (3 horizon radii) every orbit is unstable and tips inward. Inside the photon sphere (1.5) even light cannot circle. Inside the event horizon (1) nothing gets back out.">Position</button></dt><dd id="r-pos"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far you are from the centre, in horizon radii and in ordinary units for the black hole chosen. The horizon is at 1.">Distance from centre</button></dt><dd id="r-r"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Time since the start on a clock you carry. This is the time you would live through, and it stays finite all the way to the centre.">Your clock</button></dt><dd id="r-tau"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Time since the start for someone watching from far away. It runs to infinity as you near the horizon, so they never see you cross.">Clock far away</button></dt><dd id="r-far"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Your speed as measured by someone holding still at the place you are passing. It reaches the speed of light at the horizon. Inside, nothing can hold still, so there is no such speed.">Speed past hoverers</button></dt><dd id="r-v"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="One way to picture a black hole is as space itself flowing inward like a river. It flows at the speed of light at the horizon and faster inside, which is why nothing there can swim back out.">Space flowing in at</button></dt><dd id="r-river"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How much harder gravity pulls at your feet than at your head, for a body 2 m tall. Sideways motion adds to it. It depends on the black hole's mass: gentle at the horizon of a giant one, deadly well outside a small one.">Tidal stretch</button></dt><dd id="r-tide"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How wide the black circle looks from where you are, moving as you are. Falling freely it is about 84° at the horizon, and it only reaches half the sky, 180°, at the centre.">Shadow width</button></dt><dd id="r-shadow"></dd></div>
+      </dl></section>
+    </div>
+  </main>
+</div>
+<div id="ro-tip" role="status"></div>
+<div id="rate-pop" class="ratepop" role="group" aria-label="Playback speed">
+  <div class="cap">
+    <div class="vrail"><div class="rail"><input id="c-rate2" type="range" min="-3" max="3" step="0.1" value="0" aria-label="Playback speed" aria-orientation="vertical"></div></div>
+    <button class="btn icon" id="b-rate-close" type="button" aria-label="Close playback speed"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.77 16.75a9.5 9.5 0 1 1 16.46 0M12 12l4-4"/></svg></button>
+  </div>
+  <output id="o-rate2" for="c-rate2"></output>
+</div>
+
+<script id="fs-finish" type="x-shader/x-fragment">
+// The last step of the picture, shared by both shaders: fit the light to the screen, drop the colour if asked, add grain.
+uniform float uMono;    // 1: no colour
+uniform float uGrain;   // 0 to 1
+uniform float uSeed;    // a new number each time the static changes
+uniform float uFade;    // 1, falling to 0 as the picture ends
+uniform float uVig;     // how much darker a lens leaves the corners; 0 for none
+uvec3 fHash(uvec3 v) {
+  v = v * 1664525u + 1013904223u;
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  v ^= v >> 16u;
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  return v;
+}
+vec3 fRand(vec2 p) { return vec3(fHash(uvec3(uvec2(p + 8.0), uint(uSeed)))) * (1.0 / 4294967296.0) - 0.5; }
+// Static: an independent random value at every pixel, then a 3 x 3 Gaussian blur of that field, so each pixel shares a little
+// with its neighbours as film grain and sensor noise do. Scaled back to a standard deviation of 1.
+vec3 fGrain(vec2 p) {
+  vec3 n = 4.0 * fRand(p)
+         + 2.0 * (fRand(p + vec2(1.0, 0.0)) + fRand(p - vec2(1.0, 0.0)) + fRand(p + vec2(0.0, 1.0)) + fRand(p - vec2(0.0, 1.0)))
+         + fRand(p + vec2(1.0, 1.0)) + fRand(p - vec2(1.0, 1.0)) + fRand(p + vec2(1.0, -1.0)) + fRand(p + vec2(-1.0, 1.0));
+  return n * (9.2376 / 16.0);
+}
+vec3 finish(vec3 hdr, vec2 p) {
+  vec3 c = clamp((hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14), 0.0, 1.0);
+  if (uMono > 0.5) c = vec3(dot(c, vec3(0.2126, 0.7152, 0.0722)));
+  if (uVig > 0.0) { vec2 q = (p * 2.0 - uRes) / length(uRes); float v = 1.0 / (1.0 + uVig * dot(q, q)); c *= v * v; }   // q is 1 at the corners
+  c = pow(c * uFade, vec3(1.0 / 2.2));
+  if (uGrain > 0.0) {
+    vec3 n = fGrain(p);
+    float nl = (n.r + n.g + n.b) * 0.57735;
+    vec3 g = uMono > 0.5 ? vec3(nl) : mix(vec3(nl), n, 0.3);          // mostly brightness, a little colour
+    float L = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    float w = mix(0.55, 1.0, smoothstep(0.0, 0.3, L)) * (1.0 - 0.45 * smoothstep(0.7, 1.0, L));   // strongest in the mid-tones
+    c += g * (w * 0.12 * uGrain * uGrain);     // 50% gives a deviation of about 3% of full brightness, 100% four times that
+  }
+  return c + fRand(p + 64.0).x / 255.0;
+}
+</script>
+
+<script id="fs-scene" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+
+uniform vec2 uRes;
+uniform vec3 uPos;      // camera position, units of r_s
+uniform mat3 uCam;      // columns: right, up, forward
+uniform vec3 uU;        // gamma * velocity of the camera relative to the local free-fall frame
+uniform float uGam;
+uniform float uFov;     // full angle across the short side of the screen
+uniform float uDiskT;   // far-away time driving the disk rotation
+uniform float uDisk;
+uniform float uShift;
+uniform float uDiskTemp;
+uniform float uDirect;  // 1: tone-map here (no post pass)
+uniform vec2 uJit;       // a fraction of a pixel, different each time a held picture is traced again
+uniform float uLimb;     // 1: the disk is dimmer seen edge-on
+uniform float uDelay;    // 1: each part of the disk is shown as it was when its light left
+uniform float uPlunge;   // 1: gas goes on falling inside the last stable orbit
+uniform float uTurb;     // 1: turbulence with the uneven brightness of the real thing
+uniform float uBBtab;    // 1: blackbody colours from the table
+uniform float uDiskExp;  // 1: the disk's true contrast; less: compressed to fit a screen
+uniform float uEdge;     // 1: extra rays along the shadow's edge, and the disk's squeezed copies softened
+uniform sampler2D uBB;   // blackbody colours, 500 K to 60 000 K
+
+const float PI = 3.14159265359;
+const float R_IN = 3.0;     // innermost stable circular orbit
+const float R_OUT = 14.0;
+const int NSTEP = 240;
+const float H0 = 0.1;
+const vec3 GN = vec3(0.12004, 0.75023, 0.65020);    // pole of the generated Milky Way
+const vec3 GC = vec3(-0.99277, 0.09072, 0.07862);   // its bright centre
+
+// ---------- hashing and noise ----------
+uvec3 pcg3d(uvec3 v) {
+  v = v * 1664525u + 1013904223u;
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  v ^= v >> 16u;
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  return v;
+}
+vec3 hash3(vec3 c, uint seed) {
+  uvec3 v = uvec3(ivec3(c) + ivec3(8192)) ^ uvec3(seed, seed * 747796405u, seed * 2891336453u);
+  return vec3(pcg3d(v)) * (1.0 / 4294967296.0);
+}
+float h31(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1); p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float vnoise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(h31(i), h31(i + vec3(1, 0, 0)), f.x), mix(h31(i + vec3(0, 1, 0)), h31(i + vec3(1, 1, 0)), f.x), f.y),
+             mix(mix(h31(i + vec3(0, 0, 1)), h31(i + vec3(1, 0, 1)), f.x), mix(h31(i + vec3(0, 1, 1)), h31(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+// fractal noise whose fine octaves fade out once a pixel covers more than one noise cell
+float fbmS(vec3 p, float foot) {
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float k = 1.0 - smoothstep(0.25, 0.7, foot);
+    s += a * mix(0.5, vnoise(p), k);
+    p = p * 2.03 + 11.3; a *= 0.5; foot *= 2.03;
+  }
+  return s / 0.9375;
+}
+
+// ---------- blackbody light ----------
+vec3 bbFit(float T);
+// Colour of a blackbody, linear RGB, brightest channel 1. From the table when asked: the Planck spectrum at each temperature seen
+// through the eye's three colour responses, worked out once when the page loads. Otherwise from a quick fit.
+vec3 bb(float T) {
+  if (uBBtab > 0.5) {
+    float x = clamp((log(max(T, 1.0)) - 6.2146081) / 4.7874917, 0.0, 1.0);
+    vec3 c = textureLod(uBB, vec2((x * 63.0 + 0.5) / 64.0, 0.5), 0.0).rgb;
+    return c * c;
+  }
+  return bbFit(T);
+}
+vec3 bbFit(float T) {
+  float t = clamp(T, 900.0, 40000.0) * 0.01;
+  vec3 c;
+  if (t <= 66.0) {
+    c.r = 1.0;
+    c.g = 0.39008157876 * log(t) - 0.63184144378;
+    c.b = t <= 19.0 ? 0.0 : 0.54320678911 * log(t - 10.0) - 1.19625408914;
+  } else {
+    c.r = 1.29293618606 * pow(t - 60.0, -0.1332047592);
+    c.g = 1.12989086089 * pow(t - 60.0, -0.0755148492);
+    c.b = 1.0;
+  }
+  c = clamp(c, 0.0, 1.0);
+  return c * c * (c * 0.305306011 + 0.682171111) + c * 0.012522878;
+}
+float pv(float T) { return 1.0 / (exp(min(26150.0 / max(T, 1.0), 60.0)) - 1.0); }   // Planck law at 550 nm
+// how much brighter a blackbody at temperature T looks in visible light when all its frequencies are scaled by g
+float vis(float g, float T) { return min(pv(g * T) / pv(T), 250.0); }
+
+// ---------- generated sky ----------
+vec3 starLayer(vec3 d, float S, float fp, float g, uint seed, float F, float keep) {
+  const float R0 = 0.0011;                       // natural star radius, radians
+  float radU = max(R0, 0.9 * fp) * S;            // widened to at least a pixel
+  float radC = min(radU, 0.16);
+  float gain = (R0 * S) * (R0 * S) / (radC * radC);
+  vec3 ip = floor(d * S - 0.5);
+  vec3 acc = vec3(0.0);
+  for (int k = 0; k < 8; k++) {
+    vec3 c = ip + vec3(float(k & 1), float((k >> 1) & 1), float((k >> 2) & 1));
+    vec3 sp = c + 0.25 + 0.5 * hash3(c, seed);
+    float sl = length(sp);
+    if (abs(sl - S) > 0.3) continue;
+    vec3 h2 = hash3(c, seed + 101u);
+    if (h2.z > keep) continue;
+    vec3 dv = d - sp / sl;
+    float x = dot(dv, dv) * S * S / (radC * radC);
+    if (x > 12.0) continue;
+    float T = 2700.0 + 16000.0 * pow(h2.x, 2.5);
+    float fl = F * (0.25 + 5.0 * pow(h2.y, 7.0));
+    acc += bb(g * T) * (vis(g, T) * fl * exp(-x));
+  }
+  vec3 meanC = bb(g * 6000.0) * (vis(g, 6000.0) * 0.6 * PI * (R0 * S) * (R0 * S) * F * 0.875 * keep);
+  return mix(acc * gain, meanC, smoothstep(0.16, 0.55, radU));
+}
+vec3 skyColor(vec3 d, float fp, float g) {
+  float sl = dot(d, GN), cc = dot(d, GC);
+  float n1 = fbmS(d * 2.6 + 3.1, fp * 2.6);
+  float n2 = fbmS(d * 6.5 - 1.7, fp * 6.5);
+  float band = exp(-sl * sl * 38.0);
+  float wide = exp(-sl * sl * 7.0);
+  float toward = 0.4 + 0.6 * smoothstep(-0.8, 1.0, cc);
+  float bulge = exp(-(1.0 - cc) * 24.0) * exp(-sl * sl * 26.0);
+  float dust = smoothstep(0.47, 0.70, n2) * exp(-sl * sl * 150.0);
+  float glow = (band * (0.2 + 2.4 * n1 * n1) * toward + 0.10 * wide + 2.2 * bulge) * (1.0 - 0.85 * dust);
+  float Tm = mix(7000.0, 4300.0, clamp(bulge * 1.6 + 0.2 * band, 0.0, 1.0));
+  vec3 col = bb(g * Tm) * (vis(g, Tm) * glow * 0.035);
+  float dens = clamp(0.16 + (1.3 * band * toward + bulge) * (1.0 - 0.7 * dust), 0.0, 1.0);
+  col += starLayer(d, 9.0, fp, g, 11u, 4.5, 1.0);
+  col += starLayer(d, 26.0, fp, g, 23u, 0.9, 0.75);
+  col += starLayer(d, 62.0, fp, g, 37u, 0.26, 0.6);
+  col += starLayer(d, 140.0, fp, g, 53u, 0.12, dens);
+  return col;
+}
+
+// ---------- accretion disk ----------
+// foot: how much of the disk's radius one pixel spans here. Octaves finer than that would only sparkle, so each fades to its mean.
+// lost: how much of the pattern's variance went with them (value noise has a variance of about 0.034), so that what is drawn
+// from the softened pattern can be kept as bright on average as the detail it stands for.
+float dtex(float a, float r, float foot, out float lost) {
+  vec3 q = vec3(cos(a) * 1.6, sin(a) * 1.6, r * 2.4);
+  float s = 0.0, w = 0.5, fq = foot * 2.4;
+  lost = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float gone = smoothstep(0.45, 1.1, fq), kept = 1.0 - gone;
+    s += w * mix(vnoise(q), 0.5, gone);
+    lost += w * w * (1.0 - kept * kept);
+    q = q * 2.07 + 5.7; w *= 0.5; fq *= 2.07;
+  }
+  lost *= 0.034 / (0.9375 * 0.9375);
+  return s / 0.9375;
+}
+// r: radius of the hit; n: unit direction to it; gCam: camera frequency per unit photon energy; by: the photon's angular momentum
+// about the disk's axis, and b its whole angular momentum, both per unit energy; wd: du/dphi of the ray at the hit; tdel: how long
+// the light took from the hit to the camera
+vec4 diskShade(float r, vec3 n, float gCam, float by, float b, float wd, float tdel, float foot) {
+  float outer = 1.0 - smoothstep(R_OUT * 0.5, R_OUT, r);
+  float edge, Tn, Om, den;                               // den: the photon's energy as the gas measures it, per unit energy far away
+  float aOff = 0.0, rTex = r;                            // where on the turbulence pattern this gas is
+  if (r >= R_IN) {
+    Tn = pow(max(1.0 - sqrt(R_IN / r), 0.0) / (r * r * r), 0.25) * 4.6717;   // thin-disk profile, peak 1
+    Om = sqrt(0.5 / (r * r * r));                        // orbital angular velocity
+    den = inversesqrt(1.0 - 1.5 / r) * (1.0 - Om * by);  // time dilation of orbiting gas, and its motion along the line of sight
+    if (uPlunge > 0.5) { edge = outer; Tn = mix(0.8, Tn, smoothstep(R_IN, 4.08, r)); }   // the gas stays hot to the edge and beyond, as in simulations with magnetic stress
+    else edge = smoothstep(R_IN, R_IN + 0.3, r) * outer;
+  } else {
+    // Inside the last stable orbit nothing can circle. The gas falls freely with the energy sqrt(8/9) and angular momentum sqrt(3)
+    // it had at the edge: inward at (1/3) (3/r - 1)^1.5, thinning as it speeds up.
+    float f = 1.0 - 1.0 / r;
+    float ur = -0.3333333 * pow(3.0 / r - 1.0, 1.5);
+    den = 0.9428090 / f - (b * wd / f) * ur - 1.7320508 * by / (r * r);
+    // Its pattern is the one at the edge, carried in along the paths the gas follows: each stream keeps what it left with and
+    // winds round by 2 sqrt(3) (1/sqrt(x0) - 1/sqrt(x + x0)), x = 3/r - 1. (x0 = 0.5 stands for the slow drift at the edge
+    // itself; without it a stream would circle there for ever.) So the pattern is drawn out into streams, and turns at the edge's rate.
+    Om = 0.1360828;
+    aOff = 3.4641016 * (1.4142136 - inversesqrt(3.0 / r - 0.5));
+    rTex = mix(R_IN, r, 0.3);
+    Tn = 0.8;
+    edge = (0.02 / (0.02 - ur)) * smoothstep(1.05, 1.5, r);
+  }
+  float g = uShift > 0.5 ? gCam / max(den, 1e-4) : 1.0;
+  float a = atan(n.z, n.x);
+  const float P = 48.0;                                  // two noise fields cross-faded so the shear never winds up
+  float tt = uDiskT - uDelay * tdel;
+  float f1 = fract(tt / P), f2 = fract(tt / P + 0.5);
+  float w1 = 1.0 - abs(2.0 * f1 - 1.0), w2 = 1.0 - w1;
+  float ft = r < R_IN ? 0.3 * foot : foot;               // inside the edge the pattern is drawn out along the streams, so it varies more slowly with radius
+  float lost, lost2;
+  float t1 = dtex(a + aOff + Om * (f1 - 0.5) * P, rTex, ft, lost), t2 = dtex(a + aOff + Om * (f2 - 0.5) * P + 2.1, rTex + 17.0, ft, lost2);
+  float tex = (w1 * t1 + w2 * t2 - 0.5) * inversesqrt(w1 * w1 + w2 * w2) + 0.5;
+  float em, al;
+  if (uTurb > 0.5) {                                     // log-normal: a few bright knots among wide dim stretches
+    float k = exp(4.2 * (tex - 0.5) + 8.82 * lost);    // the average of exp(4.2 x) over the detail smoothed away is exp(4.2^2 / 2 times its variance) higher
+    em = 0.82 * k; al = clamp(0.22 + 0.55 * k, 0.0, 1.0);
+  } else {
+    float streak = smoothstep(0.22, 0.78, tex);
+    em = 0.3 + 1.5 * streak * streak; al = clamp(0.3 + 0.75 * streak, 0.0, 1.0);
+  }
+  if (uLimb > 0.5) {                                     // the cosine of the angle the light left at, from the disk's upright, as the gas sees it
+    float mu = clamp(sqrt(max(b * b - by * by, 0.0)) / (r * max(den, 1e-4)), 0.0, 1.0);
+    em *= (1.0 + 2.06 * mu) / 2.373;                     // the law for a scattering atmosphere, set to 1 at its average angle
+  }
+  float T = uDiskTemp * Tn * g;
+  float lum = pow(pv(T) / pv(uDiskTemp), uDiskExp);
+  return vec4(bb(T) * lum * em * 0.8, edge * al);
+}
+
+// Light-travel time over part of a step: from its start to the fraction t of the way along. Across one step the rate dT/dphi runs
+// close to a power of u (far out it is 1/u^2, which is light covering distance at its own speed), so that power law is fitted to
+// the two ends and integrated exactly. Within about 2% at the tracer's coarsest steps; a plain average of the ends can be several times out.
+float tSpan(float f0, float f1, float u0, float u1, float h, float t) {
+  float dn = u1 - u0;
+  if (abs(dn) < 1e-4 * u0) return t * h * 0.5 * (f0 + mix(f0, f1, t));
+  float a = log(f1 / f0) / log(u1 / u0);
+  float ue = u0 + t * dn;
+  if (abs(a + 1.0) < 1e-3) return h * f0 * u0 * log(ue / u0) / dn;
+  return h * (f0 * pow(ue / u0, a) * ue - f0 * u0) / ((a + 1.0) * dn);
+}
+
+//#finish
+
+// Sets a ray up from a point on the screen. False where there is none to trace: outside the lens, or (inside the horizon) looking
+// where no light from outside can arrive from.
+bool rayStart(vec2 frag, out vec3 dc, out vec3 ea, out vec3 eb, out float u, out float w, out float C, out float b, out float gCam) {
+  vec2 p = (frag * 2.0 - uRes) / min(uRes.x, uRes.y);
+  // one lens for every field of view: rectilinear up to 100 degrees, easing into an equidistant fisheye by 150
+  float rho = length(p);
+  float thP = atan(rho * tan(0.5 * min(uFov, 2.7)));
+  float th = mix(thP, rho * 0.5 * uFov, smoothstep(1.745, 2.618, uFov));
+  dc = uCam * vec3(p * (sin(th) / max(rho, 1e-6)), cos(th));
+  // 1. aberration: camera frame -> local free-fall frame
+  float dU = dot(dc, uU);
+  vec3 dr = dc + uU * (dU / (uGam + 1.0)) - uU;
+  float kD = uGam - dU;                              // Doppler factor of that boost
+  dr = normalize(dr);
+  // 2. the ray in its own orbital plane
+  float r0 = length(uPos);
+  ea = uPos / r0;
+  float beta = inversesqrt(r0);                      // inflow speed of space
+  float mu = dot(dr, ea);
+  float Ef = 1.0 + beta * mu;                        // photon energy at infinity / energy in the free-fall frame
+  gCam = 1.0 / (kD * max(Ef, 1e-6));
+  float vt = sqrt(max(1.0 - mu * mu, 1e-10));
+  eb = (dr - mu * ea) / vt;
+  u = 1.0 / r0;
+  w = -u * (mu + beta) / vt;                         // du/dphi, including the drag of inflowing space
+  C = Ef * Ef * u * u / (vt * vt);                   // 1/b^2
+  b = r0 * vt / max(Ef, 1e-6);                       // impact parameter
+  return Ef > 0.0 && th < PI;
+}
+
+// Traces one ray. Gives back the disk's light along it (rgb) and the share of what lies behind that still gets through (a);
+// says whether it reached the sky, in what direction, and how the camera's motion and place shift the sky's light.
+// dEdge: how far this pixel is from the shadow's edge, in pixels (large when that is not being used).
+vec4 trace(vec2 frag, float dEdge, out vec3 dSky, out bool esc, out float gSky) {
+  vec3 dc, ea, eb; float u, w, C, b, gCam;
+  bool ok = rayStart(frag, dc, ea, eb, u, w, C, b, gCam);
+  esc = false; dSky = dc; gSky = uShift > 0.5 ? gCam : 1.0;
+  if (!ok) return vec4(0.0, 0.0, 0.0, 1.0);
+  bool deep = u > 1.0;                               // started inside the horizon
+  float by = -b * cross(ea, eb).y;
+
+  float phi = 0.0, phiNext = 1e9, phiE = 0.0, order = 0.0;
+  if (uDisk > 0.5 && abs(ea.y) + abs(eb.y) > 1e-6) {
+    phiNext = atan(-ea.y, eb.y);
+    if (phiNext <= 1e-5) phiNext += PI;
+  }
+  vec3 acc = vec3(0.0);
+  float trans = 1.0;
+  // The time light takes along the ray, in the same clock the disk turns by: dT/dphi = (C + u^3) / (u^2 (sqrt C - sqrt u w)).
+  // Kept only where the ray can meet the disk.
+  bool timed = uDelay > 0.5 && phiNext < 1e8;
+  float sC = sqrt(C), tAcc = 0.0;
+  float uHit = uPlunge > 0.5 ? 0.952381 : 1.0 / R_IN;  // how far in the disk reaches: 1.05, or the last stable orbit
+  float uStop = uPlunge > 0.5 && phiNext < 1e8 ? 1.0 : 0.6666667;
+
+  // 3. bend: u'' = 1.5 u^2 - u is the exact photon orbit equation (r_s = 1)
+  for (int i = 0; i < NSTEP; i++) {
+    float h = min(H0 * inversesqrt(1.0 + 1.5 * u), 0.5 * (u + 0.05) / (abs(w) + 1e-6));
+    float u1, w1;
+    if (deep) {
+      // inside the horizon every ray runs outward: use the first integral, which cannot drift
+      float k1 = -sqrt(max(C + u * u * (u - 1.0), 0.0));
+      float ua = u + 0.5 * h * k1; float k2 = -sqrt(max(C + ua * ua * (ua - 1.0), 0.0));
+      float ub = u + 0.5 * h * k2; float k3 = -sqrt(max(C + ub * ub * (ub - 1.0), 0.0));
+      float uc = u + h * k3;       float k4 = -sqrt(max(C + uc * uc * (uc - 1.0), 0.0));
+      u1 = u + h / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+      w1 = -sqrt(max(C + u1 * u1 * (u1 - 1.0), 0.0));
+      if (u1 < 1.0) deep = false;
+    } else {
+      float k1w = 1.5 * u * u - u;
+      float ua = u + 0.5 * h * w;   float k2u = w + 0.5 * h * k1w; float k2w = 1.5 * ua * ua - ua;
+      float ub = u + 0.5 * h * k2u; float k3u = w + 0.5 * h * k2w; float k3w = 1.5 * ub * ub - ub;
+      float uc = u + h * k3u;       float k4u = w + h * k3w;       float k4w = 1.5 * uc * uc - uc;
+      u1 = u + h / 6.0 * (w + 2.0 * k2u + 2.0 * k3u + k4u);
+      w1 = w + h / 6.0 * (k1w + 2.0 * k2w + 2.0 * k3w + k4w);
+    }
+    float f0 = 1.0, f1 = 1.0, uu = max(u1, 1e-6);
+    if (timed) {
+      f0 = (C + u * u * u) / (u * u * max(sC - sqrt(u) * w, 1e-6));
+      f1 = (C + uu * uu * uu) / (uu * uu * max(sC - sqrt(uu) * w1, 1e-6));
+    }
+    // disk plane crossing inside this step (the crossing angles are known exactly)
+    if (phiNext <= phi + h) {
+      float t = (phiNext - phi) / h, t2 = t * t, t3 = t2 * t;
+      float ud = (2.0 * t3 - 3.0 * t2 + 1.0) * u + (t3 - 2.0 * t2 + t) * h * w + (3.0 * t2 - 2.0 * t3) * u1 + (t3 - t2) * h * w1;
+      if (ud > 1.0 / R_OUT && ud < uHit) {
+        float wd = ((6.0 * t2 - 6.0 * t) * u + (3.0 * t2 - 4.0 * t + 1.0) * h * w + (6.0 * t - 6.0 * t2) * u1 + (3.0 * t2 - 2.0 * t) * h * w1) / h;
+        float tdel = timed ? tAcc + tSpan(f0, f1, u, uu, h, t) : 0.0;
+        // A copy of the disk made by light that went round the hole is squeezed toward the shadow's edge. One pixel of it spans
+        // about (r - 1.5) / (pixels from the edge) of the disk's radius: every time the distance to the edge halves, the ray
+        // lingers longer by the photon sphere and what it lands on moves on by a like amount. The first sight of the disk is not squeezed.
+        float rd = 1.0 / ud, foot = 0.0;
+        vec3 nd = cos(phiNext) * ea + sin(phiNext) * eb;
+        if (uEdge > 0.5) {
+          // And any sight of the disk is foreshortened where the ray skims it: one pixel spans its width at that distance,
+          // divided by how steeply the ray meets the disk there.
+          vec3 dir = normalize(nd * (-wd / ud) + cos(phiNext) * eb - sin(phiNext) * ea);
+          foot = length(nd * rd - uPos) * (uFov / min(uRes.x, uRes.y)) / max(abs(dir.y), 0.03);
+          if (order > 0.5) foot = max(foot, abs(rd - 1.5) / max(dEdge, 0.25));
+        }
+        vec4 dk = diskShade(rd, nd, gCam, by, b, wd, tdel, foot);
+        acc += trans * dk.a * dk.rgb;
+        trans *= 1.0 - dk.a;
+      }
+      phiNext += PI; order += 1.0;
+    }
+    if (timed) tAcc += tSpan(f0, f1, u, uu, h, 1.0);
+    if (u1 <= 0.0) {                               // reached infinity: solve for the exact angle
+      float t = u / (u - u1);
+      for (int n = 0; n < 2; n++) {
+        float t2 = t * t, t3 = t2 * t;
+        float f = (2.0 * t3 - 3.0 * t2 + 1.0) * u + (t3 - 2.0 * t2 + t) * h * w + (3.0 * t2 - 2.0 * t3) * u1 + (t3 - t2) * h * w1;
+        float df = (6.0 * t2 - 6.0 * t) * u + (3.0 * t2 - 4.0 * t + 1.0) * h * w + (6.0 * t - 6.0 * t2) * u1 + (3.0 * t2 - 2.0 * t) * h * w1;
+        t -= f / df;
+      }
+      phiE = phi + clamp(t, 0.0, 1.0) * h;
+      esc = true;
+      break;
+    }
+    if (u1 > uStop && w1 > 0.0) break;             // inside the photon sphere and heading in: captured (followed to the horizon where infalling gas may lie in its way)
+    if (trans < 0.01) break;
+    u = u1; w = w1; phi += h;
+  }
+  if (esc) dSky = cos(phiE) * ea + sin(phiE) * eb;
+  return vec4(acc, trans);
+}
+
+void main() {
+  vec2 fc = gl_FragCoord.xy + uJit;
+  // How far is this pixel from the shadow's edge? The edge is where a ray's impact parameter equals 3 sqrt(3) / 2 exactly, and every
+  // pixel knows its own before tracing anything, so the distance is that difference over how fast the parameter changes per pixel.
+  vec3 dc0, ea0, eb0; float u0, w0, C0, b0, g0;
+  bool ok0 = rayStart(fc, dc0, ea0, eb0, u0, w0, C0, b0, g0);
+  float bE = ok0 ? min(b0, 1e6) : 1e6;
+  vec2 gE = vec2(dFdx(bE), dFdy(bE));
+  float gL = max(length(gE), 1e-9);
+  float dEdge = abs(bE - 2.5980762) / gL;
+  // only rays heading the right way meet that edge: inward ones from outside the photon sphere, outward ones from inside it
+  if (uEdge < 0.5 || (ok0 && ((u0 < 0.6666667) != (w0 > 0.0)))) dEdge = 1e9;
+
+  vec3 dSky; bool esc; float gSky;
+  vec4 tr = trace(fc, dEdge, dSky, esc, gSky);
+  // 4. whatever escaped samples the sky
+  float fp = max(length(dFdx(dSky)), length(dFdy(dSky)));
+  vec3 col = tr.rgb;
+  if (esc) col += tr.a * skyColor(dSky, fp, gSky);
+  col = min(col, vec3(60.0));
+  // 5. along the shadow's edge the picture holds detail finer than a pixel: the thin rings of light that circled the hole, and the
+  // edge itself. There, and only there, sixteen more rays go out and are averaged. They are spaced evenly across the pixel in the
+  // direction the edge is crossed in (the detail is all in that direction), so a ring thinner than a pixel is always caught by
+  // its fair share of them, and what one pixel loses of it as the view moves its neighbour gains.
+  if (dEdge < 3.0) {
+    vec2 across = gE / gL, along = vec2(-across.y, across.x);
+    vec3 sum = vec3(0.0);
+    for (int k = 0; k < 16; k++) {
+      vec2 o = across * ((float(k) + 0.5) / 16.0 - 0.5) + along * (fract(float(k) * 0.6180340 + 0.25) - 0.5);
+      vec3 ds; bool es; float gs;
+      vec4 t2 = trace(fc + o, dEdge, ds, es, gs);
+      vec3 c = t2.rgb;
+      if (es) c += t2.a * skyColor(ds, fp, gs);
+      sum += min(c, vec3(60.0));
+    }
+    col = mix(col, sum / 16.0, 1.0 - smoothstep(2.0, 3.0, dEdge));
+  }
+  if (!(col.r >= 0.0 && col.g >= 0.0 && col.b >= 0.0)) col = vec3(0.0);
+  if (uDirect > 0.5) col = finish(col, gl_FragCoord.xy);
+  fragColor = vec4(col, 1.0);
+}
+</script>
+
+<script id="fs-post" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform sampler2D uTex;    // the traced frame, or the running picture built from several
+uniform sampler2D uMeter;  // one pixel: the brightness the exposure is set by
+uniform vec2 uRes;
+uniform float uGlow;
+uniform float uAuto;       // 1: automatic exposure
+uniform float uLens;       // 1: spikes on the brightest points and colour fringing (the darker corners are in the last step)
+vec3 tap(vec2 uv, float lod) {
+  vec2 o = 0.5 * exp2(lod) / uRes;
+  return 0.25 * (textureLod(uTex, uv + o, lod).rgb + textureLod(uTex, uv - o, lod).rgb +
+                 textureLod(uTex, uv + vec2(o.x, -o.y), lod).rgb + textureLod(uTex, uv + vec2(-o.x, o.y), lod).rgb);
+}
+//#finish
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec3 col = textureLod(uTex, uv, 0.0).rgb;
+  if (uLens > 0.5) {                       // a simple lens brings red and blue to slightly different sizes: none at the centre, a pixel or two at the corners
+    vec2 c = uv - 0.5; float k = 0.004 * dot(c, c);
+    col.r = textureLod(uTex, 0.5 + c * (1.0 - k), 0.0).r;
+    col.b = textureLod(uTex, 0.5 + c * (1.0 + k), 0.0).b;
+  }
+  if (uGlow > 0.0) {
+    vec3 b = tap(uv, 1.0) * 0.30 + tap(uv, 2.0) * 0.25 + tap(uv, 3.0) * 0.19 + tap(uv, 4.0) * 0.13 + tap(uv, 5.0) * 0.08 + tap(uv, 6.0) * 0.05;
+    col += uGlow * b;
+  }
+  // Exposure: the meter reads close to the brightest part of the frame, and that is brought to a little under full brightness
+  float E = uAuto > 0.5 ? clamp(0.62 / max(texelFetch(uMeter, ivec2(0), 0).r, 1e-4), 0.12, 6.0) : 1.0;
+  col *= E;
+  if (uLens > 0.5) {                       // diffraction spikes: light well past full brightness spreads along a cross, as from the vanes in a telescope
+    const vec2 D1 = vec2(0.9397, 0.3420), D2 = vec2(-0.3420, 0.9397);
+    vec3 sp = vec3(0.0);
+    float d = 2.0;
+    for (int i = 0; i < 7; i++) {
+      vec2 o1 = D1 * d / uRes, o2 = D2 * d / uRes;
+      vec3 q = max(textureLod(uTex, uv + o1, 0.0).rgb * E - 2.0, 0.0) + max(textureLod(uTex, uv - o1, 0.0).rgb * E - 2.0, 0.0)
+             + max(textureLod(uTex, uv + o2, 0.0).rgb * E - 2.0, 0.0) + max(textureLod(uTex, uv - o2, 0.0).rgb * E - 2.0, 0.0);
+      sp += q / (1.0 + d);
+      d = d * 1.5 + 1.0;
+    }
+    col += 0.18 * min(sp, vec3(8.0));
+  }
+  fragColor = vec4(finish(col, gl_FragCoord.xy), 1.0);
+}
+</script>
+
+<script id="fs-meter" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+out vec4 fragColor;
+// The light meter, one pixel. It looks at the frame as 16 x 16 blocks and takes a mean that leans hard toward the brightest of them
+// (the eighth root of the mean eighth power), so a small bright disk on a black sky and a disk that fills the frame read alike.
+// Then it moves toward that reading: quickly when the scene has brightened, slowly when it has dimmed, as an eye does.
+uniform sampler2D uTex;
+uniform sampler2D uPrev;
+uniform float uLod, uUp, uDown;
+void main() {
+  float sum = 0.0;
+  for (int j = 0; j < 16; j++) for (int i = 0; i < 16; i++) {
+    float L = min(dot(textureLod(uTex, (vec2(float(i), float(j)) + 0.5) / 16.0, uLod).rgb, vec3(0.2126, 0.7152, 0.0722)), 20.0);
+    float L2 = L * L, L4 = L2 * L2;
+    sum += L4 * L4;
+  }
+  float reading = max(pow(sum / 256.0, 0.125), 1e-4);
+  float was = max(texelFetch(uPrev, ivec2(0), 0).r, 1e-4);
+  float k = reading > was ? uUp : uDown;
+  fragColor = vec4(exp(mix(log(was), log(reading), k)), 0.0, 0.0, 1.0);
+}
+</script>
+
+<script id="fs-blend" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+out vec4 fragColor;
+// Lays the frame just traced over the running picture, by the share uA: 1 / n builds the average of a held picture,
+// a fixed share leaves a trail behind a moving one.
+uniform sampler2D uTex;
+uniform float uA;
+void main() { fragColor = vec4(texelFetch(uTex, ivec2(gl_FragCoord.xy), 0).rgb, uA); }
+</script>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('view');
+
+// ====================================================================== physics (r_s = c = 1)
+const R_END = 0.004;          // the picture stops this close to r = 0
+const RS_KM = 2.95325008;     // horizon radius per solar mass, km
+const TU_S = 9.85098e-6;      // r_s / c per solar mass, seconds
+const C2 = 8.987551787e16;
+
+// dT/dtau in Gullstrand–Painlevé time; finite and smooth through the horizon
+const utOf = (r, pr, E, L) => (E * E + (1 + L * L / (r * r)) / r) / (E - Math.sqrt(1 / r) * pr);
+
+// Integrate the fall in proper time. v and angle are what a hovering observer at r0 would measure.
+function buildPath(r0, v, angDeg, maxN = 40000) {
+  const f0 = 1 - 1 / r0, g = 1 / Math.sqrt(1 - v * v), a = angDeg * Math.PI / 180;
+  const E = g * Math.sqrt(f0), L = r0 * g * v * Math.sin(a), L2 = L * L;
+  let r = r0, pr = -g * v * Math.cos(a) * Math.sqrt(f0), phi = 0, T = 0, tau = 0, ts = 0;
+  const rEsc = Math.max(3 * r0, 60);
+  const P = { E, L, r0, tau: [], r: [], pr: [], phi: [], T: [], ts: [], outcome: 'orbit', rmin: r0, rmax: r0, iH: -1, iP: -1, iI: -1 };
+  const d = (r, pr) => { const r2 = r * r; return [pr, -0.5 / r2 + L2 / (r2 * r) - 1.5 * L2 / (r2 * r2), L / r2, utOf(r, pr, E, L)]; };
+  for (let n = 0; n < maxN; n++) {
+    P.tau.push(tau); P.r.push(r); P.pr.push(pr); P.phi.push(phi); P.T.push(T); P.ts.push(ts);
+    if (r < P.rmin) P.rmin = r; if (r > P.rmax) P.rmax = r;
+    if (P.iI < 0 && r <= 3 && r0 > 3) P.iI = n;
+    if (P.iP < 0 && r <= 1.5 && r0 > 1.5) P.iP = n;
+    if (P.iH < 0 && r <= 1) P.iH = n;
+    if (r <= R_END) { P.outcome = 'singularity'; break; }
+    if (r >= rEsc && pr > 0) { P.outcome = 'escape'; break; }
+    const h = 0.01 * Math.min(Math.pow(r, 1.5), r / (Math.abs(pr) + 1e-9), r * r / (Math.abs(L) + 1e-9));
+    const k1 = d(r, pr), k2 = d(r + 0.5 * h * k1[0], pr + 0.5 * h * k1[1]), k3 = d(r + 0.5 * h * k2[0], pr + 0.5 * h * k2[1]), k4 = d(r + h * k3[0], pr + h * k3[1]);
+    const rn = r + h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+    const rm = 0.5 * (r + rn);
+    ts = (Number.isFinite(ts) && Math.min(r, rn) > 1.002) ? ts + h * E / (1 - 1 / rm) : Infinity;   // Schwarzschild time diverges at the horizon
+    pr += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    phi += h / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+    T += h / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+    r = rn; tau += h;
+  }
+  P.n = P.tau.length;
+  return P;
+}
+const rainSpeed = r0 => Math.sqrt(1 / r0);
+// the aim angle at which a fall just fails to be captured
+function criticalAngle(r0, v) {
+  if (buildPath(r0, v, 90, 6000).outcome === 'singularity') return 90;
+  let lo = 0, hi = 90;
+  for (let i = 0; i < 28; i++) { const m = 0.5 * (lo + hi); if (buildPath(r0, v, m, 6000).outcome === 'singularity') lo = m; else hi = m; }
+  return lo;
+}
+
+// ====================================================================== state
+const S = {
+  r0: 20, v: rainSpeed(20), angle: 0, lat: 10, mass: 4.3e6,
+  look: 'hole', fov: 80, widen: true, effFov: 80, disk: true, shift: true, glow: true, temp: 5600,
+  rateExp: 0, slow: true, quality: 'auto', mono: false, grain: 50,
+  autoExp: true, limb: true, delay: true, plunge: true, turb: true, bbTab: true, still: true, blur: true, lens: true, edge: true,   // Realism (Camera)
+  full: false,                                    // the view alone, with the panel and the readouts put away
+  theme: 'rgb-green', textSize: 1, soft: false,       // the page's own look; remembered on this device
+  yaw: 0, pitch: 0,
+  mode: 'ready',        // ready | playing | paused | ended
+  tau: 0, idx: 0, idle: 0, fade: 1,
+  path: null, cur: null, preset: 'plunge', page: 'path', shadowHalf: 0,
+};
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+S.shake = reduceMotion ? 0 : 50;                  // Camera shake (Options): 50% is the amount worked out below, 0 is none. It starts at none where reduced motion is asked for
+const SH = { yaw: 0, pitch: 0, roll: 0 };          // the camera's shudder at this instant, in radians
+
+// ====================================================================== what the ship feels
+// A ship coasting through empty space feels nothing: not its speed, not the photon sphere, not the horizon. Two things do reach it.
+//   Gas. Inside the disk the hull is struck by gas on circular orbits. What matters is the ram pressure: the gas's density where the
+//   ship is, times (gamma v)^2 of the ship relative to the gas. Moving with the gas, as on a circular orbit in the disk's own
+//   direction, that is next to nothing; plunging across it, it is fierce. The disk drawn is a sheet; for this it has a thickness, a
+//   twentieth of the radius, thinning out above and below as a Gaussian.
+//   Tides. The stretch across the hull is exact for a body in free fall: (c^2 / r_s^2) (1 + 1.5 L^2 / r^2) / r^3 per metre of length.
+//   A steady stretch shakes nothing; a hull rings when the load changes about as fast as it can flex. So the tidal shake is the load
+//   (felt from a few hundredths of a g across the ship, at its worst by 50 g) times how quickly that load is growing or turning
+//   round the ship, measured against the hull's own period.
+// Two figures here are assumed: the ship is 20 m long, and its hull flexes with a period of 0.2 s.
+const SHIP_M = 20, HULL_S = 0.2, DISK_H = 0.05;
+const sstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function shipLoads(st) {
+  const P = S.path, r = st.r, rsM = RS_KM * S.mass * 1000, tu = TU_S * S.mass;
+  const kL = 1 + 1.5 * P.L * P.L / (r * r);
+  const perM = C2 / (rsM * rsM) * kL / (r * r * r);                       // tidal stretch per metre, in s^-2
+  const gBody = 2 * perM / 9.80665, gShip = SHIP_M * perM / 9.80665;
+  const rate = (Math.abs(st.pr) * (3 / r + 3 * P.L * P.L / (r * r * r * kL)) + 2 * Math.abs(P.L) / (r * r)) / tu;   // how fast the load grows, plus how fast it turns round the ship, per second
+  const x = rate * HULL_S;
+  const tide = sstep(-1.5, 1.7, Math.log10(Math.max(gShip, 1e-30))) * x / (0.3 + x);
+  let gas = 0, vRel = 0, inDisk = false;
+  if (S.disk && r > 1.001) {
+    const lat = S.lat * Math.PI / 180, e1 = [Math.cos(lat), Math.sin(lat), 0], e2 = [0, 0, -1];
+    const c = Math.cos(st.phi), sn = Math.sin(st.phi);
+    const rh = [c * e1[0] + sn * e2[0], c * e1[1] + sn * e2[1], c * e1[2] + sn * e2[2]], ph = [-sn * e1[0] + c * e2[0], -sn * e1[1] + c * e2[1], -sn * e1[2] + c * e2[2]];
+    const y = r * rh[1], rho = r * Math.hypot(rh[0], rh[2]);                // height above the disk's plane, and distance from its axis
+    const edge = sstep(3, 3.3, rho) * (1 - sstep(7, 14, rho));             // the disk's own extent, as it is drawn
+    if (edge > 0) {
+      const H = DISK_H * rho, dens = edge * Math.exp(-y * y / (2 * H * H));
+      inDisk = Math.abs(y) < 2 * H;                                        // within two of its thicknesses of the plane: in it, for the warning's purposes
+      const f = 1 - 1 / r, gs = P.E / Math.sqrt(f), ur = st.pr / Math.sqrt(f), up = P.L / r;   // the ship, as someone hovering there measures it
+      const vg = Math.sqrt(0.5 / (r - 1)), gg = 1 / Math.sqrt(1 - vg * vg);                    // the gas, on its circular orbit
+      const tl = Math.hypot(rh[2], rh[0]) || 1, t = [rh[2] / tl, 0, -rh[0] / tl];              // the way the gas moves
+      const along = ur * (rh[0] * t[0] + rh[2] * t[2]) + up * (ph[0] * t[0] + ph[2] * t[2]);
+      const gRel = Math.max(1, gs * gg - gg * vg * along);                                     // Lorentz factor of one relative to the other
+      const q = dens * (gRel * gRel - 1);
+      gas = q / (q + 0.02);                                                // compressed for the screen, as brightness is
+      vRel = Math.sqrt(1 - 1 / (gRel * gRel));
+    }
+  }
+  return { tide, gas, gBody, gShip, vRel, inDisk };
+}
+// The shudder itself: small turns of the camera about all three of its axes. Tides flex the hull slowly (1 to 3 times a second), gas
+// rattles it (7 to 15), and violent tides rattle it too. It runs on the viewer's clock, not the ship's, which near a large black
+// hole is played back hundreds of times faster. Only while the fall is playing.
+const SH_LO = [[1.31, 0.7], [2.17, 2.9], [2.93, 5.1]], SH_HI = [[7.3, 1.1], [9.7, 4.2], [12.1, 0.3], [14.9, 2.2]];
+const shBand = (t, set, axis) => { let v = 0; for (const [f, p] of set) v += Math.sin(6.2832 * f * t + p + axis * 2.399); return v / Math.sqrt(set.length / 2); };
+function shudder(now) {
+  const m = S.shake / 50, L = S.loads;
+  if (S.mode !== 'playing' || m <= 0 || !L) { SH.yaw = SH.pitch = SH.roll = 0; return; }
+  const lo = 0.7 * L.tide + 0.25 * L.gas, hi = 0.9 * L.gas + 0.5 * L.tide * L.tide;
+  if (lo + hi < 1e-4) { SH.yaw = SH.pitch = SH.roll = 0; return; }
+  const A = 0.0065 * m, t = now / 1000;                                   // at 50%: about a third of a degree in the thick of it, a little over one at the very worst
+  SH.pitch = A * (lo * shBand(t, SH_LO, 0) + hi * shBand(t, SH_HI, 0));
+  SH.yaw = A * (lo * shBand(t, SH_LO, 1) + hi * shBand(t, SH_HI, 1));
+  SH.roll = 1.3 * A * (lo * shBand(t, SH_LO, 2) + hi * shBand(t, SH_HI, 2));
+}
+let dirty = true;
+
+function rebuild() {
+  S.path = buildPath(S.r0, S.v, S.angle);
+  S.tau = 0; S.idx = 0; S.mode = 'ready'; S.fade = 1; S.idle = 0;
+  $('endcard').hidden = true;
+  layoutTicks(); describeOutcome(); syncTransport(); dirty = true;
+}
+
+function stateAt(tau) {
+  const P = S.path, n = P.n;
+  let i = Math.min(S.idx, n - 2);
+  if (P.tau[i] > tau) { let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P.tau[m] <= tau) lo = m; else hi = m; } i = lo; }
+  while (i < n - 2 && P.tau[i + 1] <= tau) i++;
+  S.idx = i;
+  const t0 = P.tau[i], t1 = P.tau[i + 1], f = t1 > t0 ? Math.min(1, Math.max(0, (tau - t0) / (t1 - t0))) : 0;
+  const mix = A => A[i] + (A[i + 1] - A[i]) * f;
+  const r = mix(P.r), pr = mix(P.pr), phi = mix(P.phi), T = mix(P.T);
+  const ts = Number.isFinite(P.ts[i + 1]) ? mix(P.ts) : Infinity;
+  return { r, pr, phi, T, ts, tau, f: (i + f) / (n - 1) };
+}
+
+// ====================================================================== WebGL
+const GL = { ok: false };
+function fatal(title, body, log) { $('fatal-title').textContent = title; $('fatal-body').textContent = body; $('fatal-log').textContent = log || ''; $('fatal').hidden = false; }
+
+function compile(gl, type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader compile failed');
+  return s;
+}
+function program(gl, fsSrc) {
+  const vs = compile(gl, gl.VERTEX_SHADER, '#version 300 es\nvoid main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }');
+  const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
+  const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'program link failed');
+  const U = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); U[info.name] = gl.getUniformLocation(p, info.name); }
+  return { p, U };
+}
+function initGL() {
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance' });
+  if (!gl) { fatal('This needs WebGL 2', $('fatal-body').textContent); return false; }
+  try {
+    GL.gl = gl;
+    const withFinish = id => $(id).textContent.replace('//#finish', $('fs-finish').textContent);
+    GL.scene = program(gl, withFinish('fs-scene'));
+    GL.post = program(gl, withFinish('fs-post'));
+    GL.meter = program(gl, $('fs-meter').textContent);
+    GL.blend = program(gl, $('fs-blend').textContent);
+  } catch (e) {
+    fatal('The ray tracer did not compile', 'Your graphics driver rejected the shader. The driver message is below.', String(e.message || e));
+    return false;
+  }
+  GL.vao = gl.createVertexArray();
+  GL.hdr = !!gl.getExtension('EXT_color_buffer_float') || !!gl.getExtension('EXT_color_buffer_half_float');
+  GL.texW = GL.texH = 0; GL.tex = GL.acc = GL.show = null; GL.accValid = false; GL.accN = 0; GL.meterT = 0; GL.m = 0; GL.settleUntil = 0;
+  if (GL.hdr) {
+    GL.fbo = gl.createFramebuffer(); GL.accFbo = gl.createFramebuffer();
+    // the light meter: two single pixels, written turn and turn about
+    GL.meterTex = [0, 1].map(() => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA16F, 1, 1);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); return t; });
+    GL.meterFbo = GL.meterTex.map(t => { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+  // blackbody colours, 500 K to 60 000 K in 64 equal steps of log temperature, stored as square roots to keep the dark reds fine
+  GL.bbTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, GL.bbTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 64, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, blackbodyTable());
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  GL.ok = true; dirty = true;
+  return true;
+}
+// The colour of a glowing body at each temperature: its Planck spectrum weighed by the eye's three colour responses (CIE 1931, in
+// the piecewise-Gaussian fit of Wyman, Sloan and Shirley), turned to linear sRGB, clipped to what a screen can show, and scaled so
+// the brightest channel is 1.
+function blackbodyTable() {
+  const N = 64, out = new Uint8Array(N * 4);
+  const g = (l, m, s1, s2) => Math.exp(-0.5 * Math.pow((l - m) / (l < m ? s1 : s2), 2));
+  for (let i = 0; i < N; i++) {
+    const T = 500 * Math.pow(120, i / (N - 1));
+    let X = 0, Y = 0, Z = 0;
+    for (let l = 380; l <= 780; l += 5) {
+      const B = 1 / (Math.pow(l, 5) * (Math.exp(1.4388e7 / (l * T)) - 1));
+      X += B * (1.056 * g(l, 599.8, 37.9, 31.0) + 0.362 * g(l, 442.0, 16.0, 26.7) - 0.065 * g(l, 501.1, 20.4, 26.2));
+      Y += B * (0.821 * g(l, 568.8, 46.9, 40.5) + 0.286 * g(l, 530.9, 16.3, 31.1));
+      Z += B * (1.217 * g(l, 437.0, 11.8, 36.0) + 0.681 * g(l, 459.0, 26.0, 13.8));
+    }
+    const c = [3.2406 * X - 1.5372 * Y - 0.4986 * Z, -0.9689 * X + 1.8758 * Y + 0.0415 * Z, 0.0557 * X - 0.2040 * Y + 1.0570 * Z].map(v => Math.max(0, v));
+    const m = Math.max(c[0], c[1], c[2]) || 1;
+    for (let k = 0; k < 3; k++) out[i * 4 + k] = Math.round(255 * Math.sqrt(c[k] / m));
+    out[i * 4 + 3] = 255;
+  }
+  return out;
+}
+function ensureTarget(w, h) {
+  const gl = GL.gl;
+  if (!GL.hdr || (GL.texW === w && GL.texH === h)) return;
+  // Two pictures of the view's size, each with its full run of smaller copies (for the glow and the light meter): the frame just
+  // traced, and the running picture that a held frame is averaged into and a moving one leaves its trail in.
+  const levels = Math.floor(Math.log2(Math.max(w, h))) + 1;
+  const make = (old, fbo) => {
+    if (old) gl.deleteTexture(old);
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texStorage2D(gl.TEXTURE_2D, levels, gl.RGBA16F, w, h);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) GL.hdr = false;   // fall back to the direct path
+    return t;
+  };
+  GL.tex = make(GL.tex, GL.fbo); GL.acc = make(GL.acc, GL.accFbo);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  GL.texW = w; GL.texH = h; GL.show = GL.tex; GL.accValid = false; GL.accN = 0;
+}
+
+// resolution: fixed by the Sharpness menu, or adapted to hold a smooth frame rate
+let autoScale = 1, slowFrames = 0, fastFrames = 0, ceilScale = 1, lastT = 0;
+function resize() {
+  const cw = canvas.clientWidth || 1, ch = canvas.clientHeight || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let sc;
+  if (S.quality === 'auto') sc = autoScale * Math.min(1, Math.sqrt(2.2e6 / (cw * ch * dpr * dpr)));
+  else sc = parseFloat(S.quality);
+  const w = Math.max(64, Math.round(cw * dpr * sc)), h = Math.max(64, Math.round(ch * dpr * sc));
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w; canvas.height = h; dirty = true;
+    if (GL.ok && S.cur) render();   // a canvas is wiped when its size changes: draw again at once, before the browser paints, so no black frame shows
+  }
+}
+function adapt(dt) {
+  if (S.quality !== 'auto') return;
+  if (dt > 0.034) { slowFrames++; fastFrames = 0; } else if (dt < 0.019) { fastFrames++; slowFrames = Math.max(0, slowFrames - 1); } else { fastFrames = 0; }
+  if (slowFrames > 14 && autoScale > 0.3) { ceilScale = autoScale * 0.97; autoScale = Math.max(0.3, autoScale * 0.82); slowFrames = 0; fastFrames = 0; resize(); }
+  else if (fastFrames > 150 && autoScale < ceilScale - 0.02) { autoScale = Math.min(ceilScale, autoScale * 1.1); fastFrames = 0; resize(); }
+}
+
+// ---------- camera
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const lin = (a, x, b, y, c, z) => [a * x[0] + b * y[0] + (c || 0) * (z ? z[0] : 0), a * x[1] + b * y[1] + (c || 0) * (z ? z[1] : 0), a * x[2] + b * y[2] + (c || 0) * (z ? z[2] : 0)];
+const unit = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+
+function camera(st) {
+  const P = S.path, lat = S.lat * Math.PI / 180;
+  const e1 = [Math.cos(lat), Math.sin(lat), 0], e2 = [0, 0, -1];     // orbit plane; e2 is the disk's direction of rotation
+  const c = Math.cos(st.phi), s = Math.sin(st.phi);
+  const rh = lin(c, e1, s, e2), ph = lin(-s, e1, c, e2);
+  const beta = Math.sqrt(1 / st.r), gam = utOf(st.r, st.pr, P.E, P.L);
+  const Ur = st.pr + beta * gam, Up = P.L / st.r;                   // 4-velocity in the free-fall frame
+  const U = lin(Ur, rh, Up, ph), shadow = shadowCircle(st.r, rh, ph, U, gam);
+  let f;
+  if (S.look === 'back') f = rh;
+  else if (S.look === 'ahead') { const vv = lin(st.pr, rh, Up, ph); f = Math.hypot(vv[0], vv[1], vv[2]) > 1e-4 ? unit(vv) : lin(-1, rh, 0, ph); }
+  else f = shadow.c;
+  let up = lin(1, [0, 1, 0], -f[1], f);
+  if (Math.hypot(up[0], up[1], up[2]) < 1e-3) up = cross(e1, e2);
+  up = unit(up);
+  const right = cross(f, up);
+  const yaw = S.yaw + SH.yaw, pitch = S.pitch + SH.pitch;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const F = lin(cp * cy, f, cp * sy, right, sp, up);
+  const R0 = lin(cy, right, -sy, f), U0 = cross(R0, F);
+  const cr = Math.cos(SH.roll), sr = Math.sin(SH.roll);
+  const R = lin(cr, R0, sr, U0), Uv = lin(cr, U0, -sr, R0);
+  return { pos: lin(st.r, rh, 0, ph), U, gam, shadow, mat: new Float32Array([...R, ...Uv, ...F]), beta };
+}
+// Half-angle of the shadow for an observer falling freely from rest far away, measured from the inward direction.
+function shadowHalfAngle(r) {
+  const beta = Math.sqrt(1 / r), BC = 2.5980762;
+  const b = t => r * Math.sin(t) / (1 + beta * Math.cos(t)) - BC;
+  let lo = 0, hi, rising = true;
+  if (r < 1) hi = Math.acos(-1 / beta); else if (r < 1.5) hi = Math.acos(-Math.min(1, beta)); else { lo = Math.acos(-beta); hi = Math.PI; rising = false; }
+  for (let i = 0; i < 40; i++) { const m = 0.5 * (lo + hi); if ((b(m) > 0) === rising) hi = m; else lo = m; }
+  return Math.PI - 0.5 * (lo + hi);
+}
+// The shadow is a circle on the sky in every frame. Carry it into the camera's frame (aberration)
+// to get its true centre and size there, whatever the camera's motion.
+function shadowCircle(r, rh, ph, U, gam) {
+  const al = shadowHalfAngle(r), a = [-rh[0], -rh[1], -rh[2]];
+  const Um = Math.hypot(U[0], U[1], U[2]);
+  if (Um < 1e-7) return { c: a, half: al };
+  const boost = d => { const k = dot(d, U) / (gam + 1) + 1; return unit([d[0] + U[0] * k, d[1] + U[1] * k, d[2] + U[2] * k]); };
+  const ua = dot(U, a) / Um;
+  let t = [U[0] / Um - ua * a[0], U[1] / Um - ua * a[1], U[2] / Um - ua * a[2]];
+  t = Math.hypot(t[0], t[1], t[2]) < 1e-6 ? ph : unit(t);
+  const q1 = boost(lin(Math.cos(al), a, Math.sin(al), t)), q2 = boost(lin(Math.cos(al), a, -Math.sin(al), t)), qa = boost(a);
+  let c = [q1[0] + q2[0], q1[1] + q2[1], q1[2] + q2[2]];
+  c = Math.hypot(c[0], c[1], c[2]) < 1e-6 ? qa : unit(c);
+  if (dot(c, qa) < 0) c = [-c[0], -c[1], -c[2]];
+  return { c, half: Math.acos(Math.max(-1, Math.min(1, dot(c, q1)))) };
+}
+function effectiveFov(st, cam) {
+  if (!S.widen || S.look !== 'hole') return S.fov;
+  const need = 2.7 * cam.shadow.half * 180 / Math.PI;
+  return Math.min(300, Math.max(S.fov, need));
+}
+
+// Traces one frame. o.keep lays it into the running picture by the share o.mix (see fs-blend); o.jit moves it a fraction of a pixel.
+function render(o) {
+  o = o || {};
+  const gl = GL.gl, st = S.cur, cam = camera(st);
+  const w = canvas.width, h = canvas.height;
+  if (GL.hdr) ensureTarget(w, h);
+  const direct = !GL.hdr;
+  gl.disable(gl.BLEND);
+  gl.bindVertexArray(GL.vao);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, direct ? null : GL.fbo);
+  gl.viewport(0, 0, w, h);
+  const sc = GL.scene; gl.useProgram(sc.p);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, GL.bbTex); gl.uniform1i(sc.U.uBB, 1);
+  gl.uniform2f(sc.U.uRes, w, h);
+  gl.uniform3fv(sc.U.uPos, cam.pos);
+  gl.uniformMatrix3fv(sc.U.uCam, false, cam.mat);
+  gl.uniform3fv(sc.U.uU, cam.U);
+  gl.uniform1f(sc.U.uGam, cam.gam);
+  S.effFov = effectiveFov(st, cam);
+  S.shadowHalf = cam.shadow.half;
+  gl.uniform1f(sc.U.uFov, S.effFov * Math.PI / 180);
+  gl.uniform1f(sc.U.uDiskT, st.T + S.idle);
+  gl.uniform1f(sc.U.uDisk, S.disk ? 1 : 0);
+  gl.uniform1f(sc.U.uShift, S.shift ? 1 : 0);
+  gl.uniform1f(sc.U.uDiskTemp, S.temp);
+  gl.uniform1f(sc.U.uDirect, direct ? 1 : 0);
+  gl.uniform2f(sc.U.uJit, o.jit ? o.jit[0] : 0, o.jit ? o.jit[1] : 0);
+  gl.uniform1f(sc.U.uLimb, S.limb ? 1 : 0);
+  gl.uniform1f(sc.U.uDelay, S.delay ? 1 : 0);
+  gl.uniform1f(sc.U.uPlunge, S.plunge ? 1 : 0);
+  gl.uniform1f(sc.U.uTurb, S.turb ? 1 : 0);
+  gl.uniform1f(sc.U.uBBtab, S.bbTab ? 1 : 0);
+  gl.uniform1f(sc.U.uEdge, S.edge ? 1 : 0);
+  gl.uniform1f(sc.U.uDiskExp, S.autoExp && !direct ? DISK_TRUE : 0.4);   // with the exposure adapting, the disk can be shown at its true contrast
+  if (direct) finishUniforms(sc.U);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  if (direct) return;
+  if (o.keep) {
+    const a = o.mix === undefined ? 1 : o.mix;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, GL.accFbo);
+    gl.useProgram(GL.blend.p);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.tex);
+    gl.uniform1i(GL.blend.U.uTex, 0); gl.uniform1f(GL.blend.U.uA, a);
+    if (a < 1) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); }
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.disable(gl.BLEND);
+    GL.show = GL.acc; GL.accValid = true;
+  } else { GL.show = GL.tex; GL.accValid = false; }
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.show);
+  if (S.glow || S.autoExp) gl.generateMipmap(gl.TEXTURE_2D);
+  GL.settleUntil = performance.now() + 2500;       // the exposure goes on settling for a while after the last frame traced
+  present();
+}
+const DISK_TRUE = 1.0;
+const STILL_N = 32;                                 // how many tracings a held picture is averaged over
+const halton = (i, b) => { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; };
+// The static changes 30 times a second whatever the screen's own rate, so it looks the same on every display.
+// With reduced motion asked for, it holds still.
+const grainSeed = () => reduceMotion ? 7 : Math.floor(performance.now() * 0.03) % 4093;
+function finishUniforms(U) {
+  const gl = GL.gl;
+  GL.seed = grainSeed();
+  gl.uniform1f(U.uMono, S.mono ? 1 : 0);
+  gl.uniform1f(U.uGrain, S.grain / 100);
+  gl.uniform1f(U.uSeed, GL.seed);
+  gl.uniform1f(U.uFade, S.fade);
+  gl.uniform1f(U.uVig, S.lens ? 0.22 : 0);
+}
+// From the picture to the screen: read the light meter, then glow, exposure, lens, tone, monochrome, grain. Cheap, so a held frame
+// can keep its static moving, and its exposure settling, without being traced again.
+function present() {
+  const gl = GL.gl, w = canvas.width, h = canvas.height, t = performance.now();
+  gl.disable(gl.BLEND);
+  gl.bindVertexArray(GL.vao);
+  if (S.autoExp) {
+    const dtm = GL.meterT ? Math.min(0.25, (t - GL.meterT) / 1000) : 1e9; GL.meterT = t;   // the first reading is taken as it stands
+    const src = GL.m, dst = 1 - GL.m, me = GL.meter;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, GL.meterFbo[dst]); gl.viewport(0, 0, 1, 1);
+    gl.useProgram(me.p);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.show); gl.uniform1i(me.U.uTex, 0);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, GL.meterTex[src]); gl.uniform1i(me.U.uPrev, 2);
+    gl.uniform1f(me.U.uLod, Math.max(0, Math.log2(Math.max(w, h) / 16)));
+    gl.uniform1f(me.U.uUp, 1 - Math.exp(-dtm / 0.35)); gl.uniform1f(me.U.uDown, 1 - Math.exp(-dtm / 1.4));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    GL.m = dst;
+  } else GL.meterT = 0;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, w, h);
+  const po = GL.post; gl.useProgram(po.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GL.show); gl.uniform1i(po.U.uTex, 0);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, GL.meterTex[GL.m]); gl.uniform1i(po.U.uMeter, 2);
+  gl.uniform2f(po.U.uRes, w, h);
+  gl.uniform1f(po.U.uGlow, S.glow ? 0.11 : 0);
+  gl.uniform1f(po.U.uAuto, S.autoExp ? 1 : 0);
+  gl.uniform1f(po.U.uLens, S.lens ? 1 : 0);
+  finishUniforms(po.U);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ====================================================================== readout
+const sig = (x, n = 3) => { if (!Number.isFinite(x)) return '∞'; if (x === 0) return '0'; const a = Math.abs(x); if (a >= 1e6 || a < 1e-3) { const e = Math.floor(Math.log10(a)); return (x / Math.pow(10, e)).toFixed(1) + '×10' + String(e).replace(/-/g, '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]); } return Number(x.toPrecision(n)).toLocaleString('en-US', { maximumFractionDigits: 6 }); };
+function fmtTime(sec) {
+  const a = Math.abs(sec);
+  if (!Number.isFinite(sec)) return '∞';
+  if (a === 0) return '0 s';
+  if (a < 1e-3) return sig(sec * 1e6) + ' µs';
+  if (a < 1) return sig(sec * 1e3) + ' ms';
+  if (a < 120) return sig(sec) + ' s';
+  if (a < 7200) return sig(sec / 60) + ' min';
+  if (a < 172800) return sig(sec / 3600) + ' h';
+  if (a < 6.3e7) return sig(sec / 86400) + ' days';
+  return sig(sec / 3.15576e7) + ' years';
+}
+function fmtDist(km) {
+  if (km < 1) return sig(km * 1000) + ' m';
+  if (km < 1e6) return sig(km) + ' km';
+  if (km < 3e7) return sig(km / 1e6) + ' million km';
+  const au = km / 1.495979e8;
+  if (au < 2e4) return sig(au) + ' AU';
+  return sig(au / 63241.1) + ' light-years';
+}
+const RS = 'r<sub>s</sub>';
+const sub = t => `<span class="sub">${t}</span>`;
+// where you are: the word in the readout, its verdict, and the warning shown over the view
+const PHASES = [
+  [1, 'Inside the horizon', 'bad', 'Inside the event horizon. Nothing gets back out from here, light included.'],
+  [1.5, 'Past the photon sphere', 'warn', 'Inside the photon sphere. Even light can no longer circle the black hole.'],
+  [3, 'Past stable orbits', 'warn', 'Inside the last stable orbit. From here every orbit tips inward.'],
+  [Infinity, 'Outside', 'plain', ''],
+];
+const html = (id, h) => { const el = $(id); if (el.innerHTML !== h) el.innerHTML = h; };
+// playback pace, in r_s/c of your own time per second of watching. Slow motion keeps the on-screen motion steady:
+// a bounded fractional change of r and a bounded turn rate.
+function paceNow() {
+  const r = S.cur.r, P = S.path, k = Math.pow(2, S.rateExp);
+  return k * (S.slow ? Math.min(12, 0.5 * Math.pow(r, 1.5), 0.6 / (Math.abs(S.cur.pr) / r + Math.abs(P.L) / (r * r) + 1e-9)) : 6);
+}
+let lastHud = 0;
+function hud(now, force) {
+  if (!force && now - lastHud < 80) return;
+  lastHud = now;
+  const st = S.cur, P = S.path, M = S.mass, rsKm = RS_KM * M, tu = TU_S * M;
+  const ph = PHASES.find(p => st.r <= p[0]);
+  const atEnd = S.mode === 'ended' && P.outcome === 'singularity';
+  const pos = $('r-pos'); pos.className = ph[2]; html('r-pos', atEnd ? 'At the centre' : ph[1]);
+  html('r-r', `<span>${st.r < 0.1 ? st.r.toFixed(4) : st.r.toFixed(3)} ${RS}</span>${sub(fmtDist(st.r * rsKm))}`);
+  html('r-tau', `${fmtTime(st.tau * tu)}${sub(sig(st.tau, 4) + ' ' + RS + '/c')}`);
+  html('r-far', Number.isFinite(st.ts) ? fmtTime(st.ts * tu) : `∞${sub('never sees you cross')}`);
+  if (st.r > 1.0005) { const v = Math.sqrt(Math.max(0, 1 - (1 - 1 / st.r) / (P.E * P.E))); html('r-v', `${v > 0.9995 ? v.toFixed(5) : v.toFixed(3)} c`); }
+  else html('r-v', `–${sub('nothing can hover here')}`);
+  html('r-river', `${sig(Math.sqrt(1 / st.r), 3)} c`);
+  const ld = S.loads || shipLoads(st);
+  html('r-tide', `${sig(ld.gBody, 2)} g${sub('over 2 m')}`);
+  html('r-shadow', `${(2 * S.shadowHalf * 180 / Math.PI).toFixed(1)}°`);
+  // Warnings over the view: the boundary crossed, and whatever is shaking the ship. Their figures are rounded coarsely, so the
+  // words change only now and then.
+  const warn = (id, on, text, bad) => { const el = $(id); if (el.hidden === on) el.hidden = !on; if (on) { if (el.textContent !== text) el.textContent = text; el.classList.toggle('bad', !!bad); } };
+  warn('al-phase', !!ph[3], ph[3], ph[2] === 'bad');
+  const vr = Math.round(ld.vRel * 20) / 20;
+  warn('al-gas', ld.inDisk && ld.gas > 0.04, `In the disk. Gas is striking the hull at ${vr < 0.05 ? 'under 0.05' : vr.toFixed(2)} c.`, ld.gas > 0.75);
+  const gs = Math.pow(10, Math.round(Math.log10(Math.max(ld.gShip, 1e-30)) * 2) / 2);
+  warn('al-tide', ld.tide > 0.04, `Tides are flexing the hull: about ${sig(gs, 1)} g across a ${SHIP_M} m ship.`, ld.tide > 0.75);
+  $('speed').textContent = `${fmtTime(paceNow() * tu)} of your time per second`;
+  showFov();
+  drawMap();
+}
+
+function describeOutcome() {
+  const P = S.path, tu = TU_S * S.mass;
+  const tH = P.iH >= 0 ? P.tau[P.iH] : 0, tEnd = P.tau[P.n - 1];
+  let word;
+  if (P.outcome === 'singularity') word = P.r0 <= 1 ? 'Already inside' : 'Captured';
+  else if (P.outcome === 'escape') word = 'Flyby';
+  else word = P.rmax - P.rmin < 0.02 ? 'Circular orbit' : 'Bound orbit';
+  html('r-out', word); $('sum-path').textContent = word;
+  html('r-min', P.outcome === 'singularity' ? 'The centre' : `<span>${P.rmin.toFixed(2)} ${RS}</span>`);
+  html('r-th', P.outcome === 'singularity' && P.r0 > 1 ? fmtTime(tH * tu) : '–');
+  html('r-tc', P.outcome === 'singularity' ? fmtTime((tEnd - tH) * tu) : '–');
+  html('r-e', P.E.toFixed(4));
+  html('r-l', `${P.L.toFixed(3)}${sub(RS + '·c')}`);
+}
+
+// ---------- path map: the fall seen from above, drawn in the page's own ink and theme colour
+const map = $('map'), mctx = map.getContext('2d');
+let mapR = 22;
+function drawMap() {
+  if (!map.clientWidth || !map.clientHeight) return;         // its page is not the one showing
+  const d = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(map.clientWidth * d), H = Math.round(map.clientHeight * d);
+  if (map.width !== W || map.height !== H) { map.width = W; map.height = H; }
+  const P = S.path, st = S.cur, cx = W / 2, cy = H / 2;
+  const want = Math.max(2.4, Math.min(st.r * 1.25, Math.max(P.rmax, P.r0) * 1.08));
+  mapR += (want - mapR) * (S.mode === 'playing' ? 0.12 : 1);
+  const k = (Math.min(W, H) / 2 - 10 * d) / mapR;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  const ln = Math.max(1, (parseFloat(css.getPropertyValue('--ln')) || 1.92) * d);
+  mctx.clearRect(0, 0, W, H);
+  mctx.lineWidth = ln; mctx.lineJoin = 'round';
+  const ring = (r, dash, c) => { mctx.beginPath(); mctx.setLineDash(dash.map(x => x * d)); mctx.strokeStyle = c; mctx.arc(cx, cy, r * k, 0, 6.2832); mctx.stroke(); };
+  ring(3, [2, 5], col('--muted')); ring(1.5, [6, 4], col('--caution'));
+  mctx.setLineDash([]);
+  mctx.beginPath(); mctx.fillStyle = '#000000'; mctx.arc(cx, cy, k, 0, 6.2832); mctx.fill();
+  ring(1, [], col('--stop'));
+  const step = Math.max(1, Math.floor(P.n / 1600));
+  const seg = (a, b, c) => { mctx.beginPath(); mctx.strokeStyle = c; for (let i = a; i <= b; i += step) { const x = cx + P.r[i] * Math.cos(P.phi[i]) * k, y = cy + P.r[i] * Math.sin(P.phi[i]) * k; if (i === a) mctx.moveTo(x, y); else mctx.lineTo(x, y); } mctx.stroke(); };
+  mctx.globalAlpha = 0.3; seg(0, P.n - 1, col('--ink')); mctx.globalAlpha = 1;
+  seg(0, Math.min(P.n - 1, S.idx + 1), col('--ink'));
+  const x = cx + st.r * Math.cos(st.phi) * k, y = cy + st.r * Math.sin(st.phi) * k;
+  mctx.beginPath(); mctx.fillStyle = col('--knob'); mctx.arc(x, y, 5 * d, 0, 6.2832); mctx.fill();
+}
+
+// ---------- timeline marks at the radii that matter
+function layoutTicks() {
+  const P = S.path, box = $('ticks'); box.textContent = '';
+  const add = (i, label, cls) => { if (i < 0) return; const t = document.createElement('i'); if (cls) t.className = cls; t.style.left = (100 * i / (P.n - 1)) + '%'; const s = document.createElement('span'); s.textContent = label; t.appendChild(s); box.appendChild(t); };
+  if (P.outcome !== 'orbit') { add(P.iI, 'last stable orbit'); add(P.iP, 'photon sphere'); }
+  add(P.iH, 'horizon', 'h');
+  declutterTicks();
+}
+function declutterTicks() {            // drop a label sooner than let two overlap
+  const spans = [...$('ticks').querySelectorAll('span')];
+  spans.forEach(s => { s.style.visibility = ''; });
+  const taken = [];
+  const order = spans.slice().sort((a, b) => (b.parentNode.className === 'h') - (a.parentNode.className === 'h'));
+  for (const s of order) {
+    const r = s.getBoundingClientRect();
+    if (!r.width) continue;
+    if (taken.some(t => r.left < t.right + 6 && r.right > t.left - 6)) s.style.visibility = 'hidden'; else taken.push(r);
+  }
+}
+
+// ====================================================================== controls
+const PRESETS = [
+  ['plunge', 'Free-fall plunge', () => ({ r0: 20, v: rainSpeed(20), angle: 0, lat: 10 })],
+  ['drop', 'Drop from rest', () => ({ r0: 10, v: 0, angle: 0, lat: 10 })],
+  ['spiral', 'Spiral capture', () => ({ r0: 20, v: rainSpeed(20), angle: criticalAngle(20, rainSpeed(20)) - 0.25, lat: 10 })],
+  ['graze', 'Near-light graze', () => ({ r0: 20, v: 0.97, angle: criticalAngle(20, 0.97) - 0.02, lat: 14 })],
+  ['sling', 'Slingshot flyby', () => ({ r0: 20, v: 0.45, angle: criticalAngle(20, 0.45) + 1.2, lat: 10 })],
+  ['orbit', 'Circular orbit', () => ({ r0: 6, v: Math.sqrt(0.5 / 5), angle: 90, lat: 12 })],
+];
+const REALISM = [['x-exp', 'autoExp'], ['x-limb', 'limb'], ['x-delay', 'delay'], ['x-plunge', 'plunge'], ['x-turb', 'turb'], ['x-bb', 'bbTab'], ['x-still', 'still'], ['x-blur', 'blur'], ['x-lens', 'lens'], ['x-edge', 'edge']];      // the switches under Camera, Realism: their boxes and what each sets
+const DEFAULTS = {
+  camera: { look: 'hole', fov: 80, widen: true, disk: true, shift: true, glow: true, temp: 5600, yaw: 0, pitch: 0,
+    autoExp: true, limb: true, delay: true, plunge: true, turb: true, bbTab: true, still: true, blur: true, lens: true, edge: true },
+  options: { rateExp: 0, slow: true, quality: 'auto', mono: false, grain: 50, shake: reduceMotion ? 0 : 50 },
+};
+const root = document.documentElement;
+const narrow = window.matchMedia('(max-width: 760px)');
+const mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+const PAGES = ['path', 'camera', 'options'], TABS = ['play', 'path', 'camera', 'options'];
+
+// a box of choices: the highlight slides to the option chosen (--i of --n)
+function setSeg(name, value) {
+  const rs = [...document.querySelectorAll(`input[name="${name}"]`)];
+  const i = rs.findIndex(r => r.value === String(value) || parseFloat(r.value) === value);
+  rs.forEach((r, j) => { r.checked = j === i; });
+  if (rs[0]) rs[0].closest('.seg').style.setProperty('--i', Math.max(0, i));
+}
+function syncInputs() {
+  $('c-r0').value = S.r0; $('c-speed').value = S.v; $('c-angle').value = S.angle; $('c-lat').value = S.lat;
+  $('c-fov').value = S.fov; $('c-temp').value = S.temp; $('c-rate').value = $('c-rate2').value = S.rateExp;
+  $('c-widen').checked = S.widen; $('c-disk').checked = S.disk; $('c-shift').checked = S.shift; $('c-glow').checked = S.glow; $('c-slow').checked = S.slow;
+  $('c-mono').checked = S.mono; $('c-grain').value = S.grain; $('c-shake').value = S.shake;
+  for (const [id, key] of REALISM) $(id).checked = S[key];
+  setSeg('mass', S.mass); setSeg('look', S.look); setSeg('quality', S.quality);
+  syncLabels();
+}
+function syncLabels() {
+  html('o-r0', `${S.r0.toFixed(1)} ${RS}`);
+  $('o-speed').textContent = S.v.toFixed(3) + ' c';
+  $('o-angle').textContent = S.angle.toFixed(S.angle % 1 ? 2 : 0) + '°';
+  $('o-lat').textContent = S.lat.toFixed(0) + '°';
+  showFov();
+  $('o-temp').textContent = sig(S.temp, 3) + ' K';
+  const rate = '×' + sig(Math.pow(2, S.rateExp), 2);
+  $('o-rate').textContent = rate; $('sum-options').textContent = rate; rateLabel();
+  $('o-grain').textContent = S.grain.toFixed(0) + '%';
+  $('o-shake').textContent = S.shake.toFixed(0) + '%';
+  $('o-mass').textContent = `${sig(S.mass, 2)} Suns. Horizon radius ${fmtDist(RS_KM * S.mass)}; light takes ${fmtTime(TU_S * S.mass)} to cross it.`;
+  for (const r of document.querySelectorAll('input[name="preset"]')) r.checked = r.value === S.preset;
+}
+function showFov() {
+  const t = S.effFov > S.fov + 0.5 ? `${S.effFov.toFixed(0)}° auto` : `${S.fov.toFixed(0)}°`;
+  $('o-fov').textContent = t; $('sum-camera').textContent = t;
+}
+
+// ---------- pages
+function showPage(k) {
+  if (k === 'play' && !narrow.matches) k = 'path';
+  S.page = k; $('app').dataset.page = k;
+  for (const p of PAGES) $('sec-' + p).hidden = p !== k;
+  for (const t of TABS) { const b = $('tab-' + t), on = t === k; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
+  const tabs = $('tabs'); tabs.style.setProperty('--i', Math.max(0, PAGES.indexOf(k))); tabs.style.setProperty('--im', TABS.indexOf(k));
+  $('pages').scrollTop = 0; askReset(false); closeTip(); closeRate();
+  resize(); declutterTicks(); dirty = true;
+}
+// Full screen: the left panel and the readouts go, and come back, with one button. On a narrow screen the view's own page comes
+// up first. The timeline, with Play and Restart at its left, goes with the view: into the box over its lower edge, and back to the
+// head of the readouts afterwards. Whichever of its controls had the keyboard keeps it.
+function setFull(on) {
+  S.full = on; closeRate();
+  if (on && narrow.matches && S.page !== 'play') showPage('play');
+  $('app').classList.toggle('full', on);
+  const sb = $('scrub-box'), to = $(on ? 'dock' : 'info'), act = document.activeElement, held = sb.contains(act);
+  if (sb.parentNode !== to) { to.insertBefore(sb, to.firstChild); if (held) act.focus({ preventScroll: true }); }
+  const b = $('b-full'), t = on ? 'Exit full screen' : 'Full screen';
+  b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', t); b.title = t + ' (F)';
+  barNear = false; barUntil = 0; if (on) barFor(2500); else barSync();
+  closeTip(); resize(); requestAnimationFrame(declutterTicks); dirty = true;
+}
+function askReset(on) { $('reset-page').hidden = on; $('reset-yes').hidden = !on; $('reset-no').hidden = !on; }
+function resetPage() {
+  if (S.page === 'camera') { Object.assign(S, DEFAULTS.camera); syncInputs(); dirty = true; }
+  else if (S.page === 'options') { Object.assign(S, DEFAULTS.options); S.theme = THEME0; S.textSize = TEXT0; S.soft = false; applyDisplay(); saveDisplay(); autoScale = ceilScale = 1; syncInputs(); resize(); dirty = true; }
+  else { Object.assign(S, PRESETS[0][2]()); S.preset = 'plunge'; S.mass = 4.3e6; S.yaw = S.pitch = 0; syncInputs(); rebuild(); }
+}
+
+// ---------- night mode: the switch in the title bar and the one under Options are the same setting
+const isNight = () => root.dataset.theme ? root.dataset.theme === 'dark' : mqDark.matches;
+function syncNight() { const n = isNight(); $('night').setAttribute('aria-checked', String(n)); $('o-night').checked = n; applyDisplay(); }
+
+// ---------- the page's own look (Options, Display options): page theme, text size, Soft background
+const THEMES = ['ink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'gray-10', 'gray-20', 'gray-30', 'gray-40', 'gray-50', 'gray-60', 'gray-70', 'gray-80', 'gray-90', 'neon-yellow', 'neon-orange', 'neon-lime', 'neon-pink', 'rgb-red', 'rgb-green', 'rgb-blue'];   // Basic, then Grayscale, then Neon & RGB
+const THEME0 = 'rgb-green';                                  // the theme the page opens in, and goes back to on reset
+const TEXT = [['Extra small', .9], ['Small', 1], ['Medium', 1.1], ['Large', 1.2], ['Extra large', 1.3]], TEXT0 = 1;
+function applyDisplay() {
+  const night = isNight();
+  // 90% gray is all but the colour of night mode's page, so the page's lines and buttons would vanish in it. In night mode it is
+  // not offered, and if it is the theme when night mode comes on, the theme becomes 80% gray, the next step.
+  if (S.theme === 'gray-90' && night) { S.theme = 'gray-80'; saveDisplay(); }
+  if (S.theme === 'ink') root.removeAttribute('data-accent'); else root.dataset.accent = S.theme;
+  root.style.setProperty('--ts', TEXT[S.textSize][1]);
+  root.classList.toggle('soft', S.soft);
+  root.classList.toggle('is-night', night);
+  for (const r of document.querySelectorAll('input[name="theme"]')) r.checked = r.value === S.theme;
+  const g90 = $('theme-gray-90'); g90.disabled = night; g90.nextElementSibling.title = night ? '90% gray (not available in night mode)' : '90% gray';
+  const tz = $('o-textSize'); tz.value = S.textSize; $('o-textSize-out').textContent = TEXT[S.textSize][0]; tz.setAttribute('aria-valuetext', TEXT[S.textSize][0]);
+  $('o-soft').checked = S.soft;
+  const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || (night ? '#000000' : '#ffffff'));   // a phone's browser bars follow the page
+  dirty = true;
+}
+function saveDisplay() { try { localStorage.setItem('black-hole-descent:display', JSON.stringify({ theme: S.theme, textSize: S.textSize, soft: S.soft })); } catch (e) {} }
+function setNight(on) {
+  root.dataset.theme = on ? 'dark' : 'light';
+  try { localStorage.setItem('black-hole-descent:night', on ? '1' : '0'); } catch (e) {}
+  syncNight();
+}
+// every dividing line and outline is one thickness, taken down to whole screen pixels as a browser does a border
+function lineWidth() { const d = window.devicePixelRatio || 1; root.style.setProperty('--ln', (Math.max(1, Math.floor(1.92 * d + 1e-6)) + .01) / d + 'px'); }
+
+// ---------- playback speed: the dial at the right of the timeline opens a tall slider over itself. It is the same setting as
+// Speed under Options. The capsule is fixed to the window where the button stands, so it is put away whenever the button might move.
+let rateOpen = false;
+function rateLabel() {
+  const pop = $('rate-pop'), len = parseFloat(pop.style.getPropertyValue('--len')) || 124, t = '×' + sig(Math.pow(2, S.rateExp), 2);
+  $('o-rate2').textContent = t;
+  pop.style.setProperty('--y', (15 + (1 - (S.rateExp + 3) / 6) * (len - 16)) + 'px');   // level with the knob
+  $('b-rate').title = $('b-rate-close').title = 'Playback speed ' + t;
+}
+function openRate() {
+  if (rateOpen) return;
+  const pop = $('rate-pop'), r = $('b-rate').getBoundingClientRect(), h = Math.max(96, Math.min(165, r.bottom - 8));
+  pop.style.left = r.left + 'px'; pop.style.top = (r.bottom - h) + 'px'; pop.style.height = h + 'px'; pop.style.setProperty('--len', (h - 41) + 'px');
+  rateLabel(); closeTip();
+  rateOpen = true; pop.classList.add('open'); $('b-rate').setAttribute('aria-expanded', 'true'); $('c-rate2').focus({ preventScroll: true });
+  barSync();
+}
+function closeRate(refocus) {
+  if (!rateOpen) return;
+  rateOpen = false; $('rate-pop').classList.remove('open'); $('b-rate').setAttribute('aria-expanded', 'false');
+  if (refocus) $('b-rate').focus({ preventScroll: true });
+  barFor(500);
+}
+
+// ---------- full screen: the bar along the bottom keeps out of the picture unless it is wanted. With a mouse that is while the
+// pointer is over it (a band along the view's lower edge, a little taller than the bar), and for half a second after. A finger
+// cannot hover, so a tap on the picture brings the bar up for a few seconds. It also stays while one of its controls is held, or was
+// reached with the Tab key, while the speed slider is open, for a moment after a key is used on one of its controls, and for a
+// moment on entering full screen, to show where it is.
+let barNear = false, barHold = false, barKeys = false, barUntil = 0, barTimer = 0, barTap = null;
+const BAR_ZONE = 92;
+function barSync() {
+  clearTimeout(barTimer);
+  const dock = $('dock'), now = performance.now();
+  const keep = !S.full || barNear || barHold || rateOpen || now < barUntil || (barKeys && dock.contains(document.activeElement));
+  dock.classList.toggle('away', !keep);
+  if (S.full && keep && now < barUntil) barTimer = setTimeout(barSync, barUntil - now + 30);
+}
+function barFor(ms) { barUntil = Math.max(barUntil, performance.now() + ms); barSync(); }
+function wireBar() {
+  const box = $('canvas-box'), dock = $('dock');
+  const near = e => e.clientY >= box.getBoundingClientRect().bottom - BAR_ZONE;
+  box.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const n = near(e); if (n === barNear) return;
+    barNear = n; if (n) barSync(); else barFor(500);
+  });
+  box.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && barNear) { barNear = false; barFor(500); } });
+  box.addEventListener('pointerdown', e => {
+    if (dock.contains(e.target)) { barHold = true; barSync(); }
+    else if (e.pointerType !== 'mouse') barTap = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  });
+  const up = e => {
+    if (barHold) { barHold = false; if (e.pointerType === 'mouse') barSync(); else barFor(3500); }
+    if (barTap && barTap.id === e.pointerId) { if (e.type === 'pointerup' && Math.hypot(e.clientX - barTap.x, e.clientY - barTap.y) < 10) barFor(3500); barTap = null; }
+  };
+  window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  dock.addEventListener('focusin', barSync); dock.addEventListener('focusout', () => setTimeout(barSync, 0));
+  window.addEventListener('keydown', e => { if (e.key === 'Tab') barKeys = true; if (S.full && dock.contains(e.target)) barFor(2500); }, true);
+  window.addEventListener('pointerdown', () => { barKeys = false; }, true);
+}
+
+// ---------- what a readout means: a small box by its name, one at a time
+let tipFor = null;
+function closeTip() {
+  if (!tipFor) return;
+  tipFor.setAttribute('aria-expanded', 'false'); tipFor = null;
+  const tip = $('ro-tip'); tip.className = ''; tip.textContent = ''; tip.removeAttribute('style');
+}
+function openTip(b) {
+  closeTip(); tipFor = b; b.setAttribute('aria-expanded', 'true');
+  const tip = $('ro-tip'); tip.textContent = b.dataset.tip; tip.className = 'rotip';
+  const r = b.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  let y = r.bottom + 6; if (y + t.height > window.innerHeight - 8) y = r.top - t.height - 6;
+  tip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - t.width - 8)) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+
+function buildControls() {
+  const box = $('presets');
+  for (const [k, label, make] of PRESETS) {
+    const l = document.createElement('label'); l.className = 'tog';
+    const inp = document.createElement('input'); inp.type = 'radio'; inp.name = 'preset'; inp.id = 'preset-' + k; inp.value = k;
+    const sp = document.createElement('span'); sp.textContent = label;
+    l.append(inp, sp); box.appendChild(l);
+    inp.addEventListener('change', () => { Object.assign(S, make()); S.preset = k; S.yaw = S.pitch = 0; syncInputs(); rebuild(); });
+  }
+  document.querySelectorAll('.seg').forEach(seg => {
+    const rs = [...seg.querySelectorAll('input')]; seg.style.setProperty('--n', rs.length);
+    rs.forEach((r, i) => r.addEventListener('change', () => seg.style.setProperty('--i', i)));
+  });
+  const traj = (id, key) => $(id).addEventListener('input', e => { S[key] = parseFloat(e.target.value); S.preset = ''; syncLabels(); rebuild(); });
+  traj('c-r0', 'r0'); traj('c-speed', 'v'); traj('c-angle', 'angle');
+  $('c-lat').addEventListener('input', e => { S.lat = parseFloat(e.target.value); syncLabels(); dirty = true; });
+  $('b-rain').addEventListener('click', () => { S.v = Math.min(0.99, rainSpeed(S.r0)); S.preset = ''; syncInputs(); rebuild(); });
+  const radios = (name, fn) => document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', () => { if (r.checked) fn(r.value); }));
+  radios('mass', v => { S.mass = parseFloat(v); syncLabels(); describeOutcome(); dirty = true; });
+  radios('look', v => { S.look = v; S.yaw = S.pitch = 0; dirty = true; });
+  radios('quality', v => { S.quality = v; autoScale = ceilScale = 1; resize(); dirty = true; });
+  const live = (id, key) => $(id).addEventListener('input', e => { S[key] = e.target.type === 'checkbox' ? e.target.checked : parseFloat(e.target.value); syncLabels(); dirty = true; });
+  live('c-fov', 'fov'); live('c-temp', 'temp'); live('c-rate', 'rateExp'); live('c-rate2', 'rateExp');
+  $('c-rate').addEventListener('input', () => { $('c-rate2').value = S.rateExp; });
+  $('c-rate2').addEventListener('input', () => { $('c-rate').value = S.rateExp; });
+  $('b-rate').addEventListener('click', () => { if (rateOpen) closeRate(); else openRate(); });
+  $('b-rate-close').addEventListener('click', () => closeRate(true));
+  wireBar();
+  document.addEventListener('pointerdown', e => { if (rateOpen && !$('rate-pop').contains(e.target) && !$('b-rate').contains(e.target)) closeRate(); }, true);
+  $('info').addEventListener('scroll', () => closeRate(), { passive: true });
+  live('c-widen', 'widen'); live('c-disk', 'disk'); live('c-shift', 'shift'); live('c-glow', 'glow'); live('c-slow', 'slow'); live('c-mono', 'mono'); live('c-grain', 'grain'); live('c-shake', 'shake');
+  for (const [id, key] of REALISM) live(id, key);
+
+  $('b-play').addEventListener('click', togglePlay);
+  $('b-full').addEventListener('click', () => setFull(!S.full));
+  $('b-restart').addEventListener('click', () => rebuild());
+  $('b-again').addEventListener('click', () => { rebuild(); togglePlay(); });
+  $('b-review').addEventListener('click', () => { $('endcard').hidden = true; S.mode = 'paused'; S.fade = 1; setTau(S.path.tau[Math.max(0, S.path.n - 60)]); syncTransport(); });
+  $('scrub').addEventListener('input', e => {
+    const P = S.path, x = parseFloat(e.target.value) / 1000 * (P.n - 1), i = Math.min(P.n - 2, Math.floor(x));
+    if (S.mode === 'ready' || S.mode === 'ended') S.mode = 'paused';
+    $('endcard').hidden = true; S.fade = 1;
+    setTau(P.tau[i] + (P.tau[i + 1] - P.tau[i]) * (x - i)); syncTransport();
+  });
+
+  // pages, reset, night mode, explanations
+  for (const t of TABS) $('tab-' + t).addEventListener('click', () => showPage(t));
+  $('tabs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const shown = TABS.filter(t => t !== 'play' || narrow.matches), i = shown.indexOf(S.page);
+    const k = shown[(i + (e.key === 'ArrowRight' ? 1 : shown.length - 1)) % shown.length];
+    e.preventDefault(); showPage(k); $('tab-' + k).focus();
+  });
+  $('reset-page').addEventListener('click', () => { askReset(true); $('reset-yes').focus(); });
+  $('reset-yes').addEventListener('click', () => { resetPage(); askReset(false); $('reset-page').focus(); });
+  $('reset-no').addEventListener('click', () => { askReset(false); $('reset-page').focus(); });
+  $('night').addEventListener('click', () => setNight(!isNight()));
+  $('o-night').addEventListener('change', e => setNight(e.target.checked));
+  radios('theme', v => { if (THEMES.includes(v)) { S.theme = v; applyDisplay(); saveDisplay(); } });
+  $('o-textSize').addEventListener('input', e => { S.textSize = Math.max(0, Math.min(TEXT.length - 1, Math.round(+e.target.value))); applyDisplay(); saveDisplay(); requestAnimationFrame(declutterTicks); });
+  $('o-soft').addEventListener('change', e => { S.soft = e.target.checked; applyDisplay(); saveDisplay(); });
+  mqDark.addEventListener('change', syncNight);
+  new MutationObserver(syncNight).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  narrow.addEventListener('change', () => showPage(narrow.matches ? S.page : (S.page === 'play' ? 'path' : S.page)));
+  document.addEventListener('click', e => { const b = e.target.closest('.what'); if (!b || b === tipFor) closeTip(); else openTip(b); });
+  for (const id of ['pages', 'info']) $(id).addEventListener('scroll', closeTip, { passive: true });
+
+  // look around
+  let drag = null;
+  canvas.addEventListener('pointerdown', e => {
+    if (narrow.matches && S.page !== 'play') { showPage('play'); return; }      // the small picture leads to Play
+    drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); $('hint').style.opacity = 0;
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const k = Math.min(S.effFov, 200) * Math.PI / 180 / Math.min(canvas.clientWidth, canvas.clientHeight);
+    S.yaw -= (e.clientX - drag.x) * k; S.pitch = Math.max(-1.55, Math.min(1.55, S.pitch + (e.clientY - drag.y) * k));
+    drag.x = e.clientX; drag.y = e.clientY; dirty = true;
+  });
+  const end = () => { drag = null; canvas.classList.remove('dragging'); };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('dblclick', () => { S.yaw = S.pitch = 0; dirty = true; });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); S.fov = Math.max(30, Math.min(300, (S.effFov > S.fov + 0.5 && e.deltaY > 0 ? S.effFov : S.fov) * Math.exp(e.deltaY * 0.0012))); syncInputs(); dirty = true; $('hint').style.opacity = 0; }, { passive: false });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { if (rateOpen) closeRate(true); else if (tipFor) closeTip(); else if (S.full) setFull(false); return; }
+    // F works wherever the focus is (the button itself keeps it after a click), short of a box being typed in
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(TEXTAREA|SELECT)$/.test(e.target.tagName) && !(e.target.tagName === 'INPUT' && !/^(range|checkbox|radio)$/.test(e.target.type))) { setFull(!S.full); return; }
+    if (/^(INPUT|SELECT|TEXTAREA|BUTTON|SUMMARY)$/.test(e.target.tagName)) return;
+    const step = 0.06;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+    else if (e.key === 'ArrowLeft') { S.yaw += step; dirty = true; }
+    else if (e.key === 'ArrowRight') { S.yaw -= step; dirty = true; }
+    else if (e.key === 'ArrowUp') { S.pitch = Math.min(1.55, S.pitch + step); dirty = true; }
+    else if (e.key === 'ArrowDown') { S.pitch = Math.max(-1.55, S.pitch - step); dirty = true; }
+  });
+  const relayout = () => { lineWidth(); resize(); declutterTicks(); closeTip(); closeRate(); dirty = true; };
+  window.addEventListener('resize', relayout);
+  if (window.ResizeObserver) new ResizeObserver(relayout).observe($('canvas-box'));
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); GL.ok = false; });
+  canvas.addEventListener('webglcontextrestored', () => { if (initGL()) resize(); });
+}
+function setTau(t) { S.tau = Math.max(0, Math.min(S.path.tau[S.path.n - 1], t)); S.cur = stateAt(S.tau); dirty = true; }
+function togglePlay() {
+  if (S.mode === 'ended') { rebuild(); }
+  if (S.mode === 'playing') S.mode = 'paused'; else { S.mode = 'playing'; $('hint').style.opacity = 0; }
+  syncTransport(); dirty = true;
+}
+function syncTransport() {
+  // The button shows a sign and no words: the triangle to go, two bars to pause. What it would do is still said in words, to a screen reader and on hover.
+  const b = $('b-play'), t = S.mode === 'playing' ? 'Pause' : (S.mode === 'ready' ? (S.path.outcome === 'singularity' ? 'Begin descent' : 'Begin flight') : (S.mode === 'ended' ? 'Fall again' : 'Resume'));
+  b.dataset.state = S.mode === 'playing' ? 'playing' : 'paused';
+  b.setAttribute('aria-label', t); b.title = t + ' (Space)';
+}
+function finish() {
+  S.mode = 'ended'; syncTransport();
+  const P = S.path, tu = TU_S * S.mass;
+  if (P.outcome === 'singularity') {
+    const tH = P.iH >= 0 ? P.tau[P.iH] : 0, tEnd = P.tau[P.n - 1];
+    $('end-kicker').textContent = 'End of the fall';
+    $('end-title').textContent = 'You reached the centre.';
+    $('end-body').textContent = `${fmtTime((tEnd - tH) * tu)} passed on your clock between the horizon and here. No speed or aim would have stretched that beyond ${fmtTime(Math.PI / 2 * tu)} for a black hole of this mass. The picture stops at ${R_END} horizon radii, where general relativity stops being a trustworthy guide.`;
+  } else if (P.outcome === 'escape') {
+    $('end-kicker').textContent = 'Flyby complete';
+    $('end-title').textContent = 'You got away.';
+    $('end-body').textContent = `Closest approach was ${P.rmin.toFixed(2)} horizon radii. Aim a little closer to the centre, or slow down, and the black hole keeps you.`;
+  } else {
+    $('end-kicker').textContent = 'End of the computed path';
+    $('end-title').textContent = 'Still in orbit.';
+    $('end-body').textContent = `This path stays between ${P.rmin.toFixed(2)} and ${P.rmax.toFixed(2)} horizon radii and never falls in. Orbits like this only last outside 3.`;
+  }
+  $('endcard').hidden = false; dirty = true;
+}
+
+// ====================================================================== loop
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
+  if (!GL.ok) return;
+  let animating = false;
+  if (S.mode === 'playing') {
+    const P = S.path, tEnd = P.tau[P.n - 1];
+    S.tau += paceNow() * dt;
+    if (P.outcome === 'singularity') S.fade = Math.min(1, Math.max(0, (S.cur.r - R_END) / (R_END * 0.6)));
+    if (S.tau >= tEnd) { S.tau = tEnd; S.cur = stateAt(S.tau); if (P.outcome === 'singularity') S.fade = 0; finish(); }
+    else S.cur = stateAt(S.tau);
+    $('scrub').value = Math.round(S.cur.f * 1000);
+    animating = true;
+  } else if (S.mode === 'ready' && !reduceMotion && S.disk) {
+    S.idle += 2.5 * dt; animating = true;       // let the disk turn while you set up
+  }
+  if (animating || dirty) {
+    if (S.mode !== 'playing') { S.cur = stateAt(S.tau); $('scrub').value = Math.round(S.cur.f * 1000); }
+    S.loads = shipLoads(S.cur); shudder(now);
+    GL.accN = 0;
+    // Shutter blur: while things move, each frame is laid over the last and leaves a trail about 1/45 s long, whatever the frame rate
+    if (animating && S.blur && GL.hdr) render({ keep: true, mix: GL.accValid ? 1 - Math.exp(-dt / 0.022) : 1 });
+    else render();
+    hud(now, dirty); dirty = false;
+    if (animating) adapt(dt);
+  } else if (GL.hdr && S.still && GL.accN < STILL_N && S.fade > 0 && GL.texW === canvas.width) {
+    // Sharpen while still: the held picture is traced again a fraction of a pixel away and averaged in, 32 times, then left alone
+    GL.accN++;
+    render({ keep: true, mix: 1 / GL.accN, jit: [halton(GL.accN, 2) - 0.5, halton(GL.accN, 3) - 0.5] });
+  } else if (GL.hdr && GL.texW === canvas.width && ((S.grain > 0 && GL.seed !== grainSeed()) || (S.autoExp && now < GL.settleUntil))) {
+    present();                                   // nothing moved, but the static still does, and the exposure may still be settling
+  }
+}
+
+// ====================================================================== boot
+{ let v = null; try { v = localStorage.getItem('black-hole-descent:night'); } catch (e) {} root.dataset.theme = v === '0' ? 'light' : 'dark'; }   // night mode unless this device has switched it off
+try {
+  const d = JSON.parse(localStorage.getItem('black-hole-descent:display') || 'null');
+  if (d && THEMES.includes(d.theme)) S.theme = d.theme;
+  if (d && Number.isInteger(d.textSize) && TEXT[d.textSize]) S.textSize = d.textSize;
+  if (d && typeof d.soft === 'boolean') S.soft = d.soft;
+} catch (e) {}
+lineWidth();
+buildControls();
+if (window.matchMedia('(pointer: coarse)').matches) $('hint').textContent = 'Drag to look around';
+syncInputs();
+rebuild();
+S.cur = stateAt(0);
+syncNight();
+showPage(narrow.matches ? 'play' : 'path');
+if (initGL()) {
+  resize();
+  requestAnimationFrame(frame);
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('ready')));   // the highlights slide only once the page is up
+}
+// handle for automated checks
+window.__descent = { S, setTau, buildPath, criticalAngle, GL, showPage, shipLoads, SH, stateAt };
+})();
+</script>
+</body>
+</html>
