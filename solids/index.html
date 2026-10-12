@@ -1,1 +1,1723 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Subdivided Solids</title>
+<script>/* Night mode and the page theme are decided before the first paint, from what this device remembers. */
+try { if (localStorage.getItem('night-mode') === '1') document.documentElement.classList.add('night'); } catch (e) {}
+(function () { var d = null; try { d = JSON.parse(localStorage.getItem('subdivided-solids:v1') || 'null'); } catch (e) {}
+  if (!d) return;
+  var r = document.documentElement, t = typeof d.theme === 'string' && /^(red|orange|yellow|green|blue|indigo|violet|gray-[1-9]0|neon-(yellow|orange|lime|pink)|rgb-(red|green|blue))$/.test(d.theme) ? d.theme : 'ink';
+  if (t === 'gray-90' && r.classList.contains('night')) t = 'gray-80';   /* 90% gray is not offered in night mode */
+  if (t !== 'ink') r.setAttribute('data-page-theme', t);
+  if (d.soft === true) r.classList.add('soft');                          /* Soft background */
+  var z = [.9, 1, 1.1, 1.2, 1.3][d.textSize]; if (z && z !== 1) r.style.setProperty('--ts', z); })();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+/* Layout, after the Bike Fit Visualizer: a title bar with the site name and the NIGHT MODE switch; a control panel on the left
+   whose pages are picked from the navigation at its foot; the 3D window on the right with the info panel along its bottom edge.
+   Two looks: a white page by day, a black one in night mode. Lines, buttons, toggles and slider dots take the page theme's colour
+   when one is chosen (Display, Display options); with none they are black, white in night mode. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --stage:#ffffff; --panel:#ffffff; --field:#ffffff; --page:#ffffff;
+  --ink:#0a0a0a; --muted:#6b6b6b; --line:#dcdcdc;
+  --accent:#0a0a0a; --accent-ink:#ffffff;
+  --rule:#000000;
+  --knob:var(--ink);
+  --ts:1;                 /* Text size: what every size of text on the page is multiplied by, 0.9 to 1.3. The title bar keeps its own. */
+  --t-red:#e0101a; --t-orange:#c25400; --t-yellow:#dea62e; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;
+  --t-gray-10:#e6e6e6; --t-gray-20:#cccccc; --t-gray-30:#b3b3b3; --t-gray-40:#999999; --t-gray-50:#808080; --t-gray-60:#666666; --t-gray-70:#4d4d4d; --t-gray-80:#333333; --t-gray-90:#1a1a1a;
+  --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-lime:#ccff00; --t-neon-pink:#ff10f0; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff;
+  --lab-fs:14px; --cap:0.72;
+  --ln:1.92px;
+  --home-font:"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font:"Geist","Helvetica Neue",Arial,system-ui,sans-serif;
+}
+:root.night{
+  color-scheme:dark;
+  --bg:#000000; --stage:#000000; --panel:#000000; --field:#000000; --page:#000000;
+  --ink:#ececec; --muted:#949494; --line:#2e2e2e;
+  --accent:#ececec; --accent-ink:#000000;
+  --rule:#ffffff;
+}
+/* Soft background: the page is not pure white or pure black. By day a warm off-white, in night mode a slightly lighter, warmer
+   black. Only the page changes: everything on it keeps its colour. */
+:root.soft{--bg:#fcfcfa; --stage:#fcfcfa; --panel:#fcfcfa; --field:#fcfcfa; --page:#fcfcfa}
+:root.night.soft{--bg:#191918; --stage:#191918; --panel:#191918; --field:#191918; --page:#191918; --line:#3a3a39}
+:root[data-page-theme="red"]{--theme:var(--t-red)} :root[data-page-theme="orange"]{--theme:var(--t-orange)} :root[data-page-theme="yellow"]{--theme:var(--t-yellow)} :root[data-page-theme="green"]{--theme:var(--t-green)}
+:root[data-page-theme="blue"]{--theme:var(--t-blue)} :root[data-page-theme="indigo"]{--theme:var(--t-indigo)} :root[data-page-theme="violet"]{--theme:var(--t-violet)}
+:root[data-page-theme="neon-yellow"]{--theme:var(--t-neon-yellow)} :root[data-page-theme="neon-orange"]{--theme:var(--t-neon-orange)} :root[data-page-theme="neon-lime"]{--theme:var(--t-neon-lime)} :root[data-page-theme="neon-pink"]{--theme:var(--t-neon-pink)} :root[data-page-theme="rgb-red"]{--theme:var(--t-rgb-red)} :root[data-page-theme="rgb-green"]{--theme:var(--t-rgb-green)} :root[data-page-theme="rgb-blue"]{--theme:var(--t-rgb-blue)}
+:root[data-page-theme="gray-10"]{--theme:var(--t-gray-10)} :root[data-page-theme="gray-20"]{--theme:var(--t-gray-20)} :root[data-page-theme="gray-30"]{--theme:var(--t-gray-30)} :root[data-page-theme="gray-40"]{--theme:var(--t-gray-40)} :root[data-page-theme="gray-50"]{--theme:var(--t-gray-50)} :root[data-page-theme="gray-60"]{--theme:var(--t-gray-60)} :root[data-page-theme="gray-70"]{--theme:var(--t-gray-70)} :root[data-page-theme="gray-80"]{--theme:var(--t-gray-80)} :root[data-page-theme="gray-90"]{--theme:var(--t-gray-90)}
+:root[data-page-theme]{--rule:var(--theme);--accent:var(--theme);--accent-ink:#ffffff;--knob:var(--theme)}
+/* Lettering on the light themes is black, which is what reads on them. */
+:root[data-page-theme="neon-yellow"],:root[data-page-theme="neon-orange"],:root[data-page-theme="neon-lime"],:root[data-page-theme="neon-pink"],:root[data-page-theme="rgb-green"],:root[data-page-theme="yellow"],:root[data-page-theme="gray-10"],:root[data-page-theme="gray-20"],:root[data-page-theme="gray-30"],:root[data-page-theme="gray-40"],:root[data-page-theme="gray-50"]{--accent-ink:#000000}
 
+html{box-sizing:border-box;height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{display:flex;flex-direction:column;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font:400 calc(14px * var(--ts))/1.4 var(--font)}
+h1,h2,h3,p,dl,dd{margin:0}
+
+.app{position:relative;flex:1;min-height:0;display:grid;--pw:max(calc(280px * var(--ts)),min(var(--panel-w,384px),100% - 340px));grid-template-columns:var(--pw) minmax(0,1fr)}
+
+/* ---------- title bar ---------- */
+.site{position:relative;flex:none;background:var(--panel);border-bottom:var(--ln) solid var(--rule);
+  height:calc(32px + .89em);
+  font:400 clamp(9px,calc(.0694*min(33.333vh,100vw - 2*max(24px,6vw))),40px)/1 var(--font)}
+.site svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;user-select:none;-webkit-user-select:none}
+.site text{font-family:var(--home-font);font-weight:400;fill:var(--ink);text-anchor:start;text-rendering:geometricPrecision}
+.site a{position:absolute;color:var(--ink);border-radius:6px;-webkit-tap-highlight-color:transparent}
+.site a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.switch{
+  --sw:calc(var(--cap) * 1em);
+  position:fixed;right:calc(env(safe-area-inset-right, 0px) + 8px);display:block;margin:0;padding:10px 8px;
+  border:0;background:none;color:var(--ink);font:400 var(--lab-fs)/1 var(--home-font);text-rendering:geometricPrecision;white-space:nowrap;
+  cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#night{top:calc(env(safe-area-inset-top, 0px) + 6px);z-index:10}
+.switch:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:6px}
+.switch .track{display:inline-block;vertical-align:baseline;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);box-sizing:border-box;
+  border:calc(var(--sw) * 0.12) solid currentColor;border-radius:999px}
+.switch .thumb{position:absolute;top:50%;left:calc(var(--sw) * 0.13);width:calc(var(--sw) * 0.5);height:calc(var(--sw) * 0.5);border-radius:50%;
+  background:currentColor;transform:translateY(-50%);transition:transform .15s}
+.switch .words + .track{margin-left:calc(var(--sw) * 0.8)}
+.switch[aria-checked="true"] .track{background:currentColor}
+.switch[aria-checked="true"] .thumb{background:var(--page);transform:translate(calc(var(--sw) * 0.75), -50%)}
+@media (prefers-reduced-motion: reduce){ .switch .thumb{transition:none} }
+
+/* The edge lines are the drag handles: no mark of their own, they thicken when hovered, dragged or focused. */
+.resizer{position:absolute;top:0;bottom:0;left:calc(var(--pw) - var(--ln));width:11px;cursor:col-resize;touch-action:none;z-index:5}
+.resizer::before{content:"";position:absolute;top:0;bottom:0;left:0;width:0;border-left:var(--ln) solid transparent;transition:border-color .12s}
+.resizer:hover::before,.resizer.drag::before,.resizer:focus-visible::before{border-left-color:var(--rule);border-left-width:calc(var(--ln) + 1px)}
+.resizer:focus-visible{outline:none}
+.hresizer{grid-area:2/1;align-self:start;position:relative;height:11px;margin-top:calc(var(--ln) - 11px);cursor:row-resize;touch-action:none;z-index:5}
+.hresizer::before{content:"";position:absolute;left:0;right:0;bottom:0;height:0;border-bottom:var(--ln) solid transparent;transition:border-color .12s}
+.hresizer:hover::before,.hresizer.drag::before,.hresizer:focus-visible::before{border-bottom-color:var(--rule);border-bottom-width:calc(var(--ln) + 1px)}
+.hresizer:focus-visible{outline:none}
+
+/* ---------- control panel ---------- */
+.panel{min-height:0;display:flex;flex-direction:column;background:var(--panel);border-right:var(--ln) solid var(--rule);overflow:hidden}
+.pages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-inline:16px;padding-block:0 28px;display:flex;flex-direction:column;scroll-padding-top:60px}
+@supports (scrollbar-color:auto){ .pages{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+.pages::-webkit-scrollbar{width:10px;height:10px;background:transparent}
+.pages::-webkit-scrollbar-track,.pages::-webkit-scrollbar-track-piece,.pages::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
+.pages::-webkit-scrollbar-button{display:none;width:0;height:0}
+.pages::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
+.pages>*{flex:none}
+
+.sec>.sechead{display:flex;align-items:center;gap:10px;min-height:calc(52px + var(--ln));position:sticky;top:0;z-index:3;
+  border-bottom:var(--ln) solid var(--rule);margin-inline:-16px;padding:0 16px}
+.sec>.sechead h2,.sec .sum{text-box:trim-both cap alphabetic}
+.sec>.sechead::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--panel)}
+.sec>.sechead h2{flex:none;white-space:nowrap;font:600 calc(20px * var(--ts))/1.1 var(--font);letter-spacing:-.01em}
+.sec .sum{margin-left:auto;min-width:0;padding-block:4px;margin-block:-4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 calc(12px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}
+.sec-body{display:flex;flex-direction:column;gap:16px;padding:20px 0 18px}
+
+/* The navigation: a button for each page across the foot of the panel. The page showing is a solid block. */
+.tabs{flex:none;position:relative;container-type:inline-size;--tn:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:var(--ln) solid var(--rule);background:var(--panel)}
+.tabs::before{content:"";position:absolute;top:0;bottom:0;left:0;width:25%;background:var(--rule);transform:translateX(calc(var(--i,0) * 100%));
+  box-shadow:calc(max(0, var(--i,0) - 2) * 2px) 0 0 var(--rule)}
+.ready .tabs::before{transition:transform .18s cubic-bezier(.3,.7,.3,1)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:8px 2px calc(8px + env(safe-area-inset-bottom,0px));border:0;border-radius:0;
+  position:relative;background:none;color:var(--muted);font:500 min(calc(12px * var(--ts)),(100cqw / var(--tn) - 6px) / var(--k,1))/1.2 var(--font);cursor:pointer;transition:color .16s}
+.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .ic{position:relative;display:grid;place-items:center;width:52px;height:28px}
+#tab-model{display:none}
+.tab svg{width:22px;height:22px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tab svg .dot{fill:currentColor;stroke:none}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent-ink)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.tab[aria-selected="true"]:focus-visible{outline-color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){ .tab,.ready .tabs::before{transition:none} }
+
+.group{display:flex;flex-direction:column;gap:8px}
+.group>:is(.tgl,.themes,.slider)+:is(.tgl,.themes,.slider){margin-top:4px}
+.grp{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
+.cap{font-size:calc(13px * var(--ts));font-weight:500;line-height:1.2}
+.cap.lead{font-size:calc(16px * var(--ts))}
+.note{color:var(--muted);font-weight:400;font-size:calc(12px * var(--ts))}
+.hint{color:var(--muted);font-size:calc(12.5px * var(--ts));line-height:1.35}
+.hint.said{color:var(--ink);min-height:1.35em}
+
+.textin{display:block;width:100%;min-width:0;font:400 calc(13.5px * var(--ts))/1.3 var(--font);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--field);border:var(--ln) solid var(--rule);border-radius:999px;padding:7px 14px;-moz-appearance:textfield;appearance:textfield}
+.textin::-webkit-outer-spin-button,.textin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.textin:focus,.textin:focus-visible{outline:none}
+textarea.textin{border-radius:14px;height:96px;resize:vertical;font-size:calc(12px * var(--ts))}
+
+/* Switches: a row with the name at the left and a pill toggle at the right edge. The whole row is the switch. */
+.tgl{--sw:16px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:24px;
+  color:var(--ink);cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent}
+.tgl input{position:absolute;opacity:0;pointer-events:none}
+.tgl .cap{min-width:0}
+.tgl .track{flex:none;position:relative;height:var(--sw);width:calc(var(--sw) * 1.75);border:var(--ln) solid currentColor;border-radius:999px;color:var(--knob)}
+.tgl .thumb{position:absolute;top:50%;left:calc(var(--sw) * 0.13);width:calc(var(--sw) * 0.5);height:calc(var(--sw) * 0.5);border-radius:50%;
+  background:currentColor;transform:translateY(-50%);transition:left .15s}
+.tgl input:checked+.track{background:currentColor}
+.tgl input:checked+.track .thumb{left:calc(100% - var(--sw) * 0.63);background:var(--accent-ink)}
+.tgl:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.tgl:has(input:disabled){opacity:.35;cursor:default}
+/* A switch whose name explains itself when clicked (Soft background): the name is not part of the switch; the rest of the row is. */
+.tgl>.tglsw{flex:1;align-self:stretch;display:flex;align-items:center;justify-content:flex-end;min-height:24px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){ .tgl .thumb{transition:none} }
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ctl{display:flex;flex-direction:column;gap:8px;min-width:0}
+/* Boxes of choices: a pill whose highlight is one block that slides to the option chosen (--i of --n). */
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:var(--ln) solid var(--rule);border-radius:999px;container-type:inline-size;
+  background:var(--field) linear-gradient(var(--rule),var(--rule)) calc(var(--i,0)/(var(--n,2) - 1)*100%) 0/calc(100%/var(--n,2)) 100% no-repeat}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg.none{background-size:0 100%}   /* none of its options chosen (the choice is in the box beside it): no highlight */
+.ready .seg{transition:background-position .18s cubic-bezier(.3,.7,.3,1)}
+.seg label{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;padding:7px 3px;text-align:center;cursor:pointer;
+  font-size:min(calc(13px * var(--ts)),(100cqw / var(--n,2) - 6px) / var(--k,1));min-height:calc(13px * var(--ts) * 1.4 + 14px);font-weight:500;color:var(--muted);white-space:nowrap;transition:color .16s}
+.seg label:hover{color:var(--ink)}
+.seg input:checked+label{color:var(--accent-ink)}
+.seg:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){ .ready .seg{transition:none} }
+
+.slider{display:flex;flex-direction:column;gap:5px}
+.slider .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.slider output{flex:none;white-space:nowrap;font:500 calc(14px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;margin:0;accent-color:var(--accent);box-shadow:none;filter:none}
+input[type=range]::-webkit-slider-thumb{box-shadow:none;filter:none}
+input[type=range]::-webkit-slider-runnable-track{box-shadow:none;filter:none}
+input[type=range]::-moz-range-thumb{box-shadow:none;filter:none}
+input[type=range]::-moz-range-track{box-shadow:none;filter:none}
+/* Sliders: a line as thick as a toggle's outline with a filled dot sitting on it. */
+.rail{position:relative;display:flex;align-items:center;height:22px}
+.rail::before{content:"";position:absolute;left:0;right:0;top:calc(50% - var(--ln) / 2);height:0;border-top:var(--ln) solid var(--knob)}
+.rail input[type=range]{-webkit-appearance:none;appearance:none;position:relative;display:block;width:100%;height:16px;margin:0;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer}
+.rail input[type=range]::-webkit-slider-runnable-track{height:16px;border:0;background:transparent}
+.rail input[type=range]::-moz-range-track{height:16px;border:0;background:transparent}
+.rail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
+.rail input[type=range]::-moz-range-thumb{box-shadow:none;box-sizing:border-box;width:16px;height:16px;border:0;border-radius:50%;background:var(--knob)}
+.rail input[type=range]:focus-visible{outline-offset:4px}
+/* The Morph slider's dot is a cross-section of the solid: a 16px circle at the sphere end, the solid's outline at the other.
+   It is cut from a 24px box (the corners of a 16px square reach past a 16px circle). */
+#morph{--clip:circle(33.34%)}
+.rail #morph::-webkit-slider-thumb{width:24px;height:24px;margin-top:-4px;border-radius:0;clip-path:var(--clip)}
+.rail #morph::-moz-range-thumb{width:24px;height:24px;border-radius:0;clip-path:var(--clip)}
+
+.btn{font:500 calc(13.5px * var(--ts)) var(--font);color:var(--ink);background:var(--field);border:var(--ln) solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;text-align:center;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.out{border-color:var(--rule)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.link{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:2px;font-weight:500;font-size:inherit;white-space:normal}
+:is(.btn,summary,input[type=range]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sec-body>*+.pick{margin-top:12px}
+.grphead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pick>summary{list-style:none;cursor:pointer;border-radius:4px;min-height:18px}
+.pick>summary::-webkit-details-marker{display:none}
+.pick>summary>:first-child{margin-right:auto;display:flex;align-items:center;gap:7px}
+.pick>summary>:first-child::after{content:"";width:5px;height:5px;border-right:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule);transform:rotate(-45deg);transition:transform .15s}
+.pick[open]>summary>:first-child::after{transform:translateY(-2px) rotate(45deg)}
+.pick[open]>summary{margin-bottom:16px}
+@media (prefers-reduced-motion:reduce){ .pick>summary>:first-child::after{transition:none} }
+/* Page theme: a row of dots to choose from, each the colour it stands for. The one chosen has a ring of its colour round it. */
+.themes{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;min-height:24px}
+.dots{position:relative;display:flex;margin-inline:-4px}
+.dots label+input+label{margin-left:-2px}
+.dots input{position:absolute;opacity:0;pointer-events:none}
+.dots label{position:relative;flex:none;width:24px;height:24px;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dots label::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--c)}
+.dots input:checked+label::after{content:"";position:absolute;inset:0;border-radius:50%;border:var(--ln) solid var(--c)}
+.dots input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.dots input:disabled+label{opacity:.35;cursor:default}
+/* One dot in each mode can hardly be told from the page: 10% gray by day, 90% gray in night mode. It carries a hairline. */
+.dots{--faint:color-mix(in srgb,var(--ink) 25%,var(--bg))}
+:root:not(.night) .dots label[for=theme-gray-10]::before,:root.night .dots label[for=theme-gray-90]::before{box-shadow:inset 0 0 0 1px var(--faint)}
+:root:not(.night) .dots input:checked+label[for=theme-gray-10]::after,:root.night .dots input:checked+label[for=theme-gray-90]::after{border-color:var(--faint)}
+.foot{padding-top:14px;display:flex;gap:8px}
+.foot.inline{padding-top:0}
+#reset-foot{margin-top:auto}
+.foot .btn{flex:1;padding-block:8px}
+
+/* ---------- stage: the 3D window above the info panel ---------- */
+.stage{container-type:inline-size;font-size:calc(16px * var(--ts));min-width:0;min-height:0;display:grid;grid-template-rows:minmax(160px,1fr) var(--info-row,auto);background:var(--stage)}
+.stage>*{font-size:calc(14px * var(--ts))}
+.canvas{grid-area:1/1;position:relative;min-height:0;overflow:hidden}
+.canvas canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+.canvas canvas:active{cursor:grabbing}
+.hud{position:absolute;top:16px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
+.hud>.hudrow{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}
+.hudrow>*{pointer-events:auto}
+.transport{display:flex;align-items:center;gap:10px}
+#play{display:inline-grid}
+#play::after{content:"Pause";height:0;overflow:hidden;visibility:hidden}
+.speed{font:500 calc(12.5px * var(--ts)) var(--font);font-variant-numeric:tabular-nums;color:var(--muted);background:var(--panel);border:0;border-radius:6px;padding:6px 10px;white-space:nowrap}
+/* XYZ indicator, lower left: the world axes as the camera sees them. Dashed means pointing away. */
+.gizmo{position:absolute;left:16px;bottom:16px;width:88px;height:88px;overflow:visible;pointer-events:none}
+.gizmo line{stroke:var(--ink);stroke-width:var(--ln);stroke-linecap:round}
+.gizmo line.away{stroke-dasharray:2 4}
+.gizmo circle{fill:var(--ink)}
+.gizmo text{fill:var(--ink);font:500 calc(12px * var(--ts)) var(--font);text-anchor:middle;dominant-baseline:central}
+.dimlab{position:absolute;left:0;top:0;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:4px 8px;
+  font:500 calc(12.5px * var(--ts))/1.2 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
+.fallback{position:absolute;inset:0;display:grid;place-items:center;padding:32px;text-align:center}
+.fallback p{max-width:34ch}
+
+.readouts{grid-area:2/1;min-height:0;overflow-y:auto;overscroll-behavior:contain;border-top:var(--ln) solid var(--rule);background:var(--panel);padding-inline:24px;padding-block:20px;display:flex;flex-direction:column;gap:18px}
+.readouts>*{flex:none}
+@media (min-width:761px){
+  @supports (scrollbar-color:auto){ .readouts{scrollbar-width:thin;scrollbar-color:var(--rule) transparent} }
+  .readouts::-webkit-scrollbar{width:10px;height:10px;background:transparent}
+  .readouts::-webkit-scrollbar-track,.readouts::-webkit-scrollbar-track-piece,.readouts::-webkit-scrollbar-corner{background:transparent;border:0;box-shadow:none}
+  .readouts::-webkit-scrollbar-button{display:none;width:0;height:0}
+  .readouts::-webkit-scrollbar-thumb{background:var(--rule);background-clip:padding-box;border:2px solid transparent;border-radius:5px}
+  /* The panel can be put away: the 3D window takes the whole width. */
+  .app.collapsed{grid-template-columns:minmax(0,1fr)}
+  .app.collapsed :is(.panel,.resizer){display:none}
+}
+.rogroup{display:grid;grid-template-columns:calc(48px * var(--ts)) minmax(0,1fr);gap:12px;align-items:baseline}
+.rogroup h3{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
+.rogroup dl{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px 12px}
+.ro{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ro dt{font-size:calc(12px * var(--ts));color:var(--muted);line-height:1.2}
+.what{font:inherit;color:inherit;background:none;border:0;border-radius:2px;padding:0;margin:0;cursor:pointer;text-align:left;
+  text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .16s}
+.what:hover,.what[aria-expanded="true"]{text-decoration-style:solid}
+.ro dt .what:hover,.ro dt .what[aria-expanded="true"]{color:var(--ink)}
+.what:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rotip{position:fixed;z-index:30;width:max-content;max-width:min(300px,100vw - 16px);background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:6px;
+  padding:8px 10px;font-size:calc(13px * var(--ts));line-height:1.35}
+.ro dd{margin-top:auto;font:500 calc(15px * var(--ts))/1.35 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:7px}
+.tag{font:500 calc(11px * var(--ts)) var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tag.unit{letter-spacing:0;text-transform:none}
+#r-size{white-space:normal}
+
+@container (max-width:80.94em){ .rogroup dl{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@container (max-width:42.19em){ .rogroup dl{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@container (max-width:33.44em){ .rogroup dl{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@container (max-width:22.44em){ .rogroup{grid-template-columns:minmax(0,1fr)} }
+/* Narrow screens: one thing at a time. The navigation gains a fifth button, Model, whose page is the 3D window with the info panel
+   under it. On the other pages the 3D window is a small live picture pinned over the page; a touch on it goes to Model. */
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:min(160px,24vh) minmax(0,1fr)}
+  .app[data-page="model"]{grid-template-rows:minmax(0,1fr) auto}
+  .stage{grid-row:1;grid-template-rows:minmax(0,1fr)}
+  .app[data-page="model"] .stage{grid-template-rows:minmax(50%,1fr) auto}
+  .panel{grid-row:2;border-right:0;border-top:var(--ln) solid var(--rule)}
+  .app[data-page="model"] .panel{border-top:0}
+  .app[data-page="model"] .pages{display:none}
+  .app:not([data-page="model"]) :is(.readouts,.hud,.gizmo,.dimlab){display:none}
+  .app:not([data-page="model"]) .canvas{cursor:pointer}
+  .app:not([data-page="model"]) .canvas canvas{pointer-events:none}
+  .readouts{padding:16px}
+  #tab-model{display:flex}
+  .tabs{--tn:5;grid-template-columns:repeat(5,minmax(0,1fr))}
+  .tabs::before{width:20%;transform:translateX(calc(var(--im,0) * 100%));box-shadow:none}
+  .speed,#toggle-panel{display:none}
+  .resizer,.hresizer{display:none}
+}
+</style>
+
+<header class="site" id="site-bar">
+  <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
+  <a id="site-link" href="https://www.jasonbrewer.org/" aria-label="jasonbrewer.org"></a>
+  <button id="night" class="switch" type="button" role="switch" aria-checked="false"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+  <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
+</header>
+<script>
+/* Site title and NIGHT MODE switch: sized and placed by the home page's own sums, as on the Bike Fit Visualizer, so neither moves
+   nor changes size from page to page. Night mode is remembered under the same name as there. */
+(function () {
+  var bar = document.getElementById('site-bar'), name = document.getElementById('site-name'), link = document.getElementById('site-link');
+  var safe = document.getElementById('site-safe'), root = document.documentElement, nightBtn = document.getElementById('night');
+  var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  var TITLE = 'How are you feeling?';   // the home page's heading: as wide as its square
+  var PAD = 16, GAP_TOP = 12, GAP_BOTTOM = 14, NEAR = 0.09, BLOCK_GAP = 0.10;
+  var mctx = document.createElement('canvas').getContext('2d');
+  function measure(text, weight) {
+    mctx.font = weight + ' 100px ' + FAMILY;
+    var m = mctx.measureText(text);
+    return { left: m.actualBoundingBoxLeft / 100, right: m.actualBoundingBoxRight / 100, asc: m.actualBoundingBoxAscent / 100, desc: m.actualBoundingBoxDescent / 100 };
+  }
+  function mobileFit(W, edgeTop, edgeBottom, edgeLeft) {
+    var t = measure(TITLE, 400), u = 1 / (t.left + t.right);
+    var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
+    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 700).asc;
+    var ten = measure('10', 400), site = measure(name.textContent, 400);
+    var fsL = 0.5625 * u, fsK = fsL * 2 / 3;
+    var clear = (0.05 + fsL * 0.35) * 2 / 3;
+    var keySide = clear + (ten.left + ten.right) * fsK + 0.7 * fsK + capH * fsK;
+    var keyDown = clear + digitH * fsK + 0.7 * fsK + capH * fsK;
+    var blockH = digitH * 3 * u + 2.25 * capB * 0.45 * u + capB * fsL;
+    var above = { k: NEAR + (t.asc + t.desc) * u + (site.asc + site.desc) * 0.65625 * u, px: PAD + GAP_TOP };
+    var below = { k: BLOCK_GAP + keyDown + blockH + capH * fsL, px: PAD + GAP_BOTTOM };
+    return { byWidth: (W - 2 * (edgeLeft + PAD)) / (1 + 2 * keySide), byHeight: (edgeBottom - edgeTop - above.px - below.px) / (1 + above.k + below.k) };
+  }
+  function layout() {
+    var W = window.innerWidth, H = window.innerHeight, cs = getComputedStyle(safe);
+    var edgeTop = parseFloat(cs.paddingTop) || 0, edgeBottom = H - (parseFloat(cs.paddingBottom) || 0), edgeLeft = parseFloat(cs.paddingLeft) || 0;
+    var k = Math.min(1, Math.max(0, (1 - W / H) / 0.25)), mobile = k * k * (3 - 2 * k);
+    var margin = Math.max(24, W * 0.06), desk = Math.min(H / 3, W - 2 * margin);
+    var fit = mobileFit(W, edgeTop, edgeBottom, edgeLeft);
+    var mob = Math.min(fit.byWidth, fit.byHeight, Math.max(H / 3, 400));
+    var size = Math.max(21, Math.round(desk + (mob - desk) * mobile));
+    var t = measure(TITLE, 400), fs1 = size / (t.left + t.right), fsS = fs1 * (7 / 8) * 0.75;
+    var site = measure(name.textContent, 400);
+    bar.style.fontSize = fsS + 'px';
+    var r = bar.getBoundingClientRect();
+    name.setAttribute('x', edgeLeft + 16 + site.left * fsS - r.left);
+    name.setAttribute('y', edgeTop + 16 + site.asc * fsS - r.top);
+    name.style.fontSize = fsS + 'px';
+    link.style.left = (edgeLeft + 16 - 8 - r.left) + 'px';
+    link.style.top = (edgeTop + 16 - 8 - r.top) + 'px';
+    link.style.width = ((site.left + site.right) * fsS + 16) + 'px';
+    link.style.height = ((site.asc + site.desc) * fsS + 16) + 'px';
+    root.style.setProperty('--lab-fs', (fs1 * 0.45 * 1.25) + 'px');
+    root.style.setProperty('--cap', measure('H', 400).asc);
+    nightBtn.style.top = '';
+    var nt = nightBtn.querySelector('.track').getBoundingClientRect();
+    nightBtn.style.top = (nightBtn.getBoundingClientRect().top + (edgeTop + 16) - nt.top) + 'px';
+  }
+  var night = false;
+  function setNight(on) {
+    night = on;
+    root.classList.toggle('night', on);
+    nightBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    document.dispatchEvent(new Event('nightchange'));
+  }
+  nightBtn.addEventListener('click', function () {
+    setNight(!night);
+    try { localStorage.setItem('night-mode', night ? '1' : '0'); } catch (err) {}
+  });
+  var savedNight = null;
+  try { savedNight = localStorage.getItem('night-mode'); } catch (err) {}
+  setNight(savedNight === '1');
+  layout();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', layout);
+  if (document.fonts && document.fonts.load) {
+    var sample = TITLE + '0123456789MOODENERGYNIGHTH' + name.textContent;
+    ['400', '700'].forEach(function (w) { document.fonts.load(w + ' 16px "Geist"', sample).then(layout, function () {}); });
+    if (document.fonts.ready) document.fonts.ready.then(layout);
+  }
+})();
+</script>
+
+<div class="app" id="app">
+  <aside class="panel" id="panel" aria-label="Solid controls">
+  <div class="pages" id="pages">
+
+    <section class="sec" id="sec-shape" role="tabpanel" aria-labelledby="tab-shape" tabindex="-1">
+      <div class="sechead"><h2>Shape</h2><span class="sum" id="sum-shape"></span></div>
+      <div class="sec-body">
+        <div class="slider">
+          <div class="top"><label class="cap lead" for="morph">Morph</label><output id="morph-out" for="morph"></output></div>
+          <div class="rail"><input id="morph" type="range" min="0" max="1000" step="1" value="500"></div>
+        </div>
+        <div class="row2">
+          <button class="btn out" id="to-sphere" type="button">Sphere</button>
+          <button class="btn out" id="to-solid" type="button">Cube</button>
+        </div>
+        <div class="slider">
+          <div class="top"><label class="cap" for="subdiv">Subdivisions</label><output id="subdiv-out" for="subdiv"></output></div>
+          <div class="rail"><input id="subdiv" type="range" min="1" max="64" step="1" value="12"></div>
+        </div>
+        <div class="ctl" role="radiogroup" aria-labelledby="cap-solid"><span class="cap" id="cap-solid">Solid</span>
+          <div class="seg">
+            <input type="radio" name="solid" id="solid-cube" value="cube"><label for="solid-cube">Cube</label>
+            <input type="radio" name="solid" id="solid-box" value="box"><label for="solid-box">Rectangular prism</label>
+          </div>
+          <div class="seg">
+            <input type="radio" name="solid" id="solid-octa" value="octa"><label for="solid-octa">Octahedron</label>
+            <input type="radio" name="solid" id="solid-icosa" value="icosa"><label for="solid-icosa">Icosahedron</label>
+          </div>
+        </div>
+        <p class="hint" id="box-hint" hidden>A rectangular prism morphs from an ellipsoid. Subdivisions count along its longest side; shorter sides get fewer, so the faces stay close to square. <button class="btn link" id="go-size" type="button">Set its sides</button></p>
+        <div class="ctl"><span class="cap" id="cap-style">Edges while morphing</span>
+          <div class="seg" role="radiogroup" aria-labelledby="cap-style">
+            <input type="radio" name="style" id="style-round" value="round"><label for="style-round">Rounded</label>
+            <input type="radio" name="style" id="style-crease" value="crease"><label for="style-crease">Creased</label>
+          </div>
+        </div>
+        <p class="hint">Rounded keeps the surface smooth until the very end. Creased shows the solid's edges from the start.</p>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-size" role="tabpanel" aria-labelledby="tab-size" tabindex="-1">
+      <div class="sechead"><h2>Dimensions</h2><span class="sum" id="sum-size"></span></div>
+      <div class="sec-body">
+        <div class="row3">
+          <div class="ctl"><label class="cap" for="dim-x">X <span class="note">mm</span></label><input class="textin" id="dim-x" type="number" value="100" min="0.01" step="1" inputmode="decimal"></div>
+          <div class="ctl"><label class="cap" for="dim-y">Y <span class="note">mm</span></label><input class="textin" id="dim-y" type="number" value="100" min="0.01" step="1" inputmode="decimal"></div>
+          <div class="ctl"><label class="cap" for="dim-z">Z <span class="note">mm</span></label><input class="textin" id="dim-z" type="number" value="100" min="0.01" step="1" inputmode="decimal"></div>
+        </div>
+        <div class="group">
+          <label class="tgl" for="dim-lock"><span class="cap">Lock proportions</span><input id="dim-lock" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+        </div>
+        <p class="hint" id="cube-hint" hidden>A cube's sides stay equal: changing one changes all three. For different sides, choose <button class="btn link" id="go-box" type="button">Rectangular prism</button>.</p>
+        <p class="hint">The mesh is scaled so its bounding box is exactly this size. Y is up.</p>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-display" role="tabpanel" aria-labelledby="tab-display" tabindex="-1">
+      <div class="sechead"><h2>Display</h2><span class="sum" id="sum-display"></span></div>
+      <div class="sec-body">
+        <div class="ctl"><span class="cap" id="cap-display">Surface</span>
+          <div class="seg" role="radiogroup" aria-labelledby="cap-display">
+            <input type="radio" name="display" id="display-lines" value="lines"><label for="display-lines">Lines</label>
+            <input type="radio" name="display" id="display-xray" value="xray"><label for="display-xray">X-ray</label>
+            <input type="radio" name="display" id="display-facets" value="facets"><label for="display-facets">Facets</label>
+            <input type="radio" name="display" id="display-smooth" value="smooth"><label for="display-smooth">Smooth</label>
+          </div>
+        </div>
+        <details class="pick" open>
+          <summary class="grphead"><h3 class="grp">Visibility options</h3></summary>
+          <div class="group">
+            <label class="tgl" for="show-axes"><span class="cap">XYZ axes</span><input id="show-axes" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <label class="tgl" for="dim-show"><span class="cap">Dimensions</span><input id="dim-show" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+          </div>
+        </details>
+        <details class="pick" open>
+          <summary class="grphead"><h3 class="grp">Display options</h3></summary>
+          <div class="group">
+            <label class="tgl" for="o-night"><span class="cap">Night mode</span><input id="o-night" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <div class="tgl"><span class="cap" id="cap-soft"><button class="what" type="button" aria-expanded="false" data-tip="Applies a softer, warmer background.">Soft background</button></span><label class="tglsw"><input id="o-soft" type="checkbox" role="switch" aria-labelledby="cap-soft"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
+            <div class="slider">
+              <div class="top"><label class="cap" for="o-textSize">Text size</label><output id="o-textSize-out" for="o-textSize"></output></div>
+              <div class="rail"><input id="o-textSize" type="range" min="0" max="4" step="1"></div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-theme"><button class="what" type="button" aria-expanded="false" data-tip="Changes the color of buttons, sliders, toggles, and site accents.">Page theme</button></span></div>
+            <div class="themes"><span class="cap" id="cap-basic">Basic</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-basic">
+                <input type="radio" name="theme" id="theme-ink" value="ink" aria-label="Black and white"><label for="theme-ink" title="Black and white" style="--c:var(--ink)"></label>
+                <input type="radio" name="theme" id="theme-red" value="red" aria-label="Red"><label for="theme-red" title="Red" style="--c:var(--t-red)"></label>
+                <input type="radio" name="theme" id="theme-orange" value="orange" aria-label="Orange"><label for="theme-orange" title="Orange" style="--c:var(--t-orange)"></label>
+                <input type="radio" name="theme" id="theme-yellow" value="yellow" aria-label="Yellow"><label for="theme-yellow" title="Yellow" style="--c:var(--t-yellow)"></label>
+                <input type="radio" name="theme" id="theme-green" value="green" aria-label="Green"><label for="theme-green" title="Green" style="--c:var(--t-green)"></label>
+                <input type="radio" name="theme" id="theme-blue" value="blue" aria-label="Blue"><label for="theme-blue" title="Blue" style="--c:var(--t-blue)"></label>
+                <input type="radio" name="theme" id="theme-indigo" value="indigo" aria-label="Indigo"><label for="theme-indigo" title="Indigo" style="--c:var(--t-indigo)"></label>
+                <input type="radio" name="theme" id="theme-violet" value="violet" aria-label="Violet"><label for="theme-violet" title="Violet" style="--c:var(--t-violet)"></label>
+              </div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-grays">Grayscale</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-grays">
+                <input type="radio" name="theme" id="theme-gray-10" value="gray-10" aria-label="10% gray"><label for="theme-gray-10" title="10% gray" style="--c:var(--t-gray-10)"></label>
+                <input type="radio" name="theme" id="theme-gray-20" value="gray-20" aria-label="20% gray"><label for="theme-gray-20" title="20% gray" style="--c:var(--t-gray-20)"></label>
+                <input type="radio" name="theme" id="theme-gray-30" value="gray-30" aria-label="30% gray"><label for="theme-gray-30" title="30% gray" style="--c:var(--t-gray-30)"></label>
+                <input type="radio" name="theme" id="theme-gray-40" value="gray-40" aria-label="40% gray"><label for="theme-gray-40" title="40% gray" style="--c:var(--t-gray-40)"></label>
+                <input type="radio" name="theme" id="theme-gray-50" value="gray-50" aria-label="50% gray"><label for="theme-gray-50" title="50% gray" style="--c:var(--t-gray-50)"></label>
+                <input type="radio" name="theme" id="theme-gray-60" value="gray-60" aria-label="60% gray"><label for="theme-gray-60" title="60% gray" style="--c:var(--t-gray-60)"></label>
+                <input type="radio" name="theme" id="theme-gray-70" value="gray-70" aria-label="70% gray"><label for="theme-gray-70" title="70% gray" style="--c:var(--t-gray-70)"></label>
+                <input type="radio" name="theme" id="theme-gray-80" value="gray-80" aria-label="80% gray"><label for="theme-gray-80" title="80% gray" style="--c:var(--t-gray-80)"></label>
+                <input type="radio" name="theme" id="theme-gray-90" value="gray-90" aria-label="90% gray"><label for="theme-gray-90" title="90% gray" style="--c:var(--t-gray-90)"></label>
+              </div>
+            </div>
+            <div class="themes"><span class="cap" id="cap-neon">Neon &amp; RGB</span>
+              <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-neon">
+                <input type="radio" name="theme" id="theme-neon-yellow" value="neon-yellow" aria-label="Neon yellow"><label for="theme-neon-yellow" title="Neon yellow" style="--c:var(--t-neon-yellow)"></label>
+                <input type="radio" name="theme" id="theme-neon-orange" value="neon-orange" aria-label="Neon orange"><label for="theme-neon-orange" title="Neon orange" style="--c:var(--t-neon-orange)"></label>
+                <input type="radio" name="theme" id="theme-neon-lime" value="neon-lime" aria-label="Neon yellow green"><label for="theme-neon-lime" title="Neon yellow green" style="--c:var(--t-neon-lime)"></label>
+                <input type="radio" name="theme" id="theme-neon-pink" value="neon-pink" aria-label="Neon pink"><label for="theme-neon-pink" title="Neon pink" style="--c:var(--t-neon-pink)"></label>
+                <input type="radio" name="theme" id="theme-rgb-red" value="rgb-red" aria-label="Pure red"><label for="theme-rgb-red" title="Pure red" style="--c:var(--t-rgb-red)"></label>
+                <input type="radio" name="theme" id="theme-rgb-green" value="rgb-green" aria-label="Pure green"><label for="theme-rgb-green" title="Pure green" style="--c:var(--t-rgb-green)"></label>
+                <input type="radio" name="theme" id="theme-rgb-blue" value="rgb-blue" aria-label="Pure blue"><label for="theme-rgb-blue" title="Pure blue" style="--c:var(--t-rgb-blue)"></label>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="sec" id="sec-export" role="tabpanel" aria-labelledby="tab-export" tabindex="-1">
+      <div class="sechead"><h2>Export</h2><span class="sum" id="sum-export"></span></div>
+      <div class="sec-body">
+        <div class="ctl"><span class="cap" id="cap-format">Format</span>
+          <div class="seg" role="radiogroup" aria-labelledby="cap-format">
+            <input type="radio" name="format" id="format-obj" value="obj"><label for="format-obj">OBJ</label>
+            <input type="radio" name="format" id="format-stl" value="stl"><label for="format-stl">STL</label>
+            <input type="radio" name="format" id="format-glb" value="glb"><label for="format-glb">GLB</label>
+            <input type="radio" name="format" id="format-svg" value="svg"><label for="format-svg">SVG</label>
+            <input type="radio" name="format" id="format-png" value="png"><label for="format-png">PNG</label>
+          </div>
+        </div>
+        <p class="hint" id="format-note"></p>
+        <div class="foot inline">
+          <button class="btn primary" id="export" type="button">Export</button>
+          <button class="btn out" id="copy" type="button">Copy text</button>
+        </div>
+        <p class="hint said" id="status" role="status" aria-live="polite"></p>
+        <textarea class="textin" id="copy-box" readonly hidden aria-label="Exported text"></textarea>
+      </div>
+    </section>
+
+    <div class="foot" id="reset-foot">
+      <button class="btn primary" id="reset-page" type="button">Reset this page to defaults</button>
+      <button class="btn primary" type="button" hidden>Confirm</button>
+      <button class="btn out" type="button" hidden>Cancel</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Pages">
+    <button class="tab" role="tab" id="tab-model" aria-controls="stage" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.25 19.75 7.6v8.8L12 20.75 4.25 16.4V7.6ZM4.25 7.6 12 12l7.75-4.4M12 12v8.75"/></svg></span><span>Model</span></button>
+    <button class="tab" role="tab" id="tab-shape" aria-controls="sec-shape" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9.25" cy="9.25" r="5.75"/><path d="M14.9 10.5h5.6v10h-10v-5.6"/></svg></span><span>Shape</span></button>
+    <button class="tab" role="tab" id="tab-size" aria-controls="sec-size" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 6.5v11M20.5 6.5v11M3.5 12h17M7 8.75 3.75 12 7 15.25M17 8.75 20.25 12 17 15.25"/></svg></span><span>Size</span></button>
+    <button class="tab" role="tab" id="tab-display" aria-controls="sec-display" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/><circle class="dot" cx="9" cy="6" r="2.25"/><circle class="dot" cx="15.5" cy="12" r="2.25"/><circle class="dot" cx="7" cy="18" r="2.25"/></svg></span><span>Display</span></button>
+    <button class="tab" role="tab" id="tab-export" aria-controls="sec-export" aria-selected="false" tabindex="-1" type="button"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v11.25M7.25 10.75 12 15.5l4.75-4.75M5 19.75h14"/></svg></span><span>Export</span></button>
+  </nav>
+  </aside>
+  <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the control panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
+
+  <main class="stage" id="stage">
+    <div class="canvas" id="viewport">
+      <canvas id="view" tabindex="0" aria-label="3D view of the solid. Drag to tumble it any way round, scroll to zoom, double-click to reset."></canvas>
+      <svg class="gizmo" id="gizmo" viewBox="-44 -44 88 88" role="img" aria-label="Axis orientation. Y is up; in the front view X points right and Z points toward you.">
+        <g data-axis="x"><line x1="0" y1="0" x2="0" y2="0"/><text>X</text></g>
+        <g data-axis="y"><line x1="0" y1="0" x2="0" y2="0"/><text>Y</text></g>
+        <g data-axis="z"><line x1="0" y1="0" x2="0" y2="0"/><text>Z</text></g>
+        <circle r="2.5"/>
+      </svg>
+      <span class="dimlab" id="dim-label-x" hidden></span>
+      <span class="dimlab" id="dim-label-y" hidden></span>
+      <span class="dimlab" id="dim-label-z" hidden></span>
+      <div class="hud">
+        <div class="hudrow">
+          <div class="transport">
+            <button class="btn primary" id="play" type="button">Pause</button>
+            <span class="speed" id="speed"></span>
+          </div>
+          <div class="transport">
+            <button class="btn out" id="toggle-panel" type="button" aria-controls="panel" aria-expanded="true">Hide panel</button>
+            <button class="btn out" id="front-view" type="button" title="Y up, X to the right, Z toward you">Front view</button>
+            <button class="btn out" id="reset-view" type="button">Reset view</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hresizer" id="info-resizer" role="separator" aria-orientation="horizontal" aria-label="Resize the info panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
+    <div class="readouts" id="info">
+      <section class="rogroup"><h3>Mesh</h3><dl>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Corner points of the mesh. A point shared by neighbouring faces is counted once.">Vertices</button></dt><dd id="r-v"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Lines between neighbouring vertices. For a closed solid like this one, vertices minus edges plus faces always comes to 2.">Edges</button></dt><dd id="r-e"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The pieces the surface is made of. The cube and the rectangular prism are built from four-sided faces, the octahedron and icosahedron from triangles.">Faces</button></dt><dd id="r-f"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="What STL and GLB files hold. Each four-sided face is split into two triangles.">Triangles</button></dt><dd id="r-t"></dd></div>
+      </dl></section>
+      <section class="rogroup"><h3>Solid</h3><dl>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The overall size of the solid along X, Y and Z, in millimetres. Set it on the Size page.">Size</button></dt><dd id="r-size"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The space inside the mesh at this size.">Volume</button></dt><dd id="r-vol"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The total area of the mesh's faces at this size.">Surface area</button></dt><dd id="r-area"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Rounded shapes are the unit ball of a p-norm: p = 2 is the sphere or ellipsoid, and the larger p gets the flatter the faces, up to the solid itself. Creased shapes move each point straight from the sphere to the solid.">Morph path</button></dt><dd id="r-path"></dd></div>
+      </dl></section>
+    </div>
+  </main>
+</div>
+<div id="ro-tip" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const app = $('app'), panel = $('panel'), stage = $('viewport'), canvas = $('view');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const NB = ' ';
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmtInt = n => n.toLocaleString('en-US');
+const fmtMm = v => String(+v.toFixed(2));
+
+/* What each page of the panel holds, and goes back to on "Reset this page to defaults". Sizes are in mm, X × Y × Z, Y up. */
+const DEFAULTS = {
+  shape:   { solid: 'cube', n: 12, t: 0.5, style: 'round' },
+  size:    { dims: [100, 100, 100], lock: true },
+  display: { display: 'lines', showAxes: true, showDims: true },
+  export:  { format: 'obj' }
+};
+const PAGES = ['shape', 'size', 'display', 'export'], TABS = ['model', ...PAGES];
+const THEMES = ['ink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'gray-10', 'gray-20', 'gray-30', 'gray-40', 'gray-50', 'gray-60', 'gray-70', 'gray-80', 'gray-90', 'neon-yellow', 'neon-orange', 'neon-lime', 'neon-pink', 'rgb-red', 'rgb-green', 'rgb-blue'];   // Basic, then Grayscale, then Neon & RGB
+const THEME0 = 'ink';   // ink is no theme: black, white in night mode
+// Text size: one of five, by its place in this list; the number is what the page's text is multiplied by (--ts in the style sheet).
+const TEXT = [['Extra small', .9], ['Small', 1], ['Medium', 1.1], ['Large', 1.2], ['Extra large', 1.3]], TEXT0 = 1;
+// Soft background: the page's white becomes a warm off-white, and night mode's black a slightly lighter, warmer black.
+const SOFT = { day: 0xfcfcfa, night: 0x191918 };
+const state = { spin: !reducedMotion };
+const setDefaults = p => Object.assign(state, JSON.parse(JSON.stringify(DEFAULTS[p])));
+PAGES.forEach(setDefaults);
+
+/* Remembered on this device: the layout, the page theme, the text size and Soft background. (Night mode is remembered by the title bar's switch.) */
+const STORE = 'subdivided-solids:v1';
+let theme = THEME0, textSize = TEXT0, soft = false, panelW = 384, infoH = null, page = 'shape', collapsed = false, pageSaved = false, saveT = 0;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({ v: 2, theme, textSize, soft, panelW, infoH, page, collapsed })); } catch (e) {} }, 300); }
+function restore() {
+  let d = null; try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
+  if (!d || typeof d !== 'object') return;
+  if (THEMES.includes(d.theme)) theme = d.theme;
+  if (Number.isInteger(d.textSize) && TEXT[d.textSize]) textSize = d.textSize;
+  soft = d.soft === true;
+  if (Number.isFinite(d.panelW)) panelW = d.panelW;
+  if (Number.isFinite(d.infoH)) infoH = d.infoH;
+  if (TABS.includes(d.page)) { page = d.page; pageSaved = true; }
+  collapsed = d.collapsed === true;
+}
+
+/* ================= solids ================= */
+const PHI = (1 + Math.sqrt(5)) / 2;
+const SOLIDS = {
+  cube:  { name: 'Cube', file: 'cube', thumb: { k: 4, rot: 0 } },
+  box:   { name: 'Rectangular prism', file: 'prism', thumb: { k: 4, rot: 0 } },   // a cube with a count of faces of its own along each side
+  octa:  { name: 'Octahedron', file: 'octa', thumb: { k: 4, rot: Math.PI / 4 },
+           verts: [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
+           faces: [[0,2,4],[2,1,4],[1,3,4],[3,0,4],[2,0,5],[1,2,5],[3,1,5],[0,3,5]] },
+  icosa: { name: 'Icosahedron', file: 'icosa', thumb: { k: 6, rot: 0 },
+           verts: [[-1,PHI,0],[1,PHI,0],[-1,-PHI,0],[1,-PHI,0],[0,-1,PHI],[0,1,PHI],[0,-1,-PHI],[0,1,-PHI],[PHI,0,-1],[PHI,0,1],[-PHI,0,-1],[-PHI,0,1]],
+           faces: [[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]] }
+};
+const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+
+/* Builds the welded, subdivided solid with inradius 1: face centres sit on the unit sphere. */
+function buildTopology(solid, n, seg) {
+  const pos = [], polys = [];
+  let normals, sides;
+
+  if (solid === 'cube' || solid === 'box') {       // seg: how many faces run along X, Y and Z
+    sides = 4;
+    normals = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    const seen = new Map(), my = seg[1] + 1, mz = seg[2] + 1;
+    const vid = (x, y, z) => {
+      const key = (x * my + y) * mz + z;
+      let i = seen.get(key);
+      if (i === undefined) { i = pos.length / 3; seen.set(key, i); pos.push(2*x/seg[0] - 1, 2*y/seg[1] - 1, 2*z/seg[2] - 1); }
+      return i;
+    };
+    const c = [0, 0, 0];
+    for (let a = 0; a < 3; a++) for (let s = 1; s >= 0; s--) {
+      const u = (a + 1) % 3, v = (a + 2) % 3;
+      const at = (i, j) => { c[a] = s ? seg[a] : 0; c[u] = i; c[v] = j; return vid(c[0], c[1], c[2]); };
+      for (let i = 0; i < seg[u]; i++) for (let j = 0; j < seg[v]; j++) {
+        const q = [at(i, j), at(i+1, j), at(i+1, j+1), at(i, j+1)];
+        if (!s) q.reverse();
+        polys.push(q[0], q[1], q[2], q[3]);
+      }
+    }
+  } else {
+    sides = 3;
+    const def = SOLIDS[solid];
+    const V = def.verts.map(v => v.slice()), F = def.faces.map(f => f.slice());
+    normals = [];
+    let h = 1;
+    for (const f of F) {
+      const A = V[f[0]], B = V[f[1]], C = V[f[2]];
+      let nr = cross(sub(B, A), sub(C, A));
+      const cen = [(A[0]+B[0]+C[0])/3, (A[1]+B[1]+C[1])/3, (A[2]+B[2]+C[2])/3];
+      if (dot(nr, cen) < 0) { const tmp = f[1]; f[1] = f[2]; f[2] = tmp; nr = [-nr[0], -nr[1], -nr[2]]; }
+      const len = Math.hypot(nr[0], nr[1], nr[2]);
+      nr = [nr[0]/len, nr[1]/len, nr[2]/len];
+      normals.push(nr);
+      h = dot(nr, cen);
+    }
+    for (const v of V) { v[0] /= h; v[1] /= h; v[2] /= h; }
+    for (const v of V) pos.push(v[0], v[1], v[2]);
+    const edgeIds = new Map();
+    const put = (wa, a, wb, b, wc, c) => {
+      const A = V[a], B = V[b], C = V[c];
+      pos.push((wa*A[0] + wb*B[0] + wc*C[0]) / n, (wa*A[1] + wb*B[1] + wc*C[1]) / n, (wa*A[2] + wb*B[2] + wc*C[2]) / n);
+      return pos.length / 3 - 1;
+    };
+    const onEdge = (p, wp, q, wq) => {           // exact welding along shared edges
+      if (p > q) { const tp = p; p = q; q = tp; const tw = wp; wp = wq; wq = tw; }
+      const key = p * 64 + q;
+      let ids = edgeIds.get(key);
+      if (!ids) { ids = new Int32Array(n + 1).fill(-1); edgeIds.set(key, ids); }
+      if (ids[wq] < 0) ids[wq] = put(wp, p, wq, q, 0, p);
+      return ids[wq];
+    };
+    for (const f of F) {
+      const a = f[0], b = f[1], c = f[2], g = [];
+      for (let i = 0; i <= n; i++) {
+        g[i] = [];
+        for (let j = 0; j <= n - i; j++) {
+          const k = n - i - j;
+          let id;
+          if (k === n) id = a; else if (i === n) id = b; else if (j === n) id = c;
+          else if (j === 0) id = onEdge(a, k, b, i);
+          else if (i === 0) id = onEdge(a, k, c, j);
+          else if (k === 0) id = onEdge(b, i, c, j);
+          else id = put(k, a, i, b, j, c);
+          g[i][j] = id;
+        }
+      }
+      for (let i = 0; i < n; i++) for (let j = 0; j < n - i; j++) {
+        polys.push(g[i][j], g[i+1][j], g[i][j+1]);
+        if (j < n - i - 1) polys.push(g[i+1][j], g[i+1][j+1], g[i][j+1]);
+      }
+    }
+  }
+
+  const count = pos.length / 3, K = normals.length;
+  const dir = new Float32Array(count * 3), rad = new Float32Array(count), ratios = new Float32Array(count * K);
+  let rmax = 1;
+  for (let i = 0; i < count; i++) {
+    const x = pos[3*i], y = pos[3*i+1], z = pos[3*i+2], R = Math.hypot(x, y, z);
+    const dx = x / R, dy = y / R, dz = z / R;
+    dir[3*i] = dx; dir[3*i+1] = dy; dir[3*i+2] = dz; rad[i] = R;
+    if (R > rmax) rmax = R;
+    let M = 0;
+    for (let k = 0; k < K; k++) {
+      const m = Math.max(0, normals[k][0]*dx + normals[k][1]*dy + normals[k][2]*dz);
+      ratios[i*K + k] = m; if (m > M) M = m;
+    }
+    for (let k = 0; k < K; k++) ratios[i*K + k] /= M;
+  }
+
+  const P = new Uint32Array(polys), polyCount = P.length / sides;
+  let tris;
+  if (sides === 4) {
+    tris = new Uint32Array(polyCount * 6);
+    for (let q = 0; q < polyCount; q++) {
+      const a = P[4*q], b = P[4*q+1], c = P[4*q+2], d = P[4*q+3];
+      tris.set([a, b, c, a, c, d], q * 6);
+    }
+  } else tris = P;
+
+  const eset = new Set(), elist = [];
+  for (let q = 0; q < polyCount; q++) for (let s = 0; s < sides; s++) {
+    const a = P[q*sides + s], b = P[q*sides + (s + 1) % sides];
+    const key = a < b ? a * count + b : b * count + a;
+    if (!eset.has(key)) { eset.add(key); elist.push(a, b); }
+  }
+
+  // how far a face centre sits from the origin in the p-gauge, so every p keeps the inradius at 1
+  const n0 = normals[0], faceDots = normals.map(nk => Math.max(0, dot(n0, nk)));
+
+  return { solid, n, seg, count, sides, polys: P, polyCount, tris, edges: new Uint32Array(elist), dir, rad, ratios, K, rmax, faceDots };
+}
+
+/* ================= morph ================= */
+// Rounded path: the surface is the unit ball of a p-norm built from the solid's face normals.
+// p = 2 is the sphere, p = infinity is the flat solid. The slider maps t to p = 2 / (1 - t).
+const exponent = t => 2 / (1 - t);
+function pGauge(dots, p) { let s = 0; for (const m of dots) if (m > 0) s += Math.pow(m, p); return Math.pow(s, 1 / p); }
+
+let topo = null, cur = null;
+const bounds = [2, 2, 2];
+
+function morph() {
+  const { t, style } = state, { count, dir, rad, ratios, K } = topo;
+  const round = style === 'round' && t > 0 && t < 1;
+  const p = round ? exponent(t) : 0, ip = round ? 1 / p : 0, gp = round ? pGauge(topo.faceDots, p) : 1;
+  let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < count; i++) {
+    const R = rad[i];
+    let r;
+    if (t <= 0) r = 1;
+    else if (t >= 1) r = R;
+    else if (!round) r = 1 + t * (R - 1);
+    else {
+      let s = 0;
+      for (let k = i * K, e = k + K; k < e; k++) { const q = ratios[k]; if (q > 0) s += Math.pow(q, p); }
+      r = R * gp / Math.pow(s, ip);
+    }
+    const x = dir[3*i] * r, y = dir[3*i+1] * r, z = dir[3*i+2] * r;
+    cur[3*i] = x; cur[3*i+1] = y; cur[3*i+2] = z;
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+  }
+  bounds[0] = maxX - minX; bounds[1] = maxY - minY; bounds[2] = maxZ - minZ;
+  if (gl) {
+    gl.posAttr.needsUpdate = true;
+    if (state.display === 'smooth') gl.geo.computeVertexNormals();
+    applyScale();
+  }
+}
+
+/* The Morph slider's dot is the same maths in 2D: a circle that turns into the solid's outline. */
+function drawThumb() {
+  const { k, rot } = SOLIDS[state.solid].thumb, t = state.t;
+  const round = state.style === 'round' && t > 0 && t < 1;
+  const ns = Array.from({ length: k }, (_, i) => rot + i * 2 * Math.PI / k);
+  const p = round ? exponent(t) : 0;
+  const gp = round ? pGauge(ns.map(a => Math.max(0, Math.cos(a - ns[0]))), p) : 1;
+  const S = 72, pts = [];
+  for (let j = 0; j < S; j++) {
+    const th = rot + j * 2 * Math.PI / S;
+    const ms = ns.map(a => Math.max(0, Math.cos(th - a))), M = Math.max(...ms), R = 1 / M;
+    let r;
+    if (t <= 0) r = 1; else if (t >= 1) r = R; else if (!round) r = 1 + t * (R - 1);
+    else r = R * gp / pGauge(ms.map(m => m / M), p);
+    const rr = r * 100 / 3;          // the dot is 16px across at the sphere end, in a 24px box
+    pts.push((50 + rr * Math.cos(th)).toFixed(2) + '% ' + (50 - rr * Math.sin(th)).toFixed(2) + '%');
+  }
+  $('morph').style.setProperty('--clip', 'polygon(' + pts.join(',') + ')');
+}
+
+/* ================= 3D view ================= */
+let gl = null, dirty = true;
+/* Y is up. The front view looks along -Z: Y up, X to the right, Z toward the viewer. The camera's attitude is one rotation
+   (a quaternion: x, y, z, w), turned about its own axes as the model is dragged, so it tumbles freely: over the top, underneath,
+   and round again, with no stops. */
+const qmul = (a, b) => [
+  a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
+  a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
+  a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
+  a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]];
+const qaxis = (x, y, z, ang) => { const h = Math.sin(ang / 2); return [x * h, y * h, z * h, Math.cos(ang / 2)]; };
+const qnorm = q => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; };
+function qrot(q, v) {
+  const x = q[0], y = q[1], z = q[2], w = q[3];
+  const tx = 2 * (y*v[2] - z*v[1]), ty = 2 * (z*v[0] - x*v[2]), tz = 2 * (x*v[1] - y*v[0]);
+  return [v[0] + w*tx + (y*tz - z*ty), v[1] + w*ty + (z*tx - x*tz), v[2] + w*tz + (x*ty - y*tx)];
+}
+const FRONT = [0, 0, 0, 1];                                                    // Y up, X right, Z toward the viewer
+const HOME = qmul(qaxis(0, 1, 0, 0.6), qaxis(1, 0, 0, -0.45));                 // the front, from a little to the right and above
+const view = { q: HOME.slice(), zoom: 1 };
+function tumble(yaw, pitch) {              // turns the camera about its own up and right axes
+  view.q = qnorm(qmul(qmul(view.q, qaxis(0, 1, 0, yaw)), qaxis(1, 0, 0, pitch)));
+  dirty = true;
+}
+const LIGHT = [-0.42, 0.55, 1];
+const isNight = () => root.classList.contains('night');
+const pageHex = () => soft ? (isNight() ? SOFT.night : SOFT.day) : isNight() ? 0x000000 : 0xffffff;   // the page's colour, for the 3D window
+
+function initGL() {
+  if (!window.THREE) throw new Error('3D library missing');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+  const ambient = new THREE.AmbientLight(0xffffff, 1), sun = new THREE.DirectionalLight(0xffffff, 1);
+  scene.add(ambient, sun);
+  const fillMat = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const facetMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x000000, shininess: 0, flatShading: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const smoothMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x000000, shininess: 0 });
+  const lineMat = new THREE.LineBasicMaterial();
+  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), fillMat);
+  const lines = new THREE.LineSegments(new THREE.BufferGeometry(), lineMat);
+  const corners = [];
+  for (let a = 0; a < 3; a++) for (const su of [-1, 1]) for (const sv of [-1, 1]) for (const sa of [-1, 1]) {
+    const c = [0, 0, 0]; c[a] = sa; c[(a + 1) % 3] = su; c[(a + 2) % 3] = sv; corners.push(c[0], c[1], c[2]);
+  }
+  const boxGeo = new THREE.BufferGeometry();
+  boxGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(corners), 3));
+  const box = new THREE.LineSegments(boxGeo, lineMat);
+  mesh.frustumCulled = false; lines.frustumCulled = false; box.frustumCulled = false;
+  scene.add(mesh, lines, box);
+  return { renderer, scene, camera, ambient, sun, fillMat, facetMat, smoothMat, lineMat, mesh, lines, box, vp: new THREE.Matrix4(), geo: null, lineGeo: null, posAttr: null };
+}
+
+// ambient + directional strength for each shaded mode, per ink
+function lighting() {
+  const night = isNight();
+  if (state.display === 'smooth') return night ? [0.04, 1.0] : [0.16, 0.92];
+  return night ? [0.03, 0.40] : [0.66, 0.38];
+}
+
+function applyLook() {
+  if (!gl) return;
+  const bg = pageHex(), fg = isNight() ? 0xececec : 0x0a0a0a;      // the page, and its ink
+  gl.scene.background = new THREE.Color(bg);
+  gl.fillMat.color.setHex(bg);
+  gl.lineMat.color.setHex(fg);
+  const d = state.display;
+  gl.mesh.visible = d !== 'xray';
+  gl.mesh.material = d === 'facets' ? gl.facetMat : d === 'smooth' ? gl.smoothMat : gl.fillMat;
+  gl.lines.visible = d !== 'smooth';
+  gl.lineMat.depthTest = d !== 'xray';
+  const [a, s] = lighting();
+  gl.ambient.intensity = a; gl.sun.intensity = s;
+  if (d === 'smooth' && gl.geo) gl.geo.computeVertexNormals();
+  dirty = true;
+}
+
+/* How many faces run along each axis. A rectangular prism has the chosen count along its longest side and proportionally fewer
+   along the shorter ones, so its faces stay close to square; every other solid has the same count throughout. */
+function segs() {
+  const n = state.n;
+  if (state.solid !== 'box') return [n, n, n];
+  const m = Math.max(state.dims[0], state.dims[1], state.dims[2]);
+  return state.dims.map(d => Math.max(1, Math.round(n * d / m)));
+}
+const segsChanged = () => !topo || segs().some((v, i) => v !== topo.seg[i]);
+function rebuild() {
+  topo = buildTopology(state.solid, state.n, segs());
+  cur = new Float32Array(topo.count * 3);
+  if (gl) {
+    if (gl.geo) { gl.geo.dispose(); gl.lineGeo.dispose(); }
+    gl.posAttr = new THREE.BufferAttribute(cur, 3);
+    gl.posAttr.setUsage(THREE.DynamicDrawUsage);
+    gl.geo = new THREE.BufferGeometry();
+    gl.geo.setAttribute('position', gl.posAttr);
+    gl.geo.setIndex(new THREE.BufferAttribute(topo.tris, 1));
+    gl.lineGeo = new THREE.BufferGeometry();
+    gl.lineGeo.setAttribute('position', gl.posAttr);
+    gl.lineGeo.setIndex(new THREE.BufferAttribute(topo.edges, 1));
+    gl.mesh.geometry = gl.geo; gl.lines.geometry = gl.lineGeo;
+  }
+  morph();
+}
+
+/* The mesh is stretched so its bounding box is exactly the chosen dimensions.
+   In the 3D window the longest side spans 2 units; exports use millimetres. */
+function viewScale() {
+  const m = Math.max(state.dims[0], state.dims[1], state.dims[2]) / 2;
+  return [state.dims[0] / bounds[0] / m, state.dims[1] / bounds[1] / m, state.dims[2] / bounds[2] / m];
+}
+function boxHalf() { const m = Math.max(state.dims[0], state.dims[1], state.dims[2]); return state.dims.map(d => d / m); }
+function applyScale() {
+  if (!gl) return;
+  const s = viewScale(), h = boxHalf();
+  gl.mesh.scale.set(s[0], s[1], s[2]);
+  gl.lines.scale.set(s[0], s[1], s[2]);
+  gl.box.scale.set(h[0], h[1], h[2]);
+  gl.box.visible = state.showDims;
+  dirty = true;
+}
+
+function placeCamera() {
+  const cam = gl.camera, h = boxHalf();
+  const vf = cam.fov * Math.PI / 360, hf = Math.atan(Math.tan(vf) * cam.aspect);
+  const dist = Math.hypot(h[0], h[1], h[2]) * 1.16 / Math.sin(Math.min(vf, hf)) * view.zoom;
+  const q = view.q, at = qrot(q, [0, 0, dist]);
+  cam.position.set(at[0], at[1], at[2]);
+  cam.quaternion.set(q[0], q[1], q[2], q[3]);
+  cam.updateMatrixWorld();
+  gl.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  gl.sun.position.set(LIGHT[0], LIGHT[1], LIGHT[2]).applyQuaternion(cam.quaternion);
+}
+function project(x, y, z) {
+  const e = gl.vp.elements, w = e[3]*x + e[7]*y + e[11]*z + e[15];
+  return [((e[0]*x + e[4]*y + e[8]*z + e[12]) / w * 0.5 + 0.5) * stage.clientWidth,
+          (0.5 - (e[1]*x + e[5]*y + e[9]*z + e[13]) / w * 0.5) * stage.clientHeight, w];
+}
+
+/* XYZ indicator: the world axes as the camera sees them. Dashed means pointing away. */
+const gizmo = $('gizmo'), gizmoDot = gizmo.querySelector('circle');
+const gizmoAxes = ['x', 'y', 'z'].map(a => gizmo.querySelector('[data-axis="' + a + '"]'));
+function drawGizmo() {
+  const r = qrot(view.q, [1, 0, 0]), u = qrot(view.q, [0, 1, 0]), f = qrot(view.q, [0, 0, 1]);
+  const ax = [0, 1, 2].map(i => [r[i], u[i], f[i]]);      // each world axis: how far it points right, up and toward the viewer
+  const L = 26;
+  for (const i of [0, 1, 2].sort((p, q) => ax[p][2] - ax[q][2])) {
+    const g = gizmoAxes[i], line = g.firstElementChild, text = g.lastElementChild;
+    const x = ax[i][0], y = ax[i][1], len = Math.hypot(x, y);
+    const ux = len > 0.02 ? x / len : 0.7, uy = len > 0.02 ? y / len : 0.7;
+    line.setAttribute('x2', (x * L).toFixed(1)); line.setAttribute('y2', (-y * L).toFixed(1));
+    line.classList.toggle('away', ax[i][2] < -0.05);
+    text.setAttribute('x', (x * L + ux * 10).toFixed(1)); text.setAttribute('y', (-(y * L + uy * 10)).toFixed(1));
+    gizmo.insertBefore(g, gizmoDot);
+  }
+}
+
+/* Dimension labels sit on the bounding box: X and Z on the lowest edge in view, Y on the leftmost of its uprights. */
+const dimLabels = ['x', 'y', 'z'].map(a => $('dim-label-' + a));
+function drawDimLabels() {
+  const h = boxHalf(), c0 = project(0, 0, 0);
+  for (let a = 0; a < 3; a++) {
+    const el = dimLabels[a];
+    if (!state.showDims) { el.hidden = true; continue; }
+    const u = (a + 1) % 3, v = (a + 2) % 3;
+    let best = null, bestScore = -Infinity;
+    for (const su of [-1, 1]) for (const sv of [-1, 1]) {
+      const p = [0, 0, 0]; p[u] = su * h[u]; p[v] = sv * h[v];
+      const s = project(p[0], p[1], p[2]), score = a === 1 ? -s[0] : s[1];
+      if (score > bestScore) { bestScore = score; best = s; }
+    }
+    const dx = best[0] - c0[0], dy = best[1] - c0[1], l = Math.hypot(dx, dy) || 1;
+    const text = 'XYZ'[a] + ' ' + fmtMm(state.dims[a]) + ' mm';
+    if (el.textContent !== text) el.textContent = text;
+    el.hidden = false;
+    const W = stage.clientWidth, H = stage.clientHeight;          // kept inside the 3D window, clear of its edges
+    const x = clamp(best[0] + dx / l * 22, Math.min(56, W / 2), Math.max(W - 56, W / 2));
+    const y = clamp(best[1] + dy / l * 14, Math.min(20, H / 2), Math.max(H - 20, H / 2));
+    el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+  }
+}
+function renderNow() {
+  if (!gl) return;
+  placeCamera();
+  gl.renderer.render(gl.scene, gl.camera);
+  drawGizmo(); drawDimLabels();
+}
+
+function resize() {
+  if (!gl) return;
+  const w = Math.max(1, stage.clientWidth), h = Math.max(1, stage.clientHeight);
+  gl.renderer.setSize(w, h, false);
+  gl.camera.aspect = w / h;
+  gl.camera.updateProjectionMatrix();
+  renderNow();
+  updateNote();
+}
+
+let tween = null, lastTime = 0;
+const pointers = new Map();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - lastTime) / 1000); lastTime = now;
+  if (tween && !tween(now)) tween = null;
+  if (state.spin && !pointers.size) { view.q = qnorm(qmul(qaxis(0, 1, 0, dt * 0.2), view.q)); dirty = true; }   // Play turns it about the up axis
+  if (dirty) { dirty = false; renderNow(); }
+}
+
+/* orbit, zoom, pinch */
+function bindOrbit() {
+  let pinch = 0;
+  const spread = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) pinch = spread();
+  });
+  canvas.addEventListener('pointermove', e => {
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pointers.size === 1) tumble(-dx * 0.008, -dy * 0.008);
+    else if (pointers.size === 2) {
+      const d = spread();
+      if (pinch > 0 && d > 0) setZoom(view.zoom * pinch / d);
+      pinch = d;
+    }
+    dirty = true;
+  });
+  const release = e => { pointers.delete(e.pointerId); pinch = 0; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); setZoom(view.zoom * Math.exp(e.deltaY * 0.0012)); }, { passive: false });
+  canvas.addEventListener('dblclick', resetView);
+  canvas.addEventListener('keydown', e => {
+    const step = 0.08;
+    if (e.key === 'ArrowLeft') tumble(step, 0); else if (e.key === 'ArrowRight') tumble(-step, 0);
+    else if (e.key === 'ArrowUp') tumble(0, step);
+    else if (e.key === 'ArrowDown') tumble(0, -step);
+    else if (e.key === '+' || e.key === '=') setZoom(view.zoom / 1.1);
+    else if (e.key === '-') setZoom(view.zoom * 1.1);
+    else return;
+    e.preventDefault(); dirty = true;
+  });
+}
+function setZoom(z) { view.zoom = Math.min(4, Math.max(0.35, z)); dirty = true; }
+function resetView() { view.q = HOME.slice(); view.zoom = 1; dirty = true; }
+function frontView() { setSpin(false); view.q = FRONT.slice(); view.zoom = 1; dirty = true; }   // it stops turning, so the view stays put
+
+/* ================= readouts ================= */
+function solidMeasures() {          // volume in mm³ and surface area in mm², at the chosen size
+  const sx = state.dims[0] / bounds[0], sy = state.dims[1] / bounds[1], sz = state.dims[2] / bounds[2], T = topo.tris;
+  let vol = 0, area = 0;
+  for (let i = 0; i < T.length; i += 3) {
+    const a = 3*T[i], b = 3*T[i+1], c = 3*T[i+2];
+    const ax = cur[a]*sx, ay = cur[a+1]*sy, az = cur[a+2]*sz;
+    const ux = cur[b]*sx - ax, uy = cur[b+1]*sy - ay, uz = cur[b+2]*sz - az;
+    const vx = cur[c]*sx - ax, vy = cur[c+1]*sy - ay, vz = cur[c+2]*sz - az;
+    const nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+    vol += (ax*nx + ay*ny + az*nz) / 6;
+    area += Math.hypot(nx, ny, nz) / 2;
+  }
+  return [vol, area];
+}
+const sig = v => v >= 100 ? fmtInt(Math.round(v)) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+const tagged = (el, value, tag, cls) => { el.textContent = value; if (tag) { const s = document.createElement('span'); s.className = cls || 'tag'; s.textContent = tag; el.append(' ', s); } };
+function readouts() {
+  const V = topo.count, E = topo.edges.length / 2, F = topo.polyCount, t = state.t;
+  $('r-v').textContent = fmtInt(V);
+  $('r-e').textContent = fmtInt(E);
+  tagged($('r-f'), fmtInt(F), topo.sides === 4 ? 'quads' : 'triangles');
+  $('r-t').textContent = fmtInt(topo.tris.length / 3);
+  tagged($('r-size'), state.dims.map(fmtMm).join(' × '), 'mm', 'tag unit');      // the unit drops under the figures where a column is too narrow for both
+  const [vol, area] = solidMeasures();
+  $('r-vol').textContent = vol >= 1000 ? sig(vol / 1000) + NB + 'cm³' : sig(vol) + NB + 'mm³';
+  $('r-area').textContent = area >= 100 ? sig(area / 100) + NB + 'cm²' : sig(area) + NB + 'mm²';
+  if (t <= 0) tagged($('r-path'), roundName(), '');
+  else if (state.style === 'round') tagged($('r-path'), t >= 1 ? 'p = ∞' : 'p = ' + exponent(t).toFixed(t > 0.95 ? 0 : 2), 'rounded');
+  else tagged($('r-path'), Math.round(t * 100) + '%', 'creased');
+}
+/* The summary at the right of each page's title. */
+const dimsEqual = () => Math.abs(state.dims[0] - state.dims[1]) < 1e-9 && Math.abs(state.dims[1] - state.dims[2]) < 1e-9;
+const roundName = () => dimsEqual() ? 'Sphere' : 'Ellipsoid';      // what the solid morphs from: a sphere, stretched once the sides differ
+function sums() {
+  const name = SOLIDS[state.solid].name, pct = Math.round(state.t * 100);
+  $('sum-shape').textContent = name + ' · ' + pct + '%';
+  $('speed').textContent = pct === 0 ? roundName() : pct === 100 ? name : pct + '%' + NB + name.toLowerCase();
+  $('to-sphere').textContent = roundName();
+  $('subdiv-out').textContent = state.solid === 'box' ? segs().join(' × ') : state.n;
+  $('sum-size').textContent = state.dims.map(fmtMm).join(' × ') + ' mm';
+  $('sum-display').textContent = { lines: 'Lines', xray: 'X-ray', facets: 'Facets', smooth: 'Smooth' }[state.display];
+  $('sum-export').textContent = state.format.toUpperCase();
+  $('to-solid').textContent = name;
+}
+
+function setT(t, fromSlider) {
+  state.t = clamp(t, 0, 1);
+  const el = $('morph'), pct = Math.round(state.t * 100), name = SOLIDS[state.solid].name;
+  if (!fromSlider) el.value = Math.round(state.t * 1000);
+  $('morph-out').textContent = pct + '%';
+  el.setAttribute('aria-valuetext', pct + '% from ' + roundName().toLowerCase() + ' to ' + name.toLowerCase());
+  morph(); drawThumb(); readouts(); sums();
+}
+function tweenTo(target) {
+  if (reducedMotion) { setT(target); return; }
+  const from = state.t, t0 = performance.now(), dur = 750;
+  tween = now => {
+    const k = Math.min(1, (now - t0) / dur);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    setT(from + (target - from) * e);
+    return k < 1;
+  };
+}
+
+/* ================= export ================= */
+const num = v => String(+v.toFixed(6));
+const isSmoothSurface = () => state.t <= 0 || (state.style === 'round' && state.t < 1);
+const fileBase = () => `${SOLIDS[state.solid].file}-s${state.n}-m${String(Math.round(state.t * 100)).padStart(3, '0')}`;
+function describe() {
+  const s = SOLIDS[state.solid].name.toLowerCase();
+  const path = state.style === 'round'
+    ? (state.t >= 1 ? 'p = infinity' : 'p = ' + exponent(state.t).toFixed(3))
+    : 'creased blend';
+  return `${s}, ${state.solid === 'box' ? segs().join(' x ') : state.n} subdivisions, morph ${state.t.toFixed(3)} (${path}), ${state.dims.map(fmtMm).join(' x ')} mm`;
+}
+function scaled() {          // millimetres, Y up
+  const s = [state.dims[0] / bounds[0], state.dims[1] / bounds[1], state.dims[2] / bounds[2]], out = new Float32Array(cur.length);
+  for (let i = 0; i < cur.length; i++) out[i] = cur[i] * s[i % 3];
+  return out;
+}
+function vertexNormals(P) {
+  const N = new Float32Array(P.length), T = topo.tris;
+  for (let i = 0; i < T.length; i += 3) {
+    const a = 3*T[i], b = 3*T[i+1], c = 3*T[i+2];
+    const ux = P[b]-P[a], uy = P[b+1]-P[a+1], uz = P[b+2]-P[a+2];
+    const vx = P[c]-P[a], vy = P[c+1]-P[a+1], vz = P[c+2]-P[a+2];
+    const nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+    N[a] += nx; N[a+1] += ny; N[a+2] += nz;
+    N[b] += nx; N[b+1] += ny; N[b+2] += nz;
+    N[c] += nx; N[c+1] += ny; N[c+2] += nz;
+  }
+  for (let i = 0; i < N.length; i += 3) {
+    const l = Math.hypot(N[i], N[i+1], N[i+2]) || 1;
+    N[i] /= l; N[i+1] /= l; N[i+2] /= l;
+  }
+  return N;
+}
+
+function toOBJ() {
+  const P = scaled(), { polys, sides, polyCount, count } = topo, smooth = isSmoothSurface();
+  const out = ['# Subdivided Solids', '# ' + describe(), '# units: mm, Y up',
+    `# ${count} vertices, ${polyCount} ${sides === 4 ? 'quads' : 'triangles'}`, 'o ' + fileBase()];
+  for (let i = 0; i < P.length; i += 3) out.push(`v ${num(P[i])} ${num(P[i+1])} ${num(P[i+2])}`);
+  if (smooth) {
+    const N = vertexNormals(P);
+    for (let i = 0; i < N.length; i += 3) out.push(`vn ${num(N[i])} ${num(N[i+1])} ${num(N[i+2])}`);
+    out.push('s 1');
+  } else out.push('s off');
+  for (let q = 0; q < polyCount; q++) {
+    let line = 'f';
+    for (let s = 0; s < sides; s++) { const i = polys[q*sides + s] + 1; line += smooth ? ` ${i}//${i}` : ` ${i}`; }
+    out.push(line);
+  }
+  return out.join('\n') + '\n';
+}
+
+function toSTL() {
+  const P = scaled(), T = topo.tris, n = T.length / 3;
+  const buf = new ArrayBuffer(84 + n * 50), dv = new DataView(buf);
+  const head = ('Subdivided Solids: ' + describe()).slice(0, 79);
+  for (let i = 0; i < head.length; i++) dv.setUint8(i, head.charCodeAt(i) & 127);
+  dv.setUint32(80, n, true);
+  let o = 84;
+  for (let i = 0; i < T.length; i += 3) {
+    const a = 3*T[i], b = 3*T[i+1], c = 3*T[i+2];
+    const ux = P[b]-P[a], uy = P[b+1]-P[a+1], uz = P[b+2]-P[a+2];
+    const vx = P[c]-P[a], vy = P[c+1]-P[a+1], vz = P[c+2]-P[a+2];
+    let nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    dv.setFloat32(o, nx, true); dv.setFloat32(o+4, ny, true); dv.setFloat32(o+8, nz, true);
+    for (const [k, v] of [[12, a], [24, b], [36, c]]) {
+      dv.setFloat32(o+k, P[v], true); dv.setFloat32(o+k+4, P[v+1], true); dv.setFloat32(o+k+8, P[v+2], true);
+    }
+    o += 50;
+  }
+  return new Uint8Array(buf);
+}
+
+function toGLB() {
+  const P = scaled();
+  for (let i = 0; i < P.length; i++) P[i] *= 0.001;       // glTF is in metres; like the page, it has Y up and its front toward +Z
+  const T = topo.tris, V = topo.count, N = isSmoothSurface() ? vertexNormals(P) : null;
+  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < P.length; i++) { const k = i % 3; if (P[i] < min[k]) min[k] = P[i]; if (P[i] > max[k]) max[k] = P[i]; }
+  const iLen = T.byteLength, pLen = P.byteLength, nLen = N ? N.byteLength : 0, binLen = iLen + pLen + nLen;
+  const json = {
+    asset: { version: '2.0', generator: 'Subdivided Solids' },
+    scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name: fileBase() }],
+    meshes: [{ name: fileBase(), primitives: [{ attributes: N ? { POSITION: 1, NORMAL: 2 } : { POSITION: 1 }, indices: 0, mode: 4 }] }],
+    buffers: [{ byteLength: binLen }],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: iLen, target: 34963 },
+      { buffer: 0, byteOffset: iLen, byteLength: pLen, target: 34962 }
+    ],
+    accessors: [
+      { bufferView: 0, componentType: 5125, count: T.length, type: 'SCALAR' },
+      { bufferView: 1, componentType: 5126, count: V, type: 'VEC3', min, max }
+    ]
+  };
+  if (N) {
+    json.bufferViews.push({ buffer: 0, byteOffset: iLen + pLen, byteLength: nLen, target: 34962 });
+    json.accessors.push({ bufferView: 2, componentType: 5126, count: V, type: 'VEC3' });
+  }
+  let text = JSON.stringify(json);
+  while (text.length % 4) text += ' ';
+  const jb = new TextEncoder().encode(text);
+  const total = 12 + 8 + jb.length + 8 + binLen;
+  const out = new Uint8Array(total), dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+  dv.setUint32(12, jb.length, true); dv.setUint32(16, 0x4E4F534A, true);
+  out.set(jb, 20);
+  let o = 20 + jb.length;
+  dv.setUint32(o, binLen, true); dv.setUint32(o + 4, 0x004E4942, true); o += 8;
+  out.set(new Uint8Array(T.buffer, T.byteOffset, iLen), o); o += iLen;
+  out.set(new Uint8Array(P.buffer), o); o += pLen;
+  if (N) out.set(new Uint8Array(N.buffer), o);
+  return out;
+}
+
+/* Vector drawing of what the 3D pane shows: back faces dropped, the rest painted far to near. */
+function toSVG() {
+  placeCamera();
+  const W = stage.clientWidth, H = stage.clientHeight, cam = gl.camera;
+  const e = gl.vp.elements, vs = viewScale(), Q = new Float32Array(cur.length);
+  for (let i = 0; i < cur.length; i++) Q[i] = cur[i] * vs[i % 3];
+  const V = topo.count, sx = new Float32Array(V), sy = new Float32Array(V), sw = new Float32Array(V);
+  for (let i = 0; i < V; i++) {
+    const x = Q[3*i], y = Q[3*i+1], z = Q[3*i+2];
+    const w = e[3]*x + e[7]*y + e[11]*z + e[15];
+    sx[i] = ((e[0]*x + e[4]*y + e[8]*z + e[12]) / w * 0.5 + 0.5) * W;
+    sy[i] = (0.5 - (e[1]*x + e[5]*y + e[9]*z + e[13]) / w * 0.5) * H;
+    sw[i] = w;
+  }
+  const bg = '#' + pageHex().toString(16).padStart(6, '0'), fg = isNight() ? '#ececec' : '#0a0a0a', d = state.display;
+  const c = v => v.toFixed(1);
+  const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
+    `<title>${describe()}</title>`, `<rect width="100%" height="100%" fill="${bg}"/>`];
+  if (d === 'xray') {
+    const E = topo.edges; let path = '';
+    for (let i = 0; i < E.length; i += 2) path += `M${c(sx[E[i]])} ${c(sy[E[i]])}L${c(sx[E[i+1]])} ${c(sy[E[i+1]])}`;
+    parts.push(`<path d="${path}" fill="none" stroke="${fg}" stroke-width="1" stroke-linecap="round"/>`);
+  } else {
+    const { polys, sides, polyCount } = topo, shaded = d !== 'lines';
+    const L = new THREE.Vector3(LIGHT[0], LIGHT[1], LIGHT[2]).applyQuaternion(cam.quaternion).normalize();
+    const [amb, sun] = lighting();
+    const front = [];
+    for (let q = 0; q < polyCount; q++) {
+      // screen y points down, so front faces wind negative; a bent quad counts if either half faces the viewer
+      const o = q * sides, a = polys[o], b = polys[o+1], c = polys[o+2];
+      let depth = sw[a] + sw[b] + sw[c];
+      let facing = (sx[b]-sx[a]) * (sy[c]-sy[a]) - (sx[c]-sx[a]) * (sy[b]-sy[a]) < 0;
+      if (sides === 4) {
+        const d = polys[o+3]; depth += sw[d];
+        facing = facing || (sx[c]-sx[a]) * (sy[d]-sy[a]) - (sx[d]-sx[a]) * (sy[c]-sy[a]) < 0;
+      }
+      if (facing) front.push([depth, q]);
+    }
+    front.sort((a, b) => b[0] - a[0]);
+    parts.push(shaded
+      ? `<g stroke-linejoin="round" stroke-width="${d === 'facets' ? 1 : 0.6}"${d === 'facets' ? ` stroke="${fg}"` : ''}>`
+      : `<g fill="${bg}" stroke="${fg}" stroke-width="1" stroke-linejoin="round">`);
+    for (const [, q] of front) {
+      let path = '';
+      for (let s = 0; s < sides; s++) { const a = polys[q*sides + s]; path += (s ? 'L' : 'M') + c(sx[a]) + ' ' + c(sy[a]); }
+      if (!shaded) { parts.push(`<path d="${path}Z"/>`); continue; }
+      const i0 = 3*polys[q*sides], i1 = 3*polys[q*sides+1], i2 = 3*polys[q*sides+2], i3 = 3*polys[q*sides + sides - 1];
+      const ux = Q[i2]-Q[i0], uy = Q[i2+1]-Q[i0+1], uz = Q[i2+2]-Q[i0+2];
+      const vx = Q[i3]-Q[i1], vy = Q[i3+1]-Q[i1+1], vz = Q[i3+2]-Q[i1+2];
+      let nx, ny, nz;
+      if (sides === 4) { nx = uy*vz - uz*vy; ny = uz*vx - ux*vz; nz = ux*vy - uy*vx; }
+      else {
+        const ax = Q[i1]-Q[i0], ay = Q[i1+1]-Q[i0+1], az = Q[i1+2]-Q[i0+2];
+        nx = ay*uz - az*uy; ny = az*ux - ax*uz; nz = ax*uy - ay*ux;
+      }
+      const l = Math.hypot(nx, ny, nz) || 1;
+      const lum = Math.min(1, amb + sun * Math.max(0, (nx*L.x + ny*L.y + nz*L.z) / l));
+      const g = Math.round(lum * 255).toString(16).padStart(2, '0'), col = '#' + g + g + g;
+      parts.push(d === 'facets' ? `<path d="${path}Z" fill="${col}"/>` : `<path d="${path}Z" fill="${col}" stroke="${col}"/>`);
+    }
+    parts.push('</g>');
+  }
+  parts.push('</svg>');
+  return parts.join('\n');
+}
+
+const toPNG = () => new Promise((resolve, reject) => {
+  const shown = gl.box.visible;
+  gl.box.visible = false; renderNow(); gl.box.visible = shown; dirty = true;   // the mesh alone, without the dimension box
+  canvas.toBlob(b => b ? resolve(b) : reject(new Error('no image')), 'image/png');
+});
+
+/* a one-file zip, because 3D formats can only leave the viewer inside an archive */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function deflateRaw(u8) {
+  if (typeof CompressionStream === 'undefined') return null;
+  try {
+    const stream = new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch (e) { return null; }
+}
+async function zipOne(name, u8) {
+  const nb = new TextEncoder().encode(name), crc = crc32(u8);
+  let body = await deflateRaw(u8), method = 8;
+  if (!body || body.length >= u8.length) { body = u8; method = 0; }
+  const now = new Date();
+  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const lh = new DataView(new ArrayBuffer(30));
+  lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, method, true);
+  lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true);
+  lh.setUint32(18, body.length, true); lh.setUint32(22, u8.length, true); lh.setUint16(26, nb.length, true);
+  const ch = new DataView(new ArrayBuffer(46));
+  ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+  ch.setUint16(10, method, true); ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, crc, true);
+  ch.setUint32(20, body.length, true); ch.setUint32(24, u8.length, true); ch.setUint16(28, nb.length, true);
+  const eo = new DataView(new ArrayBuffer(22));
+  eo.setUint32(0, 0x06054b50, true); eo.setUint16(8, 1, true); eo.setUint16(10, 1, true);
+  eo.setUint32(12, 46 + nb.length, true); eo.setUint32(16, 30 + nb.length + body.length, true);
+  return new Blob([lh, nb, body, ch, nb, eo], { type: 'application/zip' });
+}
+
+const MESH_FORMATS = ['obj', 'stl', 'glb'];
+let saver = null, inViewer = false;
+const saverReady = (window.claude && typeof window.claude.use === 'function'
+  ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null))
+  .then(ns => { saver = ns; inViewer = !!ns; updateNote(); return ns; });
+
+function setStatus(msg) { $('status').textContent = msg; }
+function kb(bytes) { return bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) + ' KB' : (bytes / 1048576).toFixed(1) + ' MB'; }
+
+function updateNote() {
+  if (!topo) return;
+  const f = state.format, tri = fmtInt(topo.tris.length / 3);
+  const zip = inViewer ? ' Saved inside a .zip.' : '';
+  const text = {
+    obj: `Wavefront OBJ in mm, Y up. ${topo.sides === 4 ? fmtInt(topo.polyCount) + ' quads, kept as quads' : tri + ' triangles'}.${zip}`,
+    stl: `Binary STL in mm, Y up. ${tri} triangles.${zip}`,
+    glb: `Binary glTF in metres, Y up. ${tri} triangles.${zip}`,
+    svg: 'Vector drawing of the current view and display mode.',
+    png: `Image of the current view, ${canvas.width} × ${canvas.height} px.`
+  }[f];
+  $('format-note').textContent = gl || MESH_FORMATS.includes(f) ? text : 'This format needs the 3D view, which is off in this browser.';
+  $('export').disabled = !gl && !MESH_FORMATS.includes(f);
+  $('copy').disabled = !(f === 'obj' || (f === 'svg' && gl));
+}
+
+async function build(format) {
+  const base = fileBase();
+  if (format === 'obj') return { name: base + '.obj', data: new TextEncoder().encode(toOBJ()) };
+  if (format === 'stl') return { name: base + '.stl', data: toSTL() };
+  if (format === 'glb') return { name: base + '.glb', data: toGLB() };
+  if (format === 'svg') return { name: base + '.svg', data: new TextEncoder().encode(toSVG()) };
+  return { name: base + '.png', data: await toPNG() };
+}
+
+let exporting = false;
+async function doExport() {
+  if (exporting) return;
+  exporting = true; $('export').disabled = true; $('copy-box').hidden = true;
+  setStatus('Building file…');
+  try {
+    const { name, data } = await build(state.format);
+    const dl = await saverReady;
+    if (dl) {
+      const zipped = MESH_FORMATS.includes(state.format);
+      const filename = zipped ? name.replace(/\.\w+$/, '.zip') : name;
+      const payload = zipped ? await zipOne(name, data) : data instanceof Blob ? data : new Blob([data]);
+      setStatus('Confirm the save to finish.');
+      try {
+        await dl.save({ filename, data: payload });
+        setStatus(`Saved ${filename} (${kb(payload.size)}).`);
+      } catch (err) {
+        const code = err && err.code;
+        setStatus(code === 'declined' ? 'Export cancelled.'
+          : code === 'rate_limited' ? 'A save prompt is already open. Answer it, then export again.'
+          : code === 'too_large' ? 'That file is too large to save here. Lower the subdivisions and export again.'
+          : 'This view cannot save that file. Copy the OBJ or SVG text instead.');
+      }
+    } else {
+      const blob = data instanceof Blob ? data : new Blob([data]);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setStatus(`Exported ${name} (${kb(blob.size)}).`);
+    }
+  } catch (e) {
+    setStatus('The file could not be built. Lower the subdivisions and try again.');
+  }
+  exporting = false; updateNote();
+}
+
+async function doCopy() {
+  const text = state.format === 'svg' ? toSVG() : toOBJ();
+  const label = state.format.toUpperCase();
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copy-box').hidden = true;
+    setStatus(`Copied ${label} text (${kb(text.length)}).`);
+  } catch (e) {
+    const box = $('copy-box');
+    box.value = text; box.hidden = false; box.focus(); box.select();
+    setStatus(`${label} text is selected below. Press Ctrl+C or ⌘C to copy.`);
+  }
+}
+
+/* ================= pages, panel width, info panel height ================= */
+const phone = () => matchMedia('(max-width:760px)').matches;
+const pageTop = {};
+let lastPanel = 'shape';
+function showPage(k, focus) {
+  hideTip();
+  const sc = $('pages'), tabs = document.querySelector('.tabs');
+  pageTop[page] = sc.scrollTop; page = k; if (k !== 'model') lastPanel = k;
+  PAGES.forEach(p => { $('sec-' + p).hidden = p !== k; });
+  TABS.forEach(p => { const on = p === k, t = $('tab-' + p); t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+  tabs.style.setProperty('--i', Math.max(0, PAGES.indexOf(k))); tabs.style.setProperty('--im', TABS.indexOf(k));   // the highlight's place among the four, and among the five of a narrow screen
+  app.dataset.page = k;
+  sc.scrollTop = pageTop[k] || 0;
+  if (focus) $('tab-' + k).focus();
+  save();
+}
+const panelLo = () => Math.round(280 * TEXT[textSize][1]);   // the narrowest the panel goes: wider or narrower in step with the text
+function setPanelW(w) {
+  const lo = panelLo();
+  panelW = clamp(Math.round(w), lo, Math.max(lo, window.innerWidth - 340));
+  root.style.setProperty('--panel-w', panelW + 'px'); $('resizer').setAttribute('aria-valuenow', panelW);
+}
+function setCollapsed(on) {
+  collapsed = on;
+  app.classList.toggle('collapsed', on);
+  const b = $('toggle-panel'); b.textContent = on ? 'Show panel' : 'Hide panel'; b.setAttribute('aria-expanded', String(!on));
+}
+/* The info panel is as tall as its readouts until its top line is dragged; then it keeps that height (they scroll if it is shorter).
+   Within 6px of the readouts' own height it lets go again, and a double-click on the line does the same. */
+const INFO_MIN = 44;
+function setInfoH(h) {
+  const r = $('info'), box = r.getBoundingClientRect(), end = r.lastElementChild.getBoundingClientRect();
+  const full = end.bottom - box.top + r.scrollTop + parseFloat(getComputedStyle(r).paddingBottom);
+  infoH = h === null || Math.abs(h - full) <= 6 ? null : clamp(Math.round(h), INFO_MIN, Math.max(INFO_MIN, r.parentElement.clientHeight - 160));
+  applyInfoH();
+}
+function applyInfoH() {
+  const st = $('stage').style;
+  if (infoH === null) st.removeProperty('--info-row'); else st.setProperty('--info-row', `min(${infoH}px, 100% - 160px)`);
+  $('info-resizer').setAttribute('aria-valuenow', $('info').offsetHeight);
+}
+function applyTheme() {
+  if (theme === 'gray-90' && isNight()) theme = 'gray-80';   // 90% gray would vanish into night mode's black: the next step stands in
+  if (theme === THEME0) root.removeAttribute('data-page-theme'); else root.setAttribute('data-page-theme', theme);
+}
+function applyText() { root.style.setProperty('--ts', TEXT[textSize][1]); setPanelW(panelW); }
+function applySoft() { root.classList.toggle('soft', soft); applyLook(); }
+function applyAxes() { if (state.showAxes && gl) gizmo.removeAttribute('hidden'); else gizmo.setAttribute('hidden', ''); }
+
+/* Explanations: a click on a name with a dotted line under it shows what it means, in a small box just above it. */
+let tipFor = null, tipAt = [0, 0];
+function hideTip() { if (!tipFor) return; tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; $('ro-tip').textContent = ''; }
+function showTip(b) {
+  const ro = b.closest('.ro'), say = b.dataset.tip;
+  hideTip(); if (!say) return;
+  tipFor = b; b.setAttribute('aria-expanded', 'true');
+  const t = document.createElement('div'); t.className = 'rotip'; t.textContent = say; $('ro-tip').appendChild(t);
+  const r = b.getBoundingClientRect(), o = (ro || b).getBoundingClientRect(), line = ro ? $('info').getBoundingClientRect().top : -1e6, w = t.offsetWidth, h = t.offsetHeight; tipAt = [r.left, r.top];
+  let foot = o.top - 8; if (foot > line - 6 && foot < line + 24) foot = line - 6;
+  t.style.left = clamp(r.left, 8, Math.max(8, window.innerWidth - w - 8)) + 'px'; t.style.top = (foot - h >= 8 ? foot - h : o.bottom + 6) + 'px';
+}
+
+/* ================= controls ================= */
+const shows = [];                       // each puts one control back in step with the settings
+const refresh = () => shows.forEach(f => f());
+function radios(name, get, set) {      // one choice, in one box of options or shared between several (Solid: two boxes)
+  const rs = [...document.querySelectorAll(`input[name="${name}"]`)], boxes = [...new Set(rs.map(r => r.parentElement))];
+  const show = () => {
+    rs.forEach(r => { r.checked = r.value === get(); });
+    boxes.forEach(box => { const mine = rs.filter(r => r.parentElement === box), i = mine.findIndex(r => r.checked);
+      box.style.setProperty('--n', mine.length); box.style.setProperty('--i', Math.max(0, i)); box.classList.toggle('none', i < 0); });
+  };
+  rs.forEach(r => r.addEventListener('change', () => { if (r.checked) { set(r.value); show(); } }));
+  shows.push(show);
+}
+function toggle(id, get, set) { const el = $(id); el.addEventListener('change', () => set(el.checked)); shows.push(() => { el.checked = get(); }); }
+
+/* A cube's sides are equal. A rectangular prism's are its own: choosing it frees them, and if they were all equal it starts
+   out at 1 : 0.6 : 0.4, so that it is plainly not a cube. */
+function fitSolid() { if (state.solid === 'cube' && !dimsEqual()) state.dims = [state.dims[0], state.dims[0], state.dims[0]]; }
+function setSolid(v) {
+  state.solid = v;
+  if (v === 'box') { state.lock = false; if (dimsEqual()) { const d = state.dims[0]; state.dims = [d, d * 0.6, d * 0.4]; } }
+  fitSolid(); refresh(); rebuild(); setT(state.t); updateNote();
+}
+function setSpin(on) { state.spin = on; $('play').textContent = on ? 'Pause' : 'Play'; }
+function resetPage(p) {
+  if (!DEFAULTS[p]) return;
+  setDefaults(p); fitSolid();
+  if (p === 'display') { theme = THEME0; applyTheme(); textSize = TEXT0; applyText(); soft = false; applySoft(); save(); }
+  refresh(); rebuild(); setT(state.t); applyLook(); applyAxes(); updateNote();
+  if (p === 'export') { setStatus(''); $('copy-box').hidden = true; }
+}
+
+function bindControls() {
+  const morphEl = $('morph');
+  morphEl.addEventListener('input', () => { tween = null; setT(morphEl.value / 1000, true); });
+  $('to-sphere').addEventListener('click', () => tweenTo(0));
+  $('to-solid').addEventListener('click', () => tweenTo(1));
+  const sub = $('subdiv');
+  sub.addEventListener('input', () => { state.n = +sub.value; rebuild(); readouts(); sums(); updateNote(); });
+  shows.push(() => { sub.value = state.n; });
+  radios('solid', () => state.solid, setSolid);
+  radios('style', () => state.style, v => { state.style = v; setT(state.t); });
+  radios('display', () => state.display, v => { state.display = v; applyLook(); sums(); });
+  radios('format', () => state.format, v => { state.format = v; updateNote(); sums(); setStatus(''); $('copy-box').hidden = true; });
+  radios('theme', () => theme, v => { theme = v; applyTheme(); save(); });
+
+  const dimEls = ['dim-x', 'dim-y', 'dim-z'].map($);
+  dimEls.forEach((el, i) => {
+    el.addEventListener('input', () => {
+      const v = parseFloat(el.value);
+      if (!(v > 0) || !isFinite(v)) return;
+      if (state.lock || state.solid === 'cube') {    // the other two change by the same factor (a cube's always do)
+        const k = v / state.dims[i];
+        state.dims = state.dims.map(d => d * k);
+        dimEls.forEach((o, j) => { if (j !== i) o.value = fmtMm(state.dims[j]); });
+      }
+      state.dims[i] = v;
+      if (segsChanged()) { rebuild(); updateNote(); } else applyScale();     // a prism's faces are counted again as its sides change
+      readouts(); sums();
+    });
+    el.addEventListener('change', () => { el.value = fmtMm(state.dims[i]); });
+    shows.push(() => { el.value = fmtMm(state.dims[i]); });
+  });
+  toggle('dim-lock', () => state.lock || state.solid === 'cube', v => { state.lock = v; });
+  shows.push(() => { const cube = state.solid === 'cube'; $('dim-lock').disabled = cube; $('cube-hint').hidden = !cube; $('box-hint').hidden = state.solid !== 'box'; });
+  $('go-size').addEventListener('click', () => showPage('size'));
+  $('go-box').addEventListener('click', () => { setSolid('box'); $('dim-x').focus(); });
+  toggle('dim-show', () => state.showDims, v => { state.showDims = v; applyScale(); });
+  toggle('show-axes', () => state.showAxes, v => { state.showAxes = v; applyAxes(); });
+
+  // Night mode: the title bar's switch does the work; the panel's toggle presses it and follows it.
+  const on = $('o-night'), nightShow = () => { on.checked = isNight(); };
+  on.addEventListener('change', () => { if (on.checked !== isNight()) $('night').click(); });
+  shows.push(nightShow);
+  const sf = $('o-soft');
+  sf.addEventListener('change', () => { soft = sf.checked; applySoft(); save(); });
+  shows.push(() => { sf.checked = soft; });
+  const tz = $('o-textSize'), tzShow = () => { tz.value = textSize; $('o-textSize-out').textContent = TEXT[textSize][0]; tz.setAttribute('aria-valuetext', TEXT[textSize][0]); };
+  tz.addEventListener('input', () => { textSize = clamp(Math.round(+tz.value), 0, TEXT.length - 1); applyText(); tzShow(); save(); });
+  shows.push(tzShow);
+  // 90% gray cannot be chosen in night mode: its dot is switched off there, and says why under the pointer.
+  const g90 = $('theme-gray-90'), grayNight = () => { const n = isNight(); g90.disabled = n; g90.nextElementSibling.title = n ? '90% gray (not available in night mode)' : '90% gray'; };
+  shows.push(grayNight);
+  document.addEventListener('nightchange', () => { const was = theme; applyTheme(); applyLook(); if (theme !== was) save(); refresh(); });
+
+  const play = $('play');
+  play.addEventListener('click', () => setSpin(!state.spin));
+  setSpin(state.spin);
+  $('front-view').addEventListener('click', frontView);
+  $('reset-view').addEventListener('click', resetView);
+  $('toggle-panel').addEventListener('click', () => { setCollapsed(!collapsed); save(); });
+  $('export').addEventListener('click', doExport);
+  $('copy').addEventListener('click', doCopy);
+
+  // The reset asks first: the button gives way to Confirm and Cancel. Cancel, Escape, or going on to anything else puts it back.
+  const foot = $('reset-foot'), [btn, yes, no] = foot.children; let asking = false, at = 0;
+  const ask = (q, focus) => { asking = false;
+    if (q) { yes.hidden = no.hidden = false; no.focus(); btn.hidden = true; }
+    else { btn.hidden = false; if (focus) btn.focus(); yes.hidden = no.hidden = true; }
+    asking = q; };
+  btn.addEventListener('click', () => { ask(true); at = performance.now(); });
+  yes.addEventListener('click', () => { if (performance.now() - at < 400) return; ask(false, true); resetPage(page); });
+  no.addEventListener('click', () => ask(false, true));
+  foot.addEventListener('keydown', e => { if (e.key === 'Escape' && asking) ask(false, true); });
+  ['pointerdown', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (asking && !foot.contains(e.target)) ask(false); }));
+
+  // The navigation at the foot of the panel. With a button in focus the arrow keys (and Home and End) go to the page beside it.
+  TABS.forEach(k => { const t = $('tab-' + k);
+    t.addEventListener('click', () => showPage(k));
+    t.addEventListener('keydown', e => { const row = phone() ? TABS : PAGES, i = row.indexOf(k), j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: row.length - 1 }[e.key]; if (j === undefined) return;
+      e.preventDefault(); showPage(row[(j + row.length) % row.length], true); }); });
+  if (!pageSaved && phone()) page = 'model';            // a phone's first visit opens on the 3D window
+  if (page === 'model' && !phone()) page = 'shape';     // which is no page of a wide window
+  showPage(page);
+  const mq = matchMedia('(max-width:760px)');
+  mq.addEventListener('change', () => { if (!mq.matches && page === 'model') showPage(lastPanel); });
+  stage.addEventListener('click', () => { if (phone() && page !== 'model') showPage('model'); });   // the small picture is a way to Model
+
+  // Panel width: drag the edge, use the arrow keys on it, or double-click it to go back to the default.
+  const rz = $('resizer');
+  rz.addEventListener('pointerdown', e => { rz.setPointerCapture(e.pointerId); rz.classList.add('drag'); document.body.style.userSelect = 'none'; e.preventDefault(); });
+  rz.addEventListener('pointermove', e => { if (rz.classList.contains('drag')) setPanelW(e.clientX - app.getBoundingClientRect().left); });
+  const endDrag = () => { if (!rz.classList.contains('drag')) return; rz.classList.remove('drag'); document.body.style.userSelect = ''; save(); };
+  rz.addEventListener('pointerup', endDrag); rz.addEventListener('pointercancel', endDrag);
+  rz.addEventListener('dblclick', () => { setPanelW(384); save(); });
+  rz.addEventListener('keydown', e => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); setPanelW(panelW + (e.key === 'ArrowRight' ? 16 : -16)); save(); });
+
+  // Info panel height: its top line is dragged the same way, up and down.
+  const hz = $('info-resizer'), info = $('info'); let grab = 0;
+  hz.addEventListener('pointerdown', e => { hz.setPointerCapture(e.pointerId); hz.classList.add('drag'); grab = e.clientY - info.getBoundingClientRect().top; document.body.style.userSelect = 'none'; e.preventDefault(); });
+  hz.addEventListener('pointermove', e => { if (hz.classList.contains('drag')) setInfoH(info.getBoundingClientRect().bottom - e.clientY + grab); });
+  const endDragH = () => { if (!hz.classList.contains('drag')) return; hz.classList.remove('drag'); document.body.style.userSelect = ''; save(); };
+  hz.addEventListener('pointerup', endDragH); hz.addEventListener('pointercancel', endDragH);
+  hz.addEventListener('dblclick', () => { setInfoH(null); save(); });
+  hz.addEventListener('keydown', e => { if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault(); setInfoH(info.offsetHeight + (e.key === 'ArrowUp' ? 16 : -16)); save(); });
+
+  const tipClick = e => { const b = e.target.closest('.what'); if (b) { if (b === tipFor) hideTip(); else showTip(b); } };
+  info.addEventListener('click', tipClick); $('pages').addEventListener('click', tipClick);
+  document.addEventListener('pointerdown', e => { if (tipFor && !e.target.closest('.what, .rotip')) hideTip(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && tipFor) { tipFor.focus(); hideTip(); } });
+  const tipScroll = () => { if (!tipFor) return; const r = tipFor.getBoundingClientRect(); if (Math.abs(r.left - tipAt[0]) > 1 || Math.abs(r.top - tipAt[1]) > 1) hideTip(); };
+  info.addEventListener('scroll', tipScroll); $('pages').addEventListener('scroll', tipScroll);
+  window.addEventListener('resize', hideTip);
+  document.addEventListener('toggle', hideTip, true);
+}
+
+/* How long the longest option of each box of choices is, and the longest name in the navigation, in ems (--k): the style sheet sets
+   their words smaller where they would not fit. Measured in the page's own font, and again once that font has loaded. */
+function measureWords() {
+  const cx = document.createElement('canvas').getContext('2d'); if (!cx) return;
+  cx.font = '500 100px ' + getComputedStyle(document.body).fontFamily;
+  const longest = els => (Math.max(...[...els].map(e => cx.measureText(e.textContent.trim()).width)) / 100 * 1.02).toFixed(3);
+  document.querySelectorAll('.seg').forEach(g => { const ls = g.querySelectorAll('label'); g.style.setProperty('--n', ls.length); g.style.setProperty('--k', longest(ls)); });
+  const tabs = document.querySelector('.tabs'); tabs.style.setProperty('--k', longest(tabs.querySelectorAll('.tab')));
+}
+
+/* ================= start ================= */
+restore();
+try { gl = initGL(); } catch (e) {
+  gl = null; canvas.hidden = true;
+  const box = document.createElement('div');
+  box.className = 'fallback';
+  box.innerHTML = '<p>The 3D view could not start in this browser. The shape controls and OBJ, STL and GLB export still work.</p>';
+  stage.insertBefore(box, stage.firstChild);
+  $('play').hidden = true; $('reset-view').hidden = true; $('front-view').hidden = true;
+}
+applyTheme(); applyText(); root.classList.toggle('soft', soft); setCollapsed(collapsed);
+bindControls();
+refresh();
+rebuild();
+setT(state.t);
+updateNote();
+applyAxes();
+measureWords(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureWords);
+applyInfoH();
+/* --ln, the thickness of the dividing lines, the toggles' outlines and the sliders' lines, is taken down to whole screen pixels,
+   as a browser does a border, so all of them come out alike. Worked out again whenever the window changes. */
+const lnBase = parseFloat(getComputedStyle(root).getPropertyValue('--ln')) || 1.92;
+const lineWidth = () => { const d = window.devicePixelRatio || 1; root.style.setProperty('--ln', (Math.max(1, Math.floor(lnBase * d + 1e-6)) + .01) / d + 'px'); };
+lineWidth(); window.addEventListener('resize', lineWidth);
+if (gl) {
+  applyLook();
+  bindOrbit();
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(() => document.body.classList.add('ready'));   // control transitions come on after the first paint
+})();
+</script>
+
+</body></html>
