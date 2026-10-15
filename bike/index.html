@@ -7,9 +7,9 @@
 <title>Bike Fit Visualizer</title>
 <script>/* Night mode is off unless this device has switched it on (the same setting as the home page), decided before the first paint. */
 try { if (localStorage.getItem('night-mode') === '1') document.documentElement.classList.add('night'); } catch (e) {}
-/* The page theme is decided before the first paint too: the one remembered on this device, or green, the theme the page opens in
+/* The page theme is decided before the first paint too: the one remembered on this device, or blue, the theme the page opens in
    (THEME0 in the main script, which checks the name and has the last word). 'ink' is no theme: black, white in night mode. */
-(function () { var t = 'green', d = null; try { d = JSON.parse(localStorage.getItem('bike-fit-visualizer:v1') || 'null'); if (d && typeof d.theme === 'string' && /^[a-z0-9-]+$/.test(d.theme)) t = d.theme; } catch (e) {}
+(function () { var t = 'blue', d = null; try { d = JSON.parse(localStorage.getItem('bike-fit-visualizer:v1') || 'null'); if (d && typeof d.theme === 'string' && /^[a-z0-9-]+$/.test(d.theme)) t = d.theme; } catch (e) {}
   var was = { 'gray': 'gray-50', 'gray-25': 'gray-30', 'gray-12': 'gray-10', 'tan': 'yellow', 'purple': 'violet', 'neon-green': 'rgb-green' }; if (typeof was[t] === 'string' && was.hasOwnProperty(t)) t = was[t];   /* themes of earlier versions, each carried to the one that stands in for it now (THEME_WAS in the main script) */
   if (t === 'gray-90' && document.documentElement.classList.contains('night')) t = 'gray-80';   /* 90% gray is not offered in night mode (applyTheme in the main script) */
   if (t !== 'ink') document.documentElement.setAttribute('data-theme', t);
@@ -34,8 +34,8 @@ img{max-width:100%}
   --accent:#0a0a0a; --accent-ink:#ffffff; --slot:#d6d6d6;
   --ttext:#ffffff; --wtext:#000000; --frame:#ff000d; --metal:#8e8e8e; --part:#222222; --tire:#1c1c1c; --wheel:#bdbdbd; --spin:#bdbdbd; --comp:#000000; --tape:#212121; --saddle:#212121; --fixed:#333333; --pure:#ff000d; --full:#ff000d;
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
-  --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dots on the warnings */
-  --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches, the speed readout and the warnings: black, white in night mode */
+  --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dot on Play's button */
+  --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches and the speed readout: black, white in night mode */
   --ts:1;                                       /* Text size (Options, Display options): what every size of text on the page is multiplied by, from 0.9 for Extra small to 1.3 for Extra large; 1 is Small, the size the page was drawn at. The site name and the NIGHT MODE switch in the title bar keep their own size, which is the home page's */
   --knob:var(--ink);                            /* the sliders' lines and dots, and the panel's toggles: the page's ink, or the page theme's colour */
   --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;   /* the page themes (Options, Display options). Each is dark enough for white lettering on it (4.6 to 1 or better) and light enough to show on the black page of night mode (3.7 to 1 or better), so one colour serves both modes */
@@ -201,9 +201,9 @@ h1,h2,h3,p,dl,dd{margin:0}
   position:relative;background:none;color:var(--muted);font:500 max(8px,min(calc(12px * var(--ts)),(var(--w,9999px) / var(--tn) - 6px) / var(--k,1)))/1.2 var(--font);cursor:pointer;transition:color .16s}   /* the names are set smaller where the longest (--k ems, measured by the script) would not fit a button: five buttons on a phone at a large Text size. Never under 8px, and at full size until the bar's width is known */
 .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab .ic{position:relative;display:grid;place-items:center;width:52px;height:28px}
-/* Play is a fifth button, for narrow screens only (further down): there the drawing has a page of its own. While a warning shows
-   over the drawing and another page is up, Play's icon carries a dot of the warning's colour, since the warning itself is out of
-   sight. */
+/* Play is a fifth button, for narrow screens only (further down): there the drawing has a page of its own. While the info panel holds
+   a warning (Fit assessment reads At risk or Does not fit) and another page is up, Play's icon carries a dot of the warning's colour,
+   since the info panel is out of sight. */
 #tab-play{display:none}
 .tab[data-alert="warn"][aria-selected="false"] .ic::after,.tab[data-alert="bad"][aria-selected="false"] .ic::after{content:"";position:absolute;top:0;right:9px;width:8px;height:8px;border-radius:50%;background:var(--caution)}
 .tab[data-alert="bad"][aria-selected="false"] .ic::after{background:var(--stop)}
@@ -219,7 +219,17 @@ h1,h2,h3,p,dl,dd{margin:0}
 
 .group{display:flex;flex-direction:column;gap:8px}
 .group:not(.sliders)>:is(.tgl,.themes,.slider)+:is(.tgl,.themes,.slider){margin-top:4px}   /* a run of switches, or of Display options' rows: 12px apart, which is easier on the eye and on the finger than 8 */
-.grp{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}   /* a subsection's title: written as typed (first letter capital), in the page's ink: black, white in night mode */
+.grp{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
+/* About this page (the last subsection of Options): reading text, in the page's ink at the size of the panel's notes and a little more
+   open, with its own folding subsections 12px apart, and two small tables (aboutTables in the script fills them). */
+.about{gap:12px}
+.about p,.about li{margin:0;font-size:calc(13px * var(--ts));line-height:1.5;color:var(--ink)}
+.about ul,.about ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.about b{font-weight:600}
+.atab{width:100%;border-collapse:collapse;font-size:calc(12.5px * var(--ts));font-variant-numeric:tabular-nums}
+.atab th,.atab td{padding:4px 0;border-bottom:1px solid var(--line);text-align:right;font-weight:400}
+.atab th{color:var(--muted);font-weight:500}
+.atab :is(th,td):first-child{text-align:left}   /* a subsection's title: written as typed (first letter capital), in the page's ink: black, white in night mode */
 .cap{font-size:calc(13px * var(--ts));font-weight:500;line-height:1.2}
 .note{color:var(--muted);font-weight:400;font-size:calc(12px * var(--ts))}
 
@@ -434,18 +444,13 @@ label.cap[for=p-height]{font-size:calc(16px * var(--ts))}   /* Height, the line 
 .canvas{grid-area:1/1;position:relative;min-height:0;overflow:hidden}
 .stage>*{font-size:calc(14px * var(--ts))}   /* the stage's own font size is only a measure, for the steps of the info panel's columns (below); what is in it starts from the page's size */
 .canvas svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-/* Over the drawing: a row with Play/Pause at the upper left, the speed to the right of it, and Copy Link at the upper right; any warnings beneath it. */
+/* Over the drawing: a row with Play/Pause at the upper left, the speed to the right of it, and Copy Link at the upper right. (Warnings are not laid over the drawing: they are in the info panel.) */
 .hud{position:absolute;top:16px;left:16px;right:16px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .hud>.hudrow{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}   /* the gap between the buttons lets clicks through to the drawing */
 .hudrow>*{pointer-events:auto}
 #copy-link{border-color:var(--rule);white-space:nowrap;text-align:center}
 .said{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}   /* read out by screen readers, not shown */
-.alerts{display:flex;flex-direction:column;gap:6px;max-width:440px;min-width:0}
-.alert{display:flex;gap:8px;align-items:baseline;background:var(--panel);border:1px solid var(--rule);border-radius:6px;
-  padding:6px 10px;font-size:calc(13px * var(--ts));line-height:1.3}
-.alert::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--caution);transform:translateY(-1px)}
-.alert.bad::before{background:var(--stop)}
 .transport{display:flex;align-items:center;gap:10px}
 /* Play/Pause keeps one width whichever word it shows, so the speed beside it stays put: an unseen "Pause", the wider of the two words,
    sits under the label and sets the width, in whatever font the page is drawn in. */
@@ -473,7 +478,7 @@ label.cap[for=p-height]{font-size:calc(16px * var(--ts))}   /* Height, the line 
 .ro{display:flex;flex-direction:column;gap:3px;min-width:0}   /* 3px: clear of the dotted line under the name */
 .ro dt{font-size:calc(12px * var(--ts));color:var(--muted);line-height:1.2}
 /* A readout's name is a button, and so is its label: a click shows what the name means, or what that label says about that readout,
-   in a few plain words, in a small box set like the warnings over the drawing. The dotted line under a name or a label says it can
+   in a few plain words, in a small box with a thin outline. The dotted line under a name or a label says it can
    be clicked; under the pointer, and while its box shows, the line is solid, and a name is in the page's ink (a label keeps its
    colour, which is what it says). One box shows at a time; a click on the same words again or anywhere else, Escape, or scrolling
    the panel puts it away. The script places the box (it is fixed to the window, so the info panel's own edges do not cut it off). */
@@ -628,6 +633,18 @@ svg .joint{fill:var(--frame);stroke:var(--stage);pointer-events:none}
 .bfig .bf-val{fill:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){ .bfig .bf-p{transition:none} }
 svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:round;font-family:var(--font);font-weight:500;dominant-baseline:central}
+/* What a Bike Geometry setting measures (drawDims in the script): while one is under the pointer, in focus, being moved, or has its
+   explanation open, the drawing fades and the measurement is drawn over it, as a dimension line or an arc, with its name and value.
+   The lines are drawn like the standing figure's: the dimension line solid in the page's ink, the lines leading to it dashed. */
+svg .scene,svg .inc{transition:opacity .15s}
+svg.dimming .scene,svg.dimming .inc{opacity:.22}
+svg .dimg{pointer-events:none}
+svg .dline{fill:none;stroke:var(--ink);stroke-width:1.5px;stroke-linecap:round;vector-effect:non-scaling-stroke}
+svg .dlead{fill:none;stroke:var(--ink);stroke-opacity:.55;stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+svg .dlab{font-family:var(--font);dominant-baseline:central;stroke:var(--stage);paint-order:stroke;stroke-linejoin:round}
+svg .dlab .dn{fill:var(--muted);font-weight:400}
+svg .dlab .dv{fill:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){ svg .scene,svg .inc{transition:none} }
 
 /* (The steps are in em of the stage, which is 16px times the text size: at the size the page was drawn at they fall at 1295, 675 and
    535px, and with larger text they come sooner, so a column stays wide enough for its words.) */
@@ -637,7 +654,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 /* Narrow screens (phones): one thing at a time. The navigation gains a fifth button, Play, first in the row. Its page is the drawing
    with the info panel under it, and nothing else: together they fill the screen, the drawing keeping at least half of it and the info
    panel scrolling in the rest. On the other four pages the drawing is a small picture pinned over the page: still live, so a slider
-   can be watched at work, but with no buttons or warnings laid over it and no info panel, which leaves the settings most of the
+   can be watched at work, but with no buttons laid over it and no info panel, which leaves the settings most of the
    screen. A touch on the small picture goes to Play. (.app's data-page is the page showing; showPage() sets it.) */
 @container (max-width:22.44em){ .rogroup{grid-template-columns:minmax(0,1fr)} }   /* the narrowest phones: Bike and Rider stand over their readouts, not beside them, so two columns still fit */
 @media (max-width:760px){
@@ -678,7 +695,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
 <body>
 <header class="site" id="site-bar">
   <svg aria-hidden="true" focusable="false"><text id="site-name">jasonbrewer.org</text></svg>
-  <a id="site-link" href="https://www.jasonbrewer.org/blackhole" aria-label="jasonbrewer.org"></a>
+  <a id="site-link" href="https://www.jasonbrewer.org/" aria-label="jasonbrewer.org"></a>
   <button id="night" class="switch" type="button" role="switch" aria-checked="false"><span class="words">NIGHT MODE</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
   <div id="site-safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)"></div>
 </header>
@@ -959,6 +976,127 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
             </div>
           </div>
         </details>
+        <details class="pick" id="grp-about">
+          <summary class="grphead"><h3 class="grp">About this page</h3></summary>
+          <div class="group about">
+            <p>Bike Fit Visualizer draws a rider on a bike to scale, from your body measurements and the bike’s geometry, and animates the pedal stroke so you can see how the two fit together. The readouts under the drawing measure the fit as it moves (joint angles, reach, standover and more), and mark each one typical, marginal or out of range.</p>
+            <p>Use it to understand a bike before you buy it, to compare sizes, or to see what a longer stem or a lower saddle would change. It is a model built from averages and published rules of thumb, not a substitute for a fitting with a professional, who can watch how you actually ride.</p>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Body measurements</span></summary>
+              <div class="group about">
+                <p>Your Body starts from your height and sex and fills in an average length for each part of the body, as a share of your height.</p>
+                <p><b>Men.</b> The male shares follow the body segment table of Drillis and Contini (1966), as reproduced in David A. Winter’s <i>Biomechanics and Motor Control of Human Movement</i>, a standard reference in biomechanics. In it the ankle sits at 3.9% of height, the knee at 28.5%, the hip at 53.0% and the shoulder at 81.8%. The thigh, lower leg and torso are the gaps between them, and the neck and head make up the last 18.2%. Two figures are the page’s own: the inseam, and the forearm, which runs from the elbow to the middle of the grip rather than to the wrist.</p>
+                <p><b>Women.</b> The female shares come from ANSUR II, the U.S. Army’s 2012 anthropometric survey (Gordon and colleagues, 2014), which measured 1,986 women. Each share is the average of every woman’s measurement divided by her own height:</p>
+                <ul>
+                  <li><b>Inseam:</b> crotch height, 48.0%.</li>
+                  <li><b>Thigh:</b> hip (trochanterion) height less knee (lateral femoral epicondyle) height, 23.3%.</li>
+                  <li><b>Lower leg:</b> knee height less ankle (lateral malleolus) height, 24.8%.</li>
+                  <li><b>Upper arm:</b> shoulder to elbow (acromion–radiale), 19.1%.</li>
+                  <li><b>Forearm:</b> elbow to wrist (radiale–stylion), 14.8%, plus the part of the hand up to the middle of the grip, measured the same way as the male figure: 19.1% in all.</li>
+                  <li><b>Foot length:</b> 15.1%.</li>
+                </ul>
+                <p>In the survey the women’s ankle sits at 3.85% of height and the shoulder at 82.0%, within 0.2% of the figures the page uses for both sexes, so the torso is what is left between them, 29.8%. The survey’s subjects are soldiers, who are younger and fitter than the population as a whole, but body proportions vary much less than weight does.</p>
+                <table class="atab" id="about-body"></table>
+                <p>These are averages, and people vary a good deal around them. Choose Enter my own to replace them with your own measurements. Legs and torso always add up to your height, so lengthening one shortens the other.</p>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Bike recommendations</span></summary>
+              <div class="group about">
+                <p>Get Recommendation picks a frame size for your body, the kind of bike and your riding style, then sets up the saddle and cockpit on it.</p>
+                <p><b>Frame sizes.</b> Each size is a consensus of current stock geometry charts (2024 to 2026 models). It is written in the round figures frames are built to: top tubes and seat tubes in whole centimeters, head tubes and chainstays to 5 mm, angles to half a degree, with stock forks, stems and crank lengths.</p>
+                <ul>
+                  <li><b>Road:</b> endurance frames, from Specialized (Roubaix), Trek (Domane), Cannondale (Synapse), Canyon (Endurace) and Giant (Defy), with Moots, Mosaic, Enve and Fairlight. They were compared with race frames: Specialized Tarmac, Trek Madone, Cannondale SuperSix EVO, Canyon Ultimate and Giant TCR.</li>
+                  <li><b>Gravel:</b> Specialized Diverge, Trek Checkpoint, Canyon Grizl, Giant Revolt, Santa Cruz Stigmata, Cervélo Aspero and Salsa Warbird, with Moots, Enve, Ritchey, Fairlight and Open. Race frames (Crux, Aspero, Grail, Checkmate, Ostro Gravel, Kaius, Stigmata) were compared with adventure frames (Grizl, Diverge, Checkpoint, Topstone, Libre, Revolt).</li>
+                  <li><b>Mountain:</b> cross-country and trail hardtails: Specialized Chisel and Fuse, Trek Procaliber and Roscoe, Canyon Exceed, Giant XTC, Santa Cruz Chameleon, Kona Honzo, Salsa Timberjack and Ritchey Ultra, compared with race hardtails (Epic HT, Exceed, Scale, Alma, Highball). The two smallest sizes are on 27.5 in wheels.</li>
+                </ul>
+                <p><b>Choosing the size.</b></p>
+                <ol>
+                  <li>The size starts from your height. It moves toward a longer frame if your torso and arms are long for your height and toward a shorter one if they are short (half of the difference counts), as makers advise for riders between sizes.</li>
+                  <li>Your inseam can move you down, but no more than one size below the one for your height. That happens when the top tube would stand above your inseam, or less than 80 mm of seatpost would show.</li>
+                  <li>The saddle height follows the 109% rule (see Saddle height). The saddle is then moved fore and aft to put your knee where the riding style wants it, within what a standard seatpost allows.</li>
+                  <li>The stem (near the stock length for the size) and the spacers under it are chosen to bring your back to the riding style’s angle. On drop bars they must also leave your shoulder open to at least 75°, so your reach isn’t cramped.</li>
+                  <li>Casual on drop bars may take the next size up, if it clears your inseam and fits better. A larger frame raises the bars without pulling them closer, which riders once called the “French fit”.</li>
+                </ol>
+                <p>The crank length goes with the frame size for your height: 160 to 175 mm.</p>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Riding styles</span></summary>
+              <div class="group about">
+                <p>For each kind of bike, makers sell a relaxed frame and a race frame in the same sizes, and fitters set a relaxed or a race position on them. The three styles follow those differences, compared size for size on the makers’ published charts.</p>
+                <ul>
+                  <li><b>Front end height.</b> Road race frames stand about 16 mm lower than endurance frames on small sizes, 21 mm on medium and 26 mm on large. Their stack to reach ratio averages about 1.44, against 1.53. Gravel race frames stand about 16 mm lower than adventure frames. Cross-country race hardtails stand about 20 mm lower than trail hardtails, mostly from a shorter fork, so the styles use forks of 120, 110 and 100 mm of travel.</li>
+                  <li><b>Handling.</b> Road race frames are about a degree steeper at the head tube, with about 5 mm less rake. They have 410 mm chainstays against 420 mm, a bottom bracket 3 to 4 mm higher, and 28 mm tires against 32 mm. Gravel race frames are about half a degree steeper, with 425 mm chainstays against 435 mm. Cross-country race hardtails have 425 mm chainstays against 440 mm.</li>
+                  <li><b>Back angle.</b> Fitting guides (Andy Pruitt, Phil Burt and others, hands on the hoods) put relaxed riding at about 50° to 60°, fitness and endurance riding at 40° to 50°, and racing at 30° to 45°. Gravel positions sit a little more upright than road ones. The cockpit is set to aim for these angles:</li>
+                </ul>
+                <table class="atab" id="about-styles"></table>
+                <p>The saddle is placed to put the knee 15 mm behind the pedal axle for Casual, 5 mm behind for Balanced and 5 mm ahead for Aggressive. Endurance bikes carry more seatpost setback than race bikes, and racers often sit further forward. The stem is turned up for Casual and down for the lower styles.</p>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Saddle height</span></summary>
+              <div class="group about">
+                <p>The page shows three common ways of setting saddle height.</p>
+                <ul>
+                  <li><b>109% of inseam</b> (Hamley and Thomas, 1967). From the pedal axle at the bottom of the stroke, with the crank in line with the seat tube, to the top of the saddle. Set saddle height from inseam uses it, and the Pedal to saddle top readout shows it.</li>
+                  <li><b>88.3% of inseam</b> (Greg LeMond’s <i>Complete Book of Bicycling</i>, 1987). From the center of the bottom bracket to the top of the saddle. The BB to saddle top readout shows it.</li>
+                  <li><b>Knee angle</b> (the Holmes method; Holmes, Pruitt and Whalen, 1994). The knee bent 25° to 35° at the bottom of the stroke, which is 145° to 155° as this page measures it. The Knee, leg extended readout uses this range, and Set saddle height from recommended leg extension aims for its middle, 150°.</li>
+                </ul>
+                <p>Studies comparing these methods (Peveler and colleagues, 2005 and after) found that the inseam rules leave many riders outside the knee range. That is why fitters tend to go by the knee angle. Here the knee angle is measured on the moving model, with the foot angle set under Posture.</p>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Readouts and their ranges</span></summary>
+              <div class="group about">
+                <p>Green means typical, yellow marginal and red out of range. Gray labels describe without judging.</p>
+                <ul>
+                  <li><b>Knee, leg extended:</b> 145° to 155° (see Saddle height).</li>
+                  <li><b>Knee, top of stroke:</b> 65° to 72°, the 110° to 115° of bend fitters aim for. A tighter bend usually means long cranks or a low saddle.</li>
+                  <li><b>Hip, most closed:</b> 45° to 65°, the range in published road fitting guidance. Under 45° the thigh crowds the chest.</li>
+                  <li><b>Back angle:</b> 50° and up is casual, 40° to 50° balanced, under 40° aggressive (see Riding styles).</li>
+                  <li><b>Shoulder angle:</b> 75° to 100°, the span fitters see as normal; their targets, 80° to 95°, sit inside it.</li>
+                  <li><b>Knee vs pedal axle:</b> the classic “knee over pedal spindle” starting point, from level to 20 mm behind. Fitters disagree on whether it should be a target (Keith Bontrager among the critics), so it is gray.</li>
+                  <li><b>Standover height:</b> measured halfway along the top tube, to its upper surface. 26 mm or more under your inseam is clear, 1 to 25 mm is snug, and none is too tall.</li>
+                  <li><b>Saddle-to-bar drop:</b> judged against saddle height, so tall riders aren’t marked down. Under 4% of saddle height is upright, up to 12% is moderate, and more is deep.</li>
+                  <li><b>Stack to reach ratio:</b> under 1.45 is race, 1.45 to 1.55 endurance, and over 1.55 relaxed (the line the German magazine TOUR and others draw on a medium frame). Flat-bar frames get no label.</li>
+                  <li><b>Trail:</b> 57 mm or more is stable, 50 to 56 mm responsive, and under 50 mm twitchy. Road bikes run from about 50 to 63 mm, with 57 or 58 often given as the balance point.</li>
+                  <li><b>Toe overlap:</b> the closest the shoe comes to the front tire over the stroke, seen from the side with the wheel straight.</li>
+                  <li><b>Fit assessment:</b> At risk or Does not fit while there is a warning. Otherwise it names the riding style nearest your back angle, seated with your hands on the hoods.</li>
+                </ul>
+                <p>The ranges for trail, stack to reach and standover are road-bike ranges, so a gravel or mountain bike will often read stable or relaxed.</p>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">How the drawing works</span></summary>
+              <div class="group about">
+                <ul>
+                  <li><b>To scale.</b> Everything is worked out in millimeters and degrees from the center of the bottom bracket, and drawn to scale.</li>
+                  <li><b>Frame.</b> Stack and reach place the top of the head tube. The effective top tube is reach plus stack ÷ tan(seat tube angle). The fork, a 12 mm lower headset and the head tube add up to the stack.</li>
+                  <li><b>Wheels.</b> Wheel radius is half the rim size plus the tire width. Trail is (wheel radius × cos(head tube angle) − rake) ÷ sin(head tube angle).</li>
+                  <li><b>Legs.</b> The hip sits just above the saddle, 125 mm ahead of its tail. Each leg is solved as a two-part chain, thigh and lower leg, reaching the pedal with the foot at the angle you set. As riders do, it points the toes further before the knee locks.</li>
+                  <li><b>Arms and torso.</b> The shoulder sits where the torso’s length from the hip meets the arm’s reach to the hands, at the elbow bend you set.</li>
+                  <li><b>Hills.</b> Up to 10° the rider stays seated and leans forward. Beyond that the hips leave the saddle and move forward, into a low crouch at 30°.</li>
+                  <li><b>Speed.</b> Cadence × (chainring ÷ cog) × the wheel’s circumference.</li>
+                  <li><b>Simplifications.</b> Tubes are straight, the saddle is level, shoe and pedal height is fixed, and the drop bar is a classic round bend.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="pick">
+              <summary class="grphead"><span class="cap">Your settings and links</span></summary>
+              <div class="group about">
+                <p>Your settings are saved in this browser, on this device. Copy Link puts them into the page’s address, so the page opens just as you left it; only what differs from the defaults is written. Night mode, the page theme, the text size, Soft background and the sizes of the panels belong to your device, and links leave them out. Nothing you enter is sent anywhere.</p>
+              </div>
+            </details>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -998,7 +1136,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               <div class="slot slot-bri"><input id="o-frameB" type="range" min="0" max="100" step="1"></div>
             </div>
             <details class="pick" id="grp-text">
-              <summary class="grphead"><span class="cap">Frame Graphics</span><i class="sw sw-text" aria-hidden="true"></i></summary>
+              <summary class="grphead"><span class="cap">Frame graphics</span><i class="sw sw-text" aria-hidden="true"></i></summary>
               <div class="group sliders">
                 <input class="textin" id="o-frameText" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Frame text" placeholder="Text for the downtube">
                 <div class="togs three">
@@ -1023,7 +1161,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
         </details>
         <details class="pick" id="grp-tape">
-          <summary class="grphead"><h3 class="grp">Handlebar tape</h3><i class="sw sw-tape" aria-hidden="true"></i></summary>
+          <summary class="grphead"><h3 class="grp">Handlebar</h3><i class="sw sw-tape" aria-hidden="true"></i></summary>
           <div class="group sliders">
             <div class="slider">
               <label class="cap" for="o-tapeH">Hue</label>
@@ -1076,8 +1214,10 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               </div>
             </div>
             <label class="tgl" for="o-disc"><span class="cap">Disc brakes</span><input id="o-disc" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
+            <div class="fold" id="rotor-fold"><div><div class="ctl"><span class="cap" id="cap-rotor">Rotor size</span>   <!-- shown while Disc brakes is on -->
+              <div class="seg" role="radiogroup" aria-labelledby="cap-rotor"><input type="radio" name="rotor" id="rotor-160" value="160"><label for="rotor-160">160 mm</label><input type="radio" name="rotor" id="rotor-180" value="180"><label for="rotor-180">180 mm</label></div></div></div></div>
             <details class="pick" id="grp-wtext">
-              <summary class="grphead"><span class="cap">Wheel Graphics</span><i class="sw sw-wtext" aria-hidden="true"></i></summary>
+              <summary class="grphead"><span class="cap">Wheel graphics</span><i class="sw sw-wtext" aria-hidden="true"></i></summary>
               <div class="group sliders">
                 <input class="textin" id="o-wheelText" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Wheel text" placeholder="Text for the wheels">
                 <div class="togs three">
@@ -1155,7 +1295,7 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
               </div>
             </details>
             <details class="pick" id="grp-ttext">
-              <summary class="grphead"><span class="cap">Tire Graphics</span><i class="sw sw-ttext" aria-hidden="true"></i></summary>
+              <summary class="grphead"><span class="cap">Tire graphics</span><i class="sw sw-ttext" aria-hidden="true"></i></summary>
               <div class="group sliders">
                 <input class="textin" id="o-tireText" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Tire text" placeholder="Text for the tires">
                 <div class="togs three">
@@ -1239,28 +1379,28 @@ svg .lab{fill:var(--ink);stroke:var(--stage);paint-order:stroke;stroke-linejoin:
           </div>
           <button class="btn" id="copy-link" type="button" title="Copy a link to this page with the settings as they are now">Copy Link</button>
         </div>
-        <div class="alerts" id="alerts" aria-live="polite"></div>
+        <span class="said" id="warn-said" aria-live="polite"></span>   <!-- the warnings, read out by screen readers when they change (they are shown in the info panel) -->
         <span class="said" id="copy-said" role="status"></span>
       </div>
     </div>
     <div class="hresizer" id="info-resizer" role="separator" aria-orientation="horizontal" aria-label="Resize the info panel" title="Drag to resize. Double-click to reset." tabindex="0"></div>
     <div class="readouts" id="info">
       <section class="rogroup"><h3>Bike</h3><dl>
-        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The whole fit in one word. Casual, Balanced or Aggressive tells you how upright or how low you sit on this bike. If a warning is showing over the drawing, it says At risk or Does not fit instead.">Fit assessment</button></dt><dd id="r-fit"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The whole fit in one word. Casual, Balanced or Aggressive tells you how upright or how low you sit on this bike. If something needs fixing, it says At risk or Does not fit instead: click those words to see what.">Fit assessment</button></dt><dd id="r-fit"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How high the top tube is off the ground. It needs to be lower than your inseam so you can stand over the bike. Clear means plenty of room, snug means a little, and too tall means none.">Standover height</button></dt><dd id="r-standover"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far the handlebars sit below the saddle. A bigger drop puts you lower and more stretched out. A smaller one sits you more upright. A rise means the bars are higher than the saddle.">Saddle-to-bar drop</button></dt><dd id="r-drop"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How tall the frame is compared with how long it is. A high number is a tall, short frame that sits you upright. A low number is a long, low race frame. Under 1.45 is race and over 1.55 is relaxed.">Stack to reach ratio</button></dt><dd id="r-ratio"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far behind the steering line the front tire touches the ground. More trail helps the bike hold a straight line. Less makes it quicker to turn.">Trail</button></dt><dd id="r-trail"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The distance between the centers of the two wheels. A longer bike feels steadier. A shorter one turns more quickly.">Wheelbase</button></dt><dd id="r-wb"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Whether your shoe can touch the front tire. With a gap, it can’t. With overlap, it can in a slow, tight turn. A little overlap is common on smaller road bikes.">Toe overlap</button></dt><dd id="r-toe"></dd></div>
-        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How much the top tube slopes down from the front of the bike to the seat. More slope gives you more room to stand over the bike.">Top tube slope</button></dt><dd id="r-slope"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How much the top tube slopes down from the front of the bike to the seat. More slope gives you more room to stand over the bike. A top tube that rises toward the seat is flagged: it usually means the seat tube is long for this stack.">Top tube slope</button></dt><dd id="r-slope"></dd></div>
       </dl></section>
       <section class="rogroup"><h3>Rider</h3><dl>
-        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How straight your leg gets at the bottom of the pedal stroke. 135° to 155° is typical. Straighter means the saddle is too high. More bent means it is too low.">Knee, leg extended</button></dt><dd id="r-kmax"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How straight your leg gets at the bottom of the pedal stroke. 145° to 155° is typical. Straighter means the saddle is too high. More bent means it is too low.">Knee, leg extended</button></dt><dd id="r-kmax"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How bent your knee gets at the top of the pedal stroke. 65° to 72° is typical. A tighter bend is hard on the knee, and usually means the saddle is low or the cranks are long.">Knee, top of stroke</button></dt><dd id="r-kmin"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How close your thigh comes to your chest at the top of the pedal stroke. 45° to 65° is typical. Under 45° is tight, which makes it harder to breathe and to pedal.">Hip, most closed</button></dt><dd id="r-hip"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="How far your back leans forward, measured up from level. 50° or more is an upright, casual position. Under 40° is a low, aggressive one.">Back angle</button></dt><dd id="r-back"></dd></div>
-        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The angle between your body and your upper arm. 75° to 100° is typical. Less means the bars are close to you. More means you are reaching a long way.">Shoulder angle</button></dt><dd id="r-sh"></dd></div>
+        <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The angle between your body and your upper arm. 75° to 100° is typical. Less means the bars are close to you. More means you are reaching a long way. Out of reach means your hands can’t get to the bars, and arms straight means your arms lock to reach them.">Shoulder angle</button></dt><dd id="r-sh"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Where your knee sits compared with the pedal when the pedal is level and forward. Directly over the pedal, or just behind it, is the usual starting point. Moving the saddle forward or back changes it.">Knee vs pedal axle</button></dt><dd id="r-kops"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="The distance from the pedal at the bottom of its stroke up to the top of the saddle, compared with your inseam. A common rule sets it at 109%.">Pedal to saddle top</button></dt><dd id="r-ped"></dd></div>
         <div class="ro"><dt><button class="what" type="button" aria-expanded="false" data-tip="Saddle height, from the center of the cranks (the bottom bracket, or BB) to the top of the saddle, compared with your inseam. A common rule sets it at 88.3%.">BB to saddle top</button></dt><dd id="r-bbs"></dd></div>
@@ -1285,10 +1425,19 @@ const unit = v => { const l = Math.hypot(v[0], v[1]) || 1e-9; return [v[0] / l, 
 const angBetween = (a, b) => deg(Math.acos(clamp((a[0] * b[0] + a[1] * b[1]) / ((Math.hypot(a[0], a[1]) * Math.hypot(b[0], b[1])) || 1e-9), -1, 1)));
 
 /* ---------- model: everything is stored in millimetres and degrees ---------- */
-// Average segment lengths as a share of standing height (rounded population averages).
+// Average segment lengths as a share of standing height.
+//  m: Drillis & Contini (1966), as reproduced in Winter, Biomechanics and Motor Control of Human Movement: ankle 3.9% of height, knee
+//     28.5%, hip (greater trochanter) 53.0%, shoulder (acromion) 81.8%; thigh, lower leg and torso are the gaps between them. Inseam
+//     (floor to crotch) and forearm (elbow to the middle of the grip: forearm plus 38% of the hand) are the page's own.
+//  f: ANSUR II, the 2012 Anthropometric Survey of U.S. Army Personnel (Gordon et al. 2014), 1,986 women: the mean of each woman's
+//     measurement divided by her stature. Thigh is trochanterion height less lateral femoral epicondyle height (23.3%), lower leg is
+//     that less lateral malleolus height (24.8%), inseam is crotch height (48.0%), upper arm is acromion-radiale length (19.1%), foot
+//     is foot length (15.1%), and forearm is radiale-stylion length plus 38% of hand length (14.8% + 4.2%), built as the male one is.
+//     The survey's ankle (3.85%) and shoulder (82.0%) sit within 0.2% of height of the shared stack below, so the torso is what is left
+//     of it, as for men (29.8%; the survey's own acromial less trochanterion height is 30.1%).
 const RATIO = {
   m: { inseam: .470, thigh: .245, shank: .246, foot: .152, torso: .288, upperArm: .186, forearm: .187 },
-  f: { inseam: .466, thigh: .245, shank: .244, foot: .148, torso: .290, upperArm: .183, forearm: .182 }
+  f: { inseam: .480, thigh: .233, shank: .248, foot: .151, torso: .298, upperArm: .191, forearm: .191 }
 };
 // Standing height is a stack: ankle, lower leg, thigh, torso, then neck and head. The ankle (3.9%) and the neck and head (18.2%) are
 // fixed shares of height, which leaves STACK of it for lower leg + thigh + torso; those three always add up to exactly that.
@@ -1300,10 +1449,10 @@ const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stood this far above the top tube centreline when it was first measured to its top (older saved bikes are carried over by it)
 const TT_DROP = 10;  // the top tube joins this much further down the head tube, so more head tube shows above it; it is moved parallel to itself, which keeps its slope
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
-  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, setback: 75, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
+  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, autoKnee: false, setback: 75, saddleLen: 280, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
 const SPOKES = [24, 28, 32, 36];   // the numbers of spokes a wheel can have (Spokes, under Wheels); the first is the one the page opens with
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false,
-  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, sdlH: 0, sdlS: 0, sdlB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, spokes: 24, ringStyle: 'star', disc: 'off',   // spokes: how many each wheel has: 24, 28, 32 or 36
+  riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, sdlH: 0, sdlS: 0, sdlB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, spokes: 24, ringStyle: 'star', disc: 'off', rotor: 160,   // spokes: how many each wheel has: 24, 28, 32 or 36
   frameText: '', textBold: false, textItalic: false, textWide: false, textH: 0, textS: 0, textB: 100,   // lettering on the downtube: none to begin with, and white
   tireText: '', ttBold: false, ttItalic: false, ttWide: false, ttSides: 'one', ttHeight: 50, ttH: 0, ttS: 0, ttB: 100,   // lettering round the tires (Tire Graphics, under Tires): the same, with the same choices; whether the words are on one side of the wheel or repeated on the side opposite ('one' or 'two'); and how tall their capitals are, as a percentage of the tire's thickness (25 to 75: a quarter to three quarters)
   wheelText: '', wtBold: false, wtItalic: false, wtWide: false, wtSides: 'one', wtHeight: 50, wtH: 0, wtS: 0, wtB: 0 };   // lettering round the wheels' rims (Wheel Graphics, under Wheels): the same again, its height a share of the rim's depth; black to begin with, which shows on the silver the rims start in
@@ -1338,7 +1487,7 @@ function measureWords() { const cx = document.createElement('canvas').getContext
   if (wordRoom) wordRoom.observe(tabs);
 }
 function applyText() { document.documentElement.style.setProperty('--ts', TEXT[textSize][1]); if (BND) fit(); }   // the drawing's own labels follow, in fit()
-const THEME0 = 'green';   // the theme the page opens in, and goes back to on Reset to defaults (the script in the head names it too)
+const THEME0 = 'blue';   // the theme the page opens in, and goes back to on Reset to defaults (the script in the head names it too)
 let theme = THEME0;
 // 90% gray is all but the colour of night mode's page (with Soft background on, the same to within a hair), so the page's lines,
 // buttons and toggles would vanish in it. In night mode it is not offered: its dot is dimmed and does not answer (grayNight, further
@@ -1355,6 +1504,7 @@ const STYLES = ['casual', 'balanced', 'aggressive']; let style = 'casual';
 const PARTS = ['inseam', 'torso', 'thigh', 'shank', 'upperArm', 'forearm', 'foot'];   // the body measurements below height
 const BODY0 = () => ({ sex: 'm', height: 1828.8, custom: false, ...averages(1828.8, 'm') });   // the rider the page opens on: 6 ft 0 in, male, average measurements
 function defaults() {
+  bike = null;   // (so that the recommendation below starts from the default saddle length, not the one showing)
   ownBody = null; ownBike = null; geo = lastGeo = 'road'; style = 'casual';
   opt = { ...DEF_OPT }; units = 'in'; bikeUnits = 'mm';
   body = BODY0();
@@ -1369,7 +1519,7 @@ function defaults() {
 const OPTION_KEYS = ['cadence', 'hands', 'ring', 'cog', 'elbow', 'toe', 'angles', 'joints', 'hideRider', 'hideBike'], OFF_PAGE = ['incline', 'smiley'];
 function resetPage(p) {
   if (p === 'body') { ownBody = null; units = 'in'; body = BODY0(); fitBike(); }
-  else if (p === 'bike') { ownBike = null; geo = lastGeo = 'road'; style = 'casual'; bikeUnits = 'mm'; recommend('road'); }
+  else if (p === 'bike') { ownBike = null; if (bike) bike.saddleLen = DEF_BIKE.saddleLen; geo = lastGeo = 'road'; style = 'casual'; bikeUnits = 'mm'; recommend('road'); }
   else { (p === 'options' ? OPTION_KEYS : Object.keys(DEF_OPT).filter(k => !OPTION_KEYS.includes(k) && !OFF_PAGE.includes(k))).forEach(k => { opt[k] = DEF_OPT[k]; });
     if (p === 'options') { theme = THEME0; applyTheme(); textSize = TEXT0; applyText(); soft = false; applySoft(); } }
 }
@@ -1378,6 +1528,7 @@ function restore(d) {
   const take = (dst, src) => { if (!src || typeof src !== 'object') return;
     for (const k in dst) { const v = src[k]; if (typeof dst[k] === 'number' ? Number.isFinite(v) : typeof v === typeof dst[k]) dst[k] = v; } };
   take(bike, d.bike); take(body, d.body);
+  if (!body.custom && Number.isFinite(body.height) && (body.sex === 'm' || body.sex === 'f')) Object.assign(body, averages(clamp(body.height, HMIN, HMAX), body.sex));   // a rider on average measurements takes the averages as the page has them now
   // A bike saved before stack and reach were controls: place the head tube top where its top tube and slope put it, and keep its fork.
   if (!(d.v >= 5) && d.bike && Number.isFinite(d.bike.topTube)) {
     const sa = rad(bike.sta), ha = rad(bike.hta), sl = rad(Number.isFinite(d.bike.slope) ? d.bike.slope : 0);
@@ -1421,6 +1572,7 @@ function restore(d) {
   opt.incline = clamp(opt.incline, 0, INCLINE_MAX);
   if (opt.ringStyle !== 'solid') opt.ringStyle = 'star';
   if (opt.disc !== 'on') opt.disc = 'off';
+  if (![160, 180].includes(opt.rotor)) opt.rotor = 160;
   opt.tread = Math.round(clamp(opt.tread, 0, 100) / 25) * 25;   // tread has five stops; a value saved between two takes the nearer
   if (![622, 584, 559].includes(bike.rim)) bike.rim = 622;
 }
@@ -1529,12 +1681,12 @@ const GEO = {
 //     chosen, the stem is then the shortest, from the stock one up, that leaves the reach open (the tallest riders, with no larger
 //     frame to go to, are the ones who get a longer stem).
 function recommend(kind) {
-  const T = GEO[kind], S = T.fit[style], avg = averages(body.height, body.sex), keep = [opt.hands, opt.incline];
+  const T = GEO[kind], S = T.fit[style], avg = averages(body.height, body.sex), keep = [opt.hands, opt.incline], sLen = bike ? bike.saddleLen : DEF_BIKE.saddleLen;   // sLen: the saddle is the rider's own, and stays as it is
   const upper = (body.torso + body.upperArm + body.forearm) / (avg.torso + avg.upperArm + avg.forearm), tall = body.height * (1 + (upper - 1) / 2);
   let i = T.sizes.findIndex(z => tall <= z[0]), stock = 0; const floor = Math.max(0, T.sizes.findIndex(z => body.height <= z[0]) - 1);
   const pick = (v, st) => Array.isArray(v) ? v[STYLES.indexOf(st)] : v;
   const frame = (n, st = style) => { const z = T.sizes[n], K = { ...T, ...T.fit[st], ...z[9] }, [, tt, seat, , sta, , , stem, crank] = z, ht = pick(z[3], st), hta = pick(z[5], st), rake = pick(z[6], st), ha = rad(hta), fork = K.fork - (K.shorter || 0);
-    bike = { ...DEF_BIKE, topTube: tt, seatTube: seat, headLen: ht, sta, hta, rake, fork, chainstay: K.chainstay, bbDrop: K.bbDrop, rim: K.rim, tire: K.tire, crank, stem: clamp(stem + K.stem, T.stems[0], T.stems[1]), spacers: K.spacers[2],
+    bike = { ...DEF_BIKE, saddleLen: sLen, topTube: tt, seatTube: seat, headLen: ht, sta, hta, rake, fork, chainstay: K.chainstay, bbDrop: K.bbDrop, rim: K.rim, tire: K.tire, crank, stem: clamp(stem + K.stem, T.stems[0], T.stems[1]), spacers: K.spacers[2],
       stemAngle: K.stemAngle, barReach: K.barReach, barDrop: K.barDrop, barAngle: 0, flat: T.flat, autoSaddle: true, setback: 75, pinTT: 'topTube', pinHT: 'fork',
       stack: (ht + 12 + Math.sqrt(fork ** 2 - rake ** 2)) * Math.sin(ha) + K.bbDrop - rake * Math.cos(ha) };
     stock = bike.stem; link(); syncSaddle(); };
@@ -1544,8 +1696,8 @@ function recommend(kind) {
   for (frame(i, 'casual'); i > floor && !clears(); frame(--i, 'casual'));
   // Saddle fore and aft: the middle of the rails stays within 25 mm of a seatpost head set 10 mm behind the seat tube's line.
   const saddle = () => { const post = -(bike.saddleH - 45) * Math.cos(rad(bike.sta)) - 10; let sb = null;
-    for (let v = 0; v <= 140; v += 5) { if (Math.abs(-v - 130 - post) > 25) continue; bike.setback = v; solve(); cycle(); const c = Math.abs(C.kops - S.kops); if (!sb || c < sb[0]) sb = [c, v]; }
-    bike.setback = sb ? sb[1] : clamp(Math.round((-post - 130) / 5) * 5, 0, 140); };
+    for (let v = 0; v <= 140; v += 5) { if (Math.abs(-v - bike.saddleLen + 150 - post) > 25) continue; bike.setback = v; solve(); cycle(); const c = Math.abs(C.kops - S.kops); if (!sb || c < sb[0]) sb = [c, v]; }
+    bike.setback = sb ? sb[1] : clamp(Math.round((-post - bike.saddleLen + 150) / 5) * 5, 0, 140); };
   // The stem and spacers, with the stem up to `over` mm past the stock one. Returns how well they fit (less is better) and whether the reach is open enough.
   const cockpit = over => { const far = T.flat ? 10 : 20; let fit = null;
     for (let st = Math.max(T.stems[0], stock - far); st <= Math.min(T.stems[1], stock + over); st += 10) for (let sp = S.spacers[0]; sp <= S.spacers[1]; sp += 5) {
@@ -1609,10 +1761,11 @@ LINK_BASE[7] = { ...LINK_BASE[6], opt: { ...LINK_BASE[6].opt, ttHeight: 50 } };
 // Links numbered 8: the wheels' rims can carry lettering too (Wheel Graphics), and the reference has none.
 LINK_BASE[8] = { ...LINK_BASE[7], opt: { ...LINK_BASE[7].opt, wheelText: '', wtBold: false, wtItalic: false, wtWide: false, wtSides: 'one', wtHeight: 50, wtH: 0, wtS: 0, wtB: 0, spokes: 24 } };   // spokes: the number of spokes came after these links did; one that says nothing about it opens with 24, as any earlier link does
 LINK_BASE[9] = { ...LINK_BASE[8], opt: { ...LINK_BASE[8].opt, detail: 'low', back: false } };   // the standing figure's two settings (how much Body Detail, and front or back) came after links numbered 8, which open with these
+LINK_BASE[10] = { ...LINK_BASE[9], bike: { ...LINK_BASE[9].bike, saddleLen: 280, autoKnee: false }, opt: { ...LINK_BASE[9].opt, rotor: 160 } };   // links numbered 10: the saddle's length, the saddle set for leg extension and the rotors' size came after links numbered 9, which open with these
 const b64 = { to: t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   from: t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))) };
 function linkTo() {
-  const B = LINK_BASE[9], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 9 };   // lengths to a hundredth of a millimetre
+  const B = LINK_BASE[10], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 10 };   // lengths to a hundredth of a millimetre
   [['b', bike, B.bike], ['y', body, B.body], ['o', opt, B.opt]].forEach(([key, cur, base]) => { const o = {};
     for (const k in cur) { const v = r2(cur[k]); if (v !== base[k]) o[k] = v; } if (Object.keys(o).length) d[key] = o; });
   if (units !== B.units) d.u = units; if (bikeUnits !== B.bikeUnits) d.k = bikeUnits; if (geo !== B.geo) d.g = geo; if (lastGeo !== B.lastGeo) d.l = lastGeo; if (style !== 'casual') d.t = style;
@@ -1640,36 +1793,46 @@ function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localSto
 /* ---------- control panel ---------- */
 const BIKE = [
   ['Frame', [
-    { k: 'stack', l: 'Stack', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
-    { k: 'reach', l: 'Reach', u: 'mm', s: 1, min: 330, max: 520, step: 1, d: 0 },
-    { k: 'seatTube', l: 'Seat tube length', n: 'center to top', u: 'mm', s: 1, min: 340, max: 720, step: 1, d: 0 },
-    { k: 'topTube', l: 'Top tube length', n: 'effective', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
-    { k: 'chainstay', l: 'Chainstay length', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
-    { k: 'sta', l: 'Seat tube angle', u: '°', s: 1, min: 68, max: 80, step: .1, d: 1 },
-    { k: 'bbDrop', l: 'Bottom bracket drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 },
-    { k: 'headLen', l: 'Head tube length', u: 'mm', s: 1, min: 80, max: 260, step: 1, d: 0 },
-    { k: 'hta', l: 'Head tube angle', u: '°', s: 1, min: 64, max: 76, step: .1, d: 1 }
+    { k: 'stack', t: 'How high the top of the head tube sits above the center of the bottom bracket, measured straight up. More stack raises the handlebars.', l: 'Stack', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
+    { k: 'reach', t: 'How far the top of the head tube sits ahead of the center of the bottom bracket, measured level. More reach stretches you out toward the handlebars.', l: 'Reach', u: 'mm', s: 1, min: 330, max: 520, step: 1, d: 0 },
+    { k: 'seatTube', t: 'The seat tube’s length, from the center of the bottom bracket to the top of the tube. A longer seat tube leaves less seatpost showing.', l: 'Seat tube length', n: 'center to top', u: 'mm', s: 1, min: 340, max: 720, step: 1, d: 0 },
+    { k: 'topTube', t: 'The top tube’s length measured level, from the top of the head tube back to the line of the seat tube. It is tied to reach: change one and the other follows.', l: 'Top tube length', n: 'effective', u: 'mm', s: 1, min: 450, max: 700, step: 1, d: 0 },
+    { k: 'chainstay', t: 'The distance from the center of the bottom bracket to the rear axle. Shorter chainstays make the bike livelier. Longer ones make it steadier and leave room for wider tires.', l: 'Chainstay length', u: 'mm', s: 1, min: 380, max: 480, step: 1, d: 0 },
+    { k: 'sta', t: 'How steeply the seat tube stands up from level. A steeper angle moves the saddle forward, over the pedals.', l: 'Seat tube angle', u: '°', s: 1, min: 68, max: 80, step: .1, d: 1 },
+    { k: 'bbDrop', t: 'How far the center of the bottom bracket sits below a line between the two axles. More drop lowers you between the wheels, which feels steadier.', l: 'Bottom bracket drop', u: 'mm', s: 1, min: 40, max: 95, step: 1, d: 0 },
+    { k: 'headLen', t: 'The length of the head tube. A longer one raises the front of the bike, and the handlebars with it.', l: 'Head tube length', u: 'mm', s: 1, min: 80, max: 260, step: 1, d: 0 },
+    { k: 'hta', t: 'How steeply the steering axis stands up from level. A steeper angle steers more quickly. A slacker one is steadier.', l: 'Head tube angle', u: '°', s: 1, min: 64, max: 76, step: .1, d: 1 }
   ]],
   ['Fork and wheels', [
-    { k: 'fork', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 560, step: 1, d: 0 },
-    { k: 'rake', l: 'Fork rake', u: 'mm', s: 1, min: 30, max: 65, step: 1, d: 0 },
-    { k: 'rim', sel: [[559, '26 in'], [584, '650b / 27.5 in'], [622, '700c / 29 in']], l: 'Wheel size' },   // three stops, smallest first
-    { k: 'tire', l: 'Tire width', u: 'mm', s: 1, min: 20, max: 65, step: 1, d: 0 }
+    { k: 'fork', t: 'The fork’s length from the front axle to the bottom of its crown, measured in a straight line. It is tied to head tube length: change one and the other follows.', l: 'Fork length', n: 'axle to crown', u: 'mm', s: 1, min: 340, max: 560, step: 1, d: 0 },
+    { k: 'rake', t: 'How far the front axle sits ahead of the steering axis, also called offset. More rake means less trail, which makes the steering quicker.', l: 'Fork rake', u: 'mm', s: 1, min: 30, max: 65, step: 1, d: 0 },
+    { k: 'rim', t: 'The size of the wheel’s rim. 700c and 29 in are the same rim, 650b and 27.5 in are one size smaller, and 26 in is the smallest.', sel: [[559, '26 in'], [584, '650b / 27.5 in'], [622, '700c / 29 in']], l: 'Wheel size' },   // three stops, smallest first
+    { k: 'tire', t: 'How wide the tire is. A wider tire is also taller, so it makes the wheel larger and raises the whole bike.', l: 'Tire width', u: 'mm', s: 1, min: 20, max: 65, step: 1, d: 0 }
   ]],
   ['Saddle and cranks', [
-    { k: 'saddleH', l: 'Saddle height', n: 'BB to saddle top', u: 'mm', s: 1, min: 550, max: 950, step: 1, d: 0 },
-    { k: 'setback', l: 'Saddle setback', n: 'nose behind BB', u: 'mm', s: 1, min: 0, max: 140, step: 1, d: 0 },
-    { k: 'crank', l: 'Crank length', u: 'mm', s: 1, min: 150, max: 185, step: 2.5, d: 1 }
+    { k: 'saddleH', t: 'The distance from the center of the bottom bracket to the top of the saddle, measured along the seat tube.', l: 'Saddle height', n: 'BB to saddle top', u: 'mm', s: 1, min: 550, max: 950, step: 1, d: 0 },
+    { k: 'setback', t: 'How far the nose of the saddle sits behind the center of the bottom bracket, measured level. More setback moves you back from the pedals.', l: 'Saddle setback', n: 'nose behind BB', u: 'mm', s: 1, min: 0, max: 140, step: 1, d: 0 },
+    { k: 'saddleLen', t: 'The saddle’s length from nose to tail. Traditional road saddles are about 270 to 285 mm long, short-nose ones about 240 to 250. Setback is measured to the nose, so at the same setback a shorter saddle sits you further forward.', l: 'Saddle length', n: 'nose to tail', u: 'mm', s: 1, min: 230, max: 300, step: 1, d: 0 },
+    { k: 'crank', t: 'The length of the crank arms, from the center of the bottom bracket to the pedal axle. Longer cranks make a bigger circle, so your knee bends more at the top of the stroke.', l: 'Crank length', u: 'mm', s: 1, min: 150, max: 185, step: 2.5, d: 1 }
   ]],
   ['Cockpit', [
-    { k: 'stem', l: 'Stem length', u: 'mm', s: 1, min: 30, max: 150, step: 5, d: 0 },
-    { k: 'stemAngle', l: 'Stem angle', u: '°', s: 1, min: -25, max: 25, step: 1, d: 0 },
-    { k: 'spacers', l: 'Spacers under stem', u: 'mm', s: 1, min: 0, max: 100, step: 5, d: 0 },
-    { k: 'barReach', l: 'Bar reach', u: 'mm', s: 1, min: 60, max: 110, step: 1, d: 0 },
-    { k: 'barDrop', l: 'Bar drop', u: 'mm', s: 1, min: 100, max: 160, step: 1, d: 0 },
-    { k: 'barAngle', l: 'Bar angle', n: 'hoods up', u: '°', s: 1, min: -30, max: 30, step: 1, d: 0 }
+    { k: 'stem', t: 'The stem’s length, from the center of the steerer to the center of the handlebar. A longer stem moves the handlebars forward.', l: 'Stem length', u: 'mm', s: 1, min: 30, max: 150, step: 5, d: 0 },
+    { k: 'stemAngle', t: 'The stem’s angle against a line square to the steerer. Positive tilts it up and raises the handlebars. Negative tilts it down.', l: 'Stem angle', u: '°', s: 1, min: -25, max: 25, step: 1, d: 0 },
+    { k: 'spacers', t: 'The height of the spacers stacked between the head tube and the stem. More spacers raise the handlebars.', l: 'Spacers under stem', u: 'mm', s: 1, min: 0, max: 100, step: 5, d: 0 },
+    { k: 'barReach', t: 'How far the front of the handlebar’s bend sits ahead of where the bar clamps into the stem. More reach puts the shifters further away.', l: 'Bar reach', u: 'mm', s: 1, min: 60, max: 110, step: 1, d: 0 },
+    { k: 'barDrop', t: 'How far the drops sit below the top of the handlebar. More drop gives you a lower position when your hands are in the drops.', l: 'Bar drop', u: 'mm', s: 1, min: 100, max: 160, step: 1, d: 0 },
+    { k: 'barAngle', t: 'How far the handlebar is turned in the stem. Positive tilts the shifters up and back. Negative tilts them down and forward.', l: 'Bar angle', n: 'hoods up', u: '°', s: 1, min: -30, max: 30, step: 1, d: 0 }
   ]]
 ];
+// What the Bike Geometry page's other controls mean, shown when their names are clicked (the sliders' explanations are in BIKE, as t).
+const BIKE_TIPS = {
+  units: 'Shows the bike’s lengths, and the readouts under the drawing, in inches or millimeters. Your body measurements have their own Units switch on the Body page.',
+  bar: 'A drop bar curves down and gives you three places for your hands. A flat bar gives you one, on its grips.',
+  auto: 'When on, the saddle is set so that the distance from the pedal, at the bottom of its stroke, to the top of the saddle is 109% of your inseam. Moving Saddle height turns it off.',
+  geo: 'The kind of bike to recommend. Road bikes are built for pavement, gravel bikes for mixed surfaces and dirt roads, and mountain bikes for trails.',
+  style: 'How you like to sit on the bike. Casual is upright and relaxed, Aggressive is low and stretched out, and Balanced is in between.',
+  knee: 'Sets the saddle height from how straight your leg gets at the bottom of the pedal stroke, not from your inseam. It aims for 150°, the middle of the 145° to 155° fitters usually look for, and allows for your crank length, saddle position and foot angle. Moving Saddle height turns it off.'
+};
 const BODY = [
   { k: 'inseam', l: 'Inseam', n: 'floor to crotch', min: 550, max: 1100 },
   { k: 'torso', l: 'Torso', n: 'hip to shoulder', min: 350, max: 700 },
@@ -1682,17 +1845,22 @@ const BODY = [
 const NB = '\u00a0';   // a space that never breaks: it keeps a number and its unit on one line wherever the text wraps
 const fac = () => units === 'in' ? 25.4 : 10;   // mm per unit for the body measurements: inches or cm
 // Two Units switches, set independently. The one under Your Body puts the body measurements in inches or cm. The one under Bike Geometry puts
-// every other length (the bike, wheel depth, the readouts and the alerts) in inches or mm.
+// every other length (the bike, wheel depth and the readouts, warnings included) in inches or mm.
 // The bike, body and options themselves are always kept in mm, so switching either one changes nothing.
 const inch = () => bikeUnits === 'in';
-const len = (v, d = 1) => inch() ? (v / 25.4).toFixed(d) + NB + 'in' : Math.round(v) + NB + 'mm';   // a length in the readouts and alerts
+const len = (v, d = 1) => inch() ? (v / 25.4).toFixed(d) + NB + 'in' : Math.round(v) + NB + 'mm';   // a length in the readouts and their warnings
 // How one bike field is shown and stepped: mm per unit shown (k), slider step, decimals and unit. Angles are the same either way.
 const scaleOf = f => f.u !== '°' && inch() ? { k: 25.4, step: .05, d: 2, u: 'in' } : { k: f.s, step: f.step, d: f.d, u: f.u };
 // A slider's ends: the whole steps lying inside its allowed range (given in mm).
 const ends = (el, lo, hi, k, step) => A(el, { step, min: +(Math.ceil(lo / k / step - 1e-6) * step).toFixed(2), max: +(Math.floor(hi / k / step + 1e-6) * step).toFixed(2) });
 // One slider in the Pedal cadence design: label (with its note) on the left, the value on the right, the line and handle underneath.
-const sliderHTML = (id, f) => `<div class="slider"><div class="top"><label class="cap" for="${id}">${f.l}${f.n ? ` <span class="note">${f.n}</span>` : ''}</label>` +
-  `<output id="${id}-out" for="${id}"></output></div><div class="rail"><input id="${id}" type="range"></div></div>`;
+// A name that explains itself when clicked (t: what it says), set like the readouts' names.
+const tipBtn = (l, t) => `<button class="what" type="button" aria-expanded="false" data-tip="${t}">${l}</button>`;
+// With an explanation (f.t) the name is such a button, in place of a label (a label would pass the click on to the slider), and the
+// slider takes its name from it. dim: what the bike drawing shows while the slider is in use (drawDims).
+const sliderHTML = (id, f) => `<div class="slider"${f.dim ? ` data-dim="${f.dim}"` : ''}><div class="top">` +
+  (f.t ? `<span class="cap" id="${id}-cap">${tipBtn(f.l, f.t)}` : `<label class="cap" for="${id}">${f.l}`) + `${f.n ? ` <span class="note">${f.n}</span>` : ''}${f.t ? '</span>' : '</label>'}` +
+  `<output id="${id}-out" for="${id}"></output></div><div class="rail"><input id="${id}" type="range"${f.t ? ` aria-labelledby="${id}-cap"` : ''}></div></div>`;
 
 const shows = [];
 // The control panel's pages, in the order of their buttons. Showing one hides the others; each keeps the place it was scrolled to.
@@ -1704,6 +1872,7 @@ const phone = () => !!window.matchMedia && matchMedia('(max-width:760px)').match
 let lastPanel = 'body', pageSaved = false;   // pageSaved: this device remembers a page (if not, a phone opens on Play)
 function showPage(k, focus) { hideTip(); const sc = $('pages'), tabs = document.querySelector('.tabs'); pageTop[page] = sc.scrollTop; page = k; if (k !== 'play') lastPanel = k;
   PAGES.forEach(p => { $('sec-' + p).hidden = p !== k; });
+  if (k !== 'bike' && dimHover) { dimHover = null; setDim(); }   // the measurement shown for a Bike Geometry setting goes with its page
   TABS.forEach(p => { const on = p === k, t = $('tab-' + p); t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
   $('reset-all-foot').hidden = k !== 'options';   // "Reset all pages to defaults" is on the Options page only
   tabs.style.setProperty('--i', Math.max(0, PAGES.indexOf(k))); tabs.style.setProperty('--im', TABS.indexOf(k));   // the highlight slides under the page's button: its place among the four, and among the five of a narrow screen
@@ -1718,7 +1887,7 @@ function typeValue(el) {
   const out = $(el.id + '-out'), t = typers[el.id] || {}; if (!out || out.style.visibility) return;
   const box = document.createElement('input'); box.type = 'text'; box.className = 'typein';
   box.inputMode = t.parse || +el.min < 0 ? 'text' : 'decimal';   // a number pad where there is no minus sign or foot mark to type
-  box.setAttribute('aria-label', (document.querySelector(`label[for="${el.id}"]`)?.textContent.trim() || 'Value') + ', type a value');
+  box.setAttribute('aria-label', ((document.querySelector(`label[for="${el.id}"]`) || $(el.id + '-cap'))?.textContent.trim() || 'Value') + ', type a value');
   box.value = t.text ? t.text() : (out.textContent.match(/-?\d+(\.\d+)?/) || [''])[0];
   out.style.visibility = 'hidden'; out.after(box); box.focus(); box.select();
   let done = false;
@@ -1759,6 +1928,16 @@ function partRange(k) {
 }
 // Hamley's 109% rule: pedal axle at the bottom of the stroke to saddle top = 1.09 x inseam.
 function syncSaddle() { if (bike.autoSaddle) bike.saddleH = clamp(Math.round(1.09 * body.inseam - bike.crank), 550, 950); }
+// Set saddle height from recommended leg extension: the saddle height at which the knee, at its straightest over the stroke, opens to
+// KNEE_TARGET degrees, the middle of the usual static range (145 to 155 degrees, which is 25 to 35 of flexion; Holmes). It is found by
+// halving the range of saddle heights, judged seated on flat ground, and it takes in everything the leg depends on: the body, the
+// crank length, the saddle's setback and length, the seat tube angle and the foot angle. update() runs it whenever the setting is on.
+const KNEE_TARGET = 150;
+function kneeSaddle() {
+  const hill = opt.incline; opt.incline = 0; let lo = 550, hi = 950;
+  for (let i = 0; i < 16; i++) { bike.saddleH = (lo + hi) / 2; solve(); cycle(); if (C.worst === 'fail' || C.kmax > KNEE_TARGET) hi = bike.saddleH; else lo = bike.saddleH; }
+  bike.saddleH = Math.round((lo + hi) / 2); opt.incline = hill;
+}
 // A new height. With average measurements they are worked out again for it. With the rider's own, those are kept: legs and torso are
 // scaled together to fit the new height, and the arms and feet stay as entered.
 function setHeight(mm) {
@@ -1776,19 +1955,20 @@ function setBodyMode(own) {
 function buildPanel() {
   $('bike-fields').innerHTML = `<div class="group"><div class="seg" role="radiogroup" aria-label="How the bike's geometry is set"><input type="radio" name="geoMode" id="geoMode-rec" value="rec"><label for="geoMode-rec">Get Recommendation</label>` +
     `<input type="radio" name="geoMode" id="geoMode-own" value="own"><label for="geoMode-own">Custom Geometry</label></div>` +
-    `<div class="fold" id="geo-rec"><div><div class="group"><div class="ctl"><span class="cap" id="cap-geo">I'm looking for a...</span>` +
+    `<div class="fold" id="geo-rec"><div><div class="group"><div class="ctl"><span class="cap" id="cap-geo">${tipBtn("I'm looking for a...", BIKE_TIPS.geo)}</span>` +
     `<div class="seg fit" role="radiogroup" aria-labelledby="cap-geo">${[['road', 'Road bike'], ['gravel', 'Gravel bike'], ['mountain', 'Mountain bike']].map(([v, l]) => `<input type="radio" name="geo" id="geo-${v}" value="${v}"><label for="geo-${v}">${l}</label>`).join('')}</div></div>` +
-    `<div class="ctl" id="style-ctl"><span class="cap" id="cap-style">My riding style is...</span><div class="seg" role="radiogroup" aria-labelledby="cap-style">${[['casual', 'Casual'], ['balanced', 'Balanced'], ['aggressive', 'Aggressive']].map(([v, l]) => `<input type="radio" name="style" id="style-${v}" value="${v}"><label for="style-${v}">${l}</label>`).join('')}</div></div>` +
+    `<div class="ctl" id="style-ctl"><span class="cap" id="cap-style">${tipBtn('My riding style is...', BIKE_TIPS.style)}</span><div class="seg" role="radiogroup" aria-labelledby="cap-style">${[['casual', 'Casual'], ['balanced', 'Balanced'], ['aggressive', 'Aggressive']].map(([v, l]) => `<input type="radio" name="style" id="style-${v}" value="${v}"><label for="style-${v}">${l}</label>`).join('')}</div></div>` +
     `<p class="hint" id="geo-hint"><span id="geo-fit"></span><span id="geo-tight" hidden> The top tube stands above this inseam; a real frame this size often dips its top tube lower than the straight one drawn here.</span><span> Take a look at the detailed dimensions below. Move any slider to enter custom mode.</span></p></div></div></div></div>` + BIKE.map(([name, fs]) =>   // the switch, and under it the fold that holds what a recommendation needs: the two choices and the note on the size
     `<details class="pick"><summary class="grphead"><h3 class="grp">${name}</h3></summary><div class="group"><div class="stack">` +
     // Units (inches or mm) sits at the head of Frame. It is one setting for the whole bike: every subsection's lengths and the readouts follow it.
-    (name === 'Frame' ? `<div class="ctl"><span class="cap" id="cap-bikeUnits">Units</span>` +
+    (name === 'Frame' ? `<div class="ctl"><span class="cap" id="cap-bikeUnits">${tipBtn('Units', BIKE_TIPS.units)}</span>` +
       `<div class="seg" role="radiogroup" aria-labelledby="cap-bikeUnits"><input type="radio" name="bikeUnits" id="bikeUnits-in" value="in"><label for="bikeUnits-in">inches</label>` +
       `<input type="radio" name="bikeUnits" id="bikeUnits-mm" value="mm"><label for="bikeUnits-mm">mm</label></div></div>` : '') +
-    (name === 'Cockpit' ? `<div class="ctl"><span class="cap" id="cap-bar">Handlebar</span><div class="seg" role="radiogroup" aria-labelledby="cap-bar"><input type="radio" name="bar" id="bar-drop" value="drop"><label for="bar-drop">Drop</label>` +
-      `<input type="radio" name="bar" id="bar-flat" value="flat"><label for="bar-flat">Flat</label></div></div>` : '') + `${fs.map(f => sliderHTML('b-' + f.k, f)).join('')}</div>` +
+    (name === 'Cockpit' ? `<div class="ctl"><span class="cap" id="cap-bar">${tipBtn('Handlebar', BIKE_TIPS.bar)}</span><div class="seg" role="radiogroup" aria-labelledby="cap-bar"><input type="radio" name="bar" id="bar-drop" value="drop"><label for="bar-drop">Drop</label>` +
+      `<input type="radio" name="bar" id="bar-flat" value="flat"><label for="bar-flat">Flat</label></div></div>` : '') + `${fs.map(f => sliderHTML('b-' + f.k, { ...f, dim: f.k })).join('')}</div>` +
     (name === 'Frame' ? `<p class="hint">Top tube and reach are tied together, and so are head tube length and fork length. In each pair, the one you set last stays put and the other follows.</p>` : '') +
-    (name.startsWith('Saddle') ? `<div class="group"><label class="tgl" for="b-auto"><span class="cap">Set saddle height from inseam</span><input id="b-auto" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label><p class="hint">When on, pedal to saddle top is 109% of your inseam.</p></div>` : '') +
+    (name.startsWith('Saddle') ? `<div class="group"><div class="tgl" data-dim="pedal"><span class="cap" id="cap-auto">${tipBtn('Set saddle height from inseam', BIKE_TIPS.auto)}</span><label class="tglsw"><input id="b-auto" type="checkbox" role="switch" aria-labelledby="cap-auto"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>` +
+    `<div class="tgl" data-dim="saddleH"><span class="cap" id="cap-knee">${tipBtn('Set saddle height from recommended leg extension', BIKE_TIPS.knee)}</span><label class="tglsw"><input id="b-knee" type="checkbox" role="switch" aria-labelledby="cap-knee"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div></div>` : '') +
     `</div></details>`).join('');
   BIKE.forEach(([, fs]) => fs.forEach(f => {
     // Each runs from its smallest allowed value to its largest. The value beside the label is read from the bike itself, so one that
@@ -1801,13 +1981,15 @@ function buildPanel() {
       return;
     }
     const apply = v => { touchBike(); bike[f.k] = v * scaleOf(f).k;   // v is in the units shown; unitUI() gives the slider its scale in them
-      if (f.k === 'saddleH') { bike.autoSaddle = false; $('b-auto').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); };
+      if (f.k === 'saddleH') { bike.autoSaddle = bike.autoKnee = false; $('b-auto').checked = $('b-knee').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); };
     el.addEventListener('input', () => apply(+el.value));
     shows.push(() => { const sc = scaleOf(f), v = bike[f.k] / sc.k; el.value = v; out.textContent = v.toFixed(sc.d) + (sc.u === '°' ? '°' : NB + sc.u); });
     typers['b-' + f.k] = { set: apply };   // a typed value is taken as typed, not rounded to the slider's step
   }));
-  $('b-auto').addEventListener('change', e => { touchBike(); bike.autoSaddle = e.target.checked; syncSaddle(); refresh(); update(); });
-  shows.push(() => { $('b-auto').checked = bike.autoSaddle; });
+  // The two ways of setting the saddle height for the rider: turning one on turns the other off.
+  $('b-auto').addEventListener('change', e => { touchBike(); bike.autoSaddle = e.target.checked; if (bike.autoSaddle) bike.autoKnee = false; syncSaddle(); refresh(); update(); });
+  $('b-knee').addEventListener('change', e => { touchBike(); bike.autoKnee = e.target.checked; if (bike.autoKnee) bike.autoSaddle = false; refresh(); update(); });
+  shows.push(() => { $('b-auto').checked = bike.autoSaddle; $('b-knee').checked = bike.autoKnee; });
 
   // Height and the body measurements: sliders in the Pedal cadence design, each running from its smallest allowed value to its largest.
   // unitUI() gives them their scale in the chosen units; the value beside the label is always read from the body itself.
@@ -1878,8 +2060,11 @@ function buildPanel() {
   const g90 = $('theme-gray-90'), grayNight = () => { const n = nightNow(); g90.disabled = n; g90.nextElementSibling.title = n ? '90% gray (not available in night mode)' : '90% gray'; };
   document.addEventListener('nightchange', () => { const was = theme; applyTheme(); grayNight(); if (theme !== was) { refresh(); save(); } }); shows.push(grayNight);
   radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
-  $('o-disc').addEventListener('change', e => { opt.disc = e.target.checked ? 'on' : 'off'; update(); });   // a switch; the setting is kept as 'on' or 'off'
+  $('o-disc').addEventListener('change', e => { opt.disc = e.target.checked ? 'on' : 'off'; refresh(); update(); });   // a switch; the setting is kept as 'on' or 'off'
   shows.push(() => { $('o-disc').checked = opt.disc === 'on'; });
+  // Rotor size, which slides open under Disc brakes while that is on (and is out of reach of the keyboard while it is shut).
+  radios('rotor', () => String(opt.rotor), v => { opt.rotor = +v; update(); });
+  shows.push(() => { const f = $('rotor-fold'), on = opt.disc === 'on'; f.classList.toggle('open', on); f.firstElementChild.inert = !on; });
   radios('bodyMode', () => body.custom ? 'own' : 'avg', v => setBodyMode(v === 'own'));
   // In "Enter my own", this puts every measurement back to the average for the height.
   $('body-reset').addEventListener('click', () => { Object.assign(body, averages(body.height, body.sex)); ownBody = null; fitBike(); refresh(); update(); });
@@ -2130,8 +2315,9 @@ function solve() {
   const bg = barGeom(b), gripAt = k => { const off = b.flat ? FLAT_GRIP : bg.grips[k]; return [bar[0] + off[0], bar[1] + off[1]]; };
   const grip = gripAt(opt.hands);
   const saddleY = b.saddleH * Math.sin(sa), ankleH = .039 * H;
-  // The hip joint sits a little above the saddle, toward its back.
-  const seat = [-b.setback - 155, saddleY + clamp(.62 * (body.thigh + body.shank + ankleH - body.inseam), 20, 130)];
+  // The hip joint sits a little above the saddle, toward its back: 125 mm ahead of its tail, which is where the sitting part of a
+  // saddle is whatever its length (a short-nose saddle is shorter in front of it), so with the nose held where it is a shorter saddle seats the rider further forward.
+  const seat = [-b.setback - b.saddleLen + 125, saddleY + clamp(.62 * (body.thigh + body.shank + ankleH - body.inseam), 20, 130)];
   const T = body.torso, U = body.upperArm, F = body.forearm, hr = .06 * H;
   // Torso, arm and head from a hip position: the shoulder is where the torso arc meets the arm arc at the wanted elbow bend
   // (less, if the hands would not reach). neck: how far the neck is lifted from the line of the back, in degrees.
@@ -2265,7 +2451,7 @@ function makeRotor() {
   o.rot = N('g', '', g); o.haze = N('circle', 'haze', o.rot, { r: 66, opacity: 0 }); o.arms = N('g', '', o.rot);
   for (let k = 0; k < 6; k++) { const a = rad(k * 60), c = a + rad(32);
     N('line', 'arm', o.arms, { x1: r1(22 * Math.cos(a)), y1: r1(22 * Math.sin(a)), x2: r1(67 * Math.cos(c)), y2: r1(67 * Math.sin(c)) }); }
-  N('circle', 'track', g, { r: 72.5 }); N('circle', 'carrier', g, { r: 25 });
+  o.track = N('circle', 'track', g, { r: 72.5 }); N('circle', 'carrier', g, { r: 25 });
   return o;
 }
 function makeLeg(far) {
@@ -2282,7 +2468,7 @@ function buildScene() {
   // The hill's angle: a level line from the ground line's left end, the arc between the two, and its label. These stay level, outside the tilted scene.
   E.inc = N('g', 'inc', svg, { display: 'none' });
   E.level = N('line', 'ground level', E.inc); E.incArc = N('path', 'incarc', E.inc); E.incHeads = N('path', 'inchead', E.inc); E.incLab = N('text', 'lab', E.inc, { 'text-anchor': 'start' });
-  E.scene = root = N('g', '', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
+  E.scene = root = N('g', 'scene', svg);   // ground, bike and rider together: on a hill this is tilted about the ground line's left end
   E.ground = N('line', 'ground');
   // The far leg lies behind the far crank arm, as it does on a real bike seen from this side: the arm is drawn over it.
   E.far = makeLeg(true); E.farCrank = N('path', 'crank far'); E.farCrankIn = N('path', 'crank far in');
@@ -2364,6 +2550,7 @@ function buildScene() {
   const rider = new Set([E.trunkOL, E.torso, E.neck, E.head, E.face, E.hU, E.upper, E.hF, E.fore, E.hand, E.labG, ...Object.values(E.j),
     ...[E.far, E.near].flatMap(l => [l.shoeOL, l.ol, l.hT, l.thigh, l.hS, l.shank, l.shoeG])]), neither = new Set([E.ground, E.incHit, E.incDot]);
   [...E.scene.children].forEach(e => { if (!neither.has(e)) e.classList.add(rider.has(e) ? 'is-rider' : 'is-bike'); });
+  E.dimG = N('g', 'dimg', svg);   // what a Bike Geometry setting measures, over everything and not faded with it (drawDims)
 }
 // Frames the drawing so the ground line always lands the same distance above the bottom of the view, whatever the bike,
 // wheels or rider: the view is anchored to its bottom edge and the space under the ground is a fixed number of pixels.
@@ -2376,10 +2563,8 @@ function fit() {
     // On a hill. The bike stays centred across the frame and the picture is scaled down until the sloping ground line (with the flat
     // view's 80 mm margin beyond each end) and the rider (with the flat view's 150 mm above the head) fit. The ground line still starts
     // pad above the bottom. At the faintest slope this is exactly the flat view, so the picture never jumps as the slope comes on.
-    // When there are alerts, room is kept for them above the rider (up to 45% of the frame's height); that room comes in over the first 5 degrees.
-    const hud = $('alerts').childElementCount ? Math.min(r.height * .45, $('alerts').parentElement.offsetHeight + 22) * clamp(opt.incline / 5, 0, 1) : 0;
     const half = Math.max(BND.hill.mid - (BND.hill.x - 80), BND.hill.x + BND.hill.w - BND.hill.mid);   // from the bike's middle to the further side
-    s = Math.max(.01, Math.min(s, r.width / (2 * half), (r.height - pad) / (BND.hill.top + 150 - BND.ground), (r.height - pad - hud) / (BND.hill.top - BND.ground)));
+    s = Math.max(.01, Math.min(s, r.width / (2 * half), (r.height - pad) / (BND.hill.top + 150 - BND.ground)));
     vb = [BND.hill.mid - r.width / s / 2, -BND.ground - (r.height - pad) / s, r.width / s, r.height / s];
   }
   // The small picture pinned over a panel page on a narrow screen has no ground line to stand on, so there the bike and rider are
@@ -2392,6 +2577,7 @@ function fit() {
   E.incDot.setAttribute('r', r1(8 / s));   // the handle is 16px across, like the other sliders'
   const fs = r1(12.5 * TEXT[textSize][1] / s), sw = r1(4 / s);   // the drawing's labels are text too, and take the text size
   [...Object.values(E.lab), E.incLab].forEach(t => A(t, { 'font-size': fs, 'stroke-width': sw }));
+  VS = s; drawDims();   // the measurement over the drawing is sized in screen pixels
 }
 // Knob and gap lengths around the tire. They vary, with no short repeat, so the spinning tread reads as motion rather than strobing.
 function treadDash(c) {
@@ -2461,6 +2647,9 @@ function drawStatic() {
       A(el, { display: on ? 'inline' : 'none', 'font-size': fs, 'font-weight': opt[R.id + 'Bold'] ? 700 : 400, 'font-style': opt[R.id + 'Italic'] ? 'italic' : 'normal' });
       if (fresh) { el.textContent = ''; R.L.glyphs.forEach(gl => { N('text', '', el, { transform: `rotate(${gl.a}) translate(0 ${-rb}) scale(${R.L.k} 1)` }).textContent = gl.ch; }); } });
     A(E.rotors[i].g, { transform: `translate(${pt(ax)})`, display: opt.disc === 'on' ? 'inline' : 'none' });
+    // Rotor size, 160 or 180 mm across: the braking track keeps its 15 mm width at the edge, and the arms reach out to it.
+    { const ro = E.rotors[i], rr = opt.rotor / 2; ro.track.setAttribute('r', rr - 7.5); ro.haze.setAttribute('r', rr - 14);
+      [...ro.arms.children].forEach((l, k) => { const c = rad(k * 60 + 32); A(l, { x2: r1((rr - 13) * Math.cos(c)), y2: r1((rr - 13) * Math.sin(c)) }); }); }
     A(w.tire, { r: r1(b.rim / 2 + (b.tire - kd + 1) / 2), 'stroke-width': r1(b.tire - kd + 1) }); A(w.tread, { r: r1(rk), 'stroke-width': r1(kd), 'stroke-dasharray': knobs });
     A(w.ol, { r: r1(g.R) }); A(w.wall, { r: r1(b.rim / 2 + wallH / 2), 'stroke-width': r1(wallH), display: opt.wallOwn ? 'inline' : 'none' });
     A(w.rim, { r: r1(b.rim / 2 - rd / 2), 'stroke-width': rd }); A(w.blur, { r: r1(rs) });
@@ -2516,9 +2705,10 @@ function drawStatic() {
     const at = (side, l) => pt([g.stemBase[0] + up[0] * side * h + sd[0] * l, g.stemBase[1] + up[1] * side * h + sd[1] * l]), rear = side => -((19 - ins) + side * h * sn) / cs, front = dist(g.bar, g.stemBase) + 13 - ins;
     return `M ${at(1, rear(1))} L ${at(1, front)} L ${at(-1, front)} L ${at(-1, rear(-1))} Z`; };
   E.stem.setAttribute('d', stemD(0)); E.stem.inner = stemD(3);
-  // Saddle: 280 mm from tip to tip, the length of a traditional road saddle. The nose stays at the entered setback and the length runs
+  // Saddle: as long as Saddle length (280 mm to begin with, the length of a traditional road saddle; the outline below is drawn for that
+  // length and stretched or shortened to the one set, and the rails keep their place against the tail). The nose stays at the entered setback and the length runs
   // back from there; the rails and clamp sit under its middle.
-  const nose = -b.setback, sc = nose - 130, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
+  const nose = -b.setback, sc = nose - b.saddleLen + 150, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
   // The rails run level under the middle of the saddle, 40 mm below its top (level with its deepest part), and turn up at 45 degrees at
   // each end, back at the rear and forward at the front, to meet it. Each turned-up end stops 22 mm up, inside the saddle's outline,
   // which is drawn over it: nothing shows above the saddle.
@@ -2529,7 +2719,7 @@ function drawStatic() {
   // against the saddle-height line], so the top stays where saddle height is measured and the tip stays at the entered setback.
   // Every height is then drawn 1.25 times as large, measured from that line: the saddle is a quarter deeper than the figures below,
   // 40 mm at its deepest in place of 32, and its top stays on the line.
-  const sP = (dx, dy) => pt([nose + 6 - dx, sy + 1.25 * dy]), sC = (...c) => 'C ' + c.map(([dx, dy]) => sP(dx, dy)).join(' ');
+  const sP = (dx, dy) => pt([nose - dx * b.saddleLen / 280, sy + 1.25 * dy]), sC = (...c) => 'C ' + c.map(([dx, dy]) => sP(dx, dy)).join(' ');
   A(E.saddle, { d: `M ${sP(0, -9)} ${sC([0, -4], [4, -2], [12, -2])} ${sC([70, -2], [120, -1], [170, 0])} ${sC([215, 1], [245, 5], [266, 7])} ${sC([274, 8], [280, 5], [280, 1])} ` +
     `${sC([280, -4], [276, -10], [268, -14])} ${sC([250, -24], [232, -32], [205, -32])} ${sC([170, -32], [140, -22], [100, -19])} ${sC([60, -17], [30, -17], [10, -16])} ${sC([4, -15.5], [0, -13], [0, -9])} Z` });
   A(E.saddleClip, { d: E.saddle.getAttribute('d') });   // the saddle is cut to its own outline, which keeps its edge line inside it
@@ -2652,6 +2842,7 @@ function drawFrame() {
   }
   const sc = $('o-scrub'); if (document.activeElement !== sc || playing) sc.value = Math.round(deg(theta)) % 360;
   $('o-scrub-out').textContent = (Math.round(deg(theta)) % 360) + '°';
+  if (dimNow === 'crank') drawDims();   // the crank's length is drawn along the crank, which turns
 }
 function tick(t) {
   const dt = Math.min(.05, Math.max(0, (t - last) / 1000)); last = t;
@@ -2672,6 +2863,96 @@ function wheelBlur() {
   svg.classList.toggle('playing', playing);   // while spinning, the spoke area stays one light gray whatever the wheel colour
 }
 
+/* ---------- what a bike setting measures ---------- */
+// While a setting on the Bike Geometry page is under the pointer, in focus or being moved, or its explanation is open, the drawing
+// fades and what the setting measures is drawn over it: a dimension line, or an arc for an angle, with its name and its value as
+// the panel shows it. A readout of the bike whose explanation is open (trail, wheelbase, standover, saddle-to-bar drop, top tube
+// slope) is drawn the same way. The lines are in the scene's own millimetres and tilt with it on a hill; their offsets, ticks and
+// lettering are set in screen pixels (VS: pixels to the millimetre, from fit()), so they read the same at any size.
+// dimHover: the setting under the pointer or in focus (or last touched, on a touch screen). dimPin: the one whose explanation is
+// open. dimNow: the one drawn, the pinned one first.
+const DIM_READ = { 'r-trail': 'trail', 'r-wb': 'wb', 'r-standover': 'standover', 'r-drop': 'drop', 'r-slope': 'slope' };
+let VS = 1, dimHover = null, dimPin = null, dimNow = null;
+const rowDim = el => { const r = el && el.closest ? el.closest('#sec-bike [data-dim]') : null; return r ? r.dataset.dim : null; };
+const dimOf = el => { const k = rowDim(el); if (k) return k; const ro = el && el.closest ? el.closest('.ro') : null; return ro ? DIM_READ[ro.querySelector('dd').id] || null : null; };
+function setDim() { const k = dimPin || dimHover; if (k === dimNow) return; dimNow = k; svg.classList.toggle('dimming', !!k); drawDims(); }
+function dimWatch() {
+  const sec = $('sec-bike'), set = k => { dimHover = k; setDim(); };
+  sec.addEventListener('pointerover', e => { if (e.pointerType === 'mouse') set(rowDim(e.target) || rowDim(document.activeElement)); });
+  sec.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') set(rowDim(document.activeElement)); });
+  sec.addEventListener('focusin', e => set(rowDim(e.target)));
+  sec.addEventListener('focusout', e => set(rowDim(e.relatedTarget)));
+  sec.addEventListener('input', e => { const k = rowDim(e.target); if (k) set(k); });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') set(rowDim(e.target)); });
+}
+function drawDims() {
+  const D = E.dimG; if (!D) return; D.textContent = '';
+  const k = dimNow; if (!k || !G) return;
+  D.setAttribute('transform', E.scene.getAttribute('transform') || '');
+  const g = G, b = bike, px = v => v / VS, tick = px(4), lead = [], line = [], labs = [];
+  const seg = (a, c, to) => to.push(`M ${pt(a)} L ${pt(c)}`);
+  const leadTo = (f, p) => { if (dist(f, p) > px(1)) seg(f, along(p, unit(sub(p, f)), px(5)), lead); };   // from what is measured to the dimension line, a little past it
+  // The name and value, beside point p on the side n (a unit vector) faces.
+  const lab = (p, n, name, val) => labs.push({ q: along(p, n, px(9 + 5 * Math.abs(n[1]))), a: n[0] > .45 ? 'start' : n[0] < -.45 ? 'end' : 'middle', name, val });
+  // A dimension line from p to q with a tick across each end, dashed lines leading to it from fp and fq (if given), labelled on side n.
+  const lin = (p, q, fp, fq, n, name, val) => { seg(p, q, line); const t = unit(sub(q, p)), w = [-t[1], t[0]];
+    if (dist(p, q) > 1e-6) [p, q].forEach(e => seg(along(e, w, tick), along(e, w, -tick), line));
+    if (fp) leadTo(fp, p); if (fq) leadTo(fq, q); lab([(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], n, name, val); };
+  // The same, lying parallel to the length from a to c, 22px off it to one side (side 1: to the left going from a to c, -1: to the right).
+  const aligned = (a, c, side, name, val) => { const t = unit(sub(c, a)), n = side > 0 ? [-t[1], t[0]] : [t[1], -t[0]], o = px(22);
+    lin(along(a, n, o), along(c, n, o), a, c, n, name, val); };
+  // An angle: an arc about c of radius r (mm) from direction a0 to a1 (radians, anticlockwise from forward), with dashed reference lines.
+  const arc = (c, r, a0, a1, refs, name, val) => { const at = a => [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)];
+    refs.forEach(([f, to]) => seg(f, to, lead));
+    if (Math.abs(a1 - a0) > 1e-4) { line.push(`M ${pt(at(a0))} A ${r1(r)} ${r1(r)} 0 ${Math.abs(a1 - a0) > Math.PI ? 1 : 0} ${a1 > a0 ? 0 : 1} ${pt(at(a1))}`);
+      [a0, a1].forEach(a => { const d = [Math.cos(a), Math.sin(a)]; seg(along(c, d, r - tick), along(c, d, r + tick), line); }); }
+    const m = (a0 + a1) / 2, d = [Math.cos(m), Math.sin(m)]; lab(at(m), d, name, val); };
+  const f = BIKE.flatMap(([, fs]) => fs).find(q => q.k === k), name = f ? f.l : '', val = f ? $('b-' + k + '-out').textContent : '';
+  const O = [0, 0], ha = rad(b.hta), sa = rad(b.sta), hb = along(g.headTop, g.u, -b.headLen), fx = g.front[0], fy = g.front[1];
+  // The drop bar's own frame: turned about its clamp by Bar angle. re, dr: bar reach and drop; br: the radius of its bend.
+  const ba = rad(b.barAngle), tn = p => [g.bar[0] + p[0] * Math.cos(ba) - p[1] * Math.sin(ba), g.bar[1] + p[0] * Math.sin(ba) + p[1] * Math.cos(ba)], re = b.barReach, dr = b.barDrop, br = g.bg.r;
+  switch (k) {
+    case 'stack': { const x = g.headTop[0] + px(28); lin([x, 0], [x, b.stack], O, g.headTop, [1, 0], name, val); break; }
+    case 'reach': { const y = Math.max(g.steerTop[1], b.stack) + px(24); lin([0, y], [b.reach, y], O, g.headTop, [0, 1], name, val); break; }
+    case 'seatTube': aligned(O, along(O, g.su, b.seatTube), 1, name, val); break;
+    case 'topTube': { const S = [-b.stack / Math.tan(sa), b.stack];   // where the seat tube's line reaches the height of the head tube's top
+      seg(along(O, g.su, Math.min(b.seatTube, b.stack / Math.sin(sa))), S, lead); lin(S, g.headTop, null, null, [0, 1], name, val); break; }
+    case 'chainstay': aligned(O, g.rear, 1, name, val); break;
+    case 'sta': arc(O, 150, Math.PI - sa, Math.PI, [[O, [-230, 0]], [O, along(O, g.su, 230)]], name, val); break;
+    case 'bbDrop': { const x = Math.max(140, fx - g.R - px(30)); seg(g.rear, g.front, lead); lin([x, b.bbDrop], [x, 0], null, O, [1, 0], name, val); break; }
+    case 'headLen': aligned(hb, g.headTop, -1, name, val); break;
+    case 'hta': arc(hb, 130, -ha, 0, [[hb, [hb[0] + 200, hb[1]]], [hb, along(hb, g.u, -200)]], name, val); break;
+    case 'fork': aligned(g.front, g.crown, -1, name, val); break;
+    case 'rake': seg(g.crown, along(g.foot, g.u, -px(24)), lead); lin(g.foot, g.front, null, null, [Math.cos(ha), -Math.sin(ha)], name, val); break;
+    case 'rim': lin([fx - b.rim / 2, fy], [fx + b.rim / 2, fy], null, null, [0, 1], name, val); break;
+    case 'tire': { const x = fx + px(18), lo = fy + b.rim / 2, hi = fy + g.R; lin([x, lo], [x, hi], [fx, lo], [fx, hi], [1, 0], name, val); break; }
+    case 'saddleH': aligned(O, along(O, g.su, b.saddleH), 1, name, val); break;
+    case 'setback': { const y = g.saddleY + px(26); lin([0, y], [-b.setback, y], O, [-b.setback, g.saddleY], [0, 1], name, val); break; }
+    case 'saddleLen': { const nose = -b.setback, tail = nose - b.saddleLen, y = g.saddleY + px(26); lin([tail, y], [nose, y], [tail, g.saddleY], [nose, g.saddleY], [0, 1], name, val); break; }
+    case 'crank': aligned(O, [b.crank * Math.sin(theta), b.crank * Math.cos(theta)], 1, name, val); break;
+    case 'stem': aligned(g.stemBase, g.bar, 1, name, val); break;
+    case 'stemAngle': { const a0 = rad(90 - b.hta), a1 = a0 + rad(b.stemAngle);   // from a line square to the steerer
+      arc(g.stemBase, .7 * b.stem, a0, a1, [[g.stemBase, along(g.stemBase, [Math.cos(a0), Math.sin(a0)], b.stem + 40)]], name, val); break; }
+    case 'spacers': aligned(along(g.headTop, g.u, 12), along(g.headTop, g.u, 12 + b.spacers), 1, name, val); break;   // above the 12 mm of the upper headset
+    case 'barReach': if (!b.flat) { const h = px(26); lin(tn([0, h]), tn([re, h]), g.bar, tn([re, br - dr]), [-Math.sin(ba), Math.cos(ba)], name, val); } break;
+    case 'barDrop': if (!b.flat) { const x = re + px(26); lin(tn([x, 0]), tn([x, -dr]), g.bar, tn([re - br, -dr]), [Math.cos(ba), Math.sin(ba)], name, val); } break;
+    case 'barAngle': if (!b.flat) { const c = tn([re - br, -dr]); arc(c, 120, Math.PI, Math.PI + ba, [[c, [c[0] - 200, c[1]]], [c, along(c, [-Math.cos(ba), -Math.sin(ba)], 200)]], name, val); } break;
+    case 'pedal': { const p0 = along(O, g.su, -b.crank), l = b.saddleH + b.crank; seg(O, p0, lead);   // Set saddle height from inseam: the crank in line with the seat tube
+      aligned(p0, along(O, g.su, b.saddleH), 1, 'Pedal to saddle top', len(l) + ' · ' + (100 * l / body.inseam).toFixed(1) + '% of inseam'); break; }
+    case 'trail': { const t0 = (g.headTop[1] - g.groundY) / Math.sin(ha), xa = g.headTop[0] + t0 * Math.cos(ha), gc = [fx, g.groundY], y = g.groundY + px(12);
+      seg(g.headTop, [xa, g.groundY], lead); seg(g.front, gc, lead); lin([gc[0], y], [xa, y], gc, [xa, g.groundY], [0, 1], 'Trail', len((g.R * Math.cos(ha) - b.rake) / Math.sin(ha))); break; }
+    case 'wb': { const y = g.groundY + px(14); lin([g.rear[0], y], [fx, y], g.rear, g.front, [0, 1], 'Wheelbase', len(fx - g.rear[0])); break; }
+    case 'standover': { const x = (g.stJ[0] + g.htJ[0]) / 2, top = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)); lin([x, g.groundY], [x, top], null, null, [1, 0], 'Standover height', len(top - g.groundY)); break; }
+    case 'drop': { const top = b.flat ? g.grip[1] + 17 : g.bar[1] + 12, bx = b.flat ? g.grip[0] : g.bar[0], x = Math.max(g.bar[0], g.grip[0]) + px(34), d = Math.round(g.saddleY - top);
+      lin([x, g.saddleY], [x, top], [-b.setback, g.saddleY], [bx, top], [1, 0], 'Saddle-to-bar drop', d >= 0 ? len(d) : len(-d) + NB + 'rise'); break; }
+    case 'slope': arc(g.stJ, 200, 0, rad(g.slope), [[g.stJ, [g.stJ[0] + 280, g.stJ[1]]]], 'Top tube slope', Math.abs(r1(g.slope)).toFixed(1) + '°'); break;
+  }
+  N('path', 'dlead', D, { d: lead.join(' ') }); N('path', 'dline', D, { d: line.join(' ') });
+  const fs = r1(px(12.5 * TEXT[textSize][1])), sw = r1(px(4));
+  labs.forEach(L => { const t = N('text', 'dlab', D, { x: r1(L.q[0]), y: r1(-L.q[1]), 'text-anchor': L.a, 'font-size': fs, 'stroke-width': sw });
+    N('tspan', 'dn', t).textContent = L.name + NB; N('tspan', 'dv', t).textContent = L.val; upright(t); });
+}
+
 /* ---------- readouts ---------- */
 // What each label says about its readout, as plainly and as briefly as it can be said: shown when the label is clicked. Listed by
 // readout, then by the label as it is written. (What the readouts themselves mean is in the markup, on their names.)
@@ -2679,8 +2960,7 @@ const INSEAM = 'Your inseam is the height from the floor to your crotch. This is
 const SAYS = {
   fit: { Casual: 'You sit upright. Easy on your back and neck.', Balanced: 'Between upright and low. Suits most riding.',
     Aggressive: 'You sit low and stretched out. Faster, but harder on your back and neck.',
-    'At risk': 'A yellow warning is showing over the drawing. Something needs adjusting.',
-    'Does not fit': 'A red warning is showing over the drawing. You can’t ride the bike this way.' },
+    'At risk': 'Something needs adjusting.', 'Does not fit': 'You can’t ride the bike this way.' },   // readouts() adds the warnings themselves to these two
   standover: { clear: 'The top tube won’t touch your crotch when you stand over the bike.',
     snug: 'The top tube only just clears your crotch when you stand over the bike.',
     'too tall': 'The top tube hits your crotch when you stand over the bike.' },
@@ -2703,8 +2983,11 @@ const SAYS = {
     typical: 'Normal room between your thigh and chest at the top of the stroke.', open: 'Plenty of room between your thigh and chest. That is fine.' },
   back: { casual: 'An upright back. Easy on your back and neck.', balanced: 'A moderate lean forward. Suits most riding.',
     aggressive: 'A low, flat back. Faster, but harder on your back and neck.' },
-  sh: { compact: 'The bars are close, so your arms are tucked in. A longer stem gives more room.', typical: 'A normal reach to the bars.',
+  sh: { 'out of reach': 'Your hands can’t reach the bars in this position. Shorten the reach or raise the bars.',
+    'arms straight': 'Your arms have to lock straight to reach this hand position. Bring the bars closer or raise them.',
+    compact: 'The bars are close, so your arms are tucked in. A longer stem gives more room.', typical: 'A normal reach to the bars.',
     stretched: 'A long reach to the bars. A shorter stem brings them closer.' },
+  slope: { 'rises to seat': 'The top tube climbs from the head tube to the seat. That usually means the seat tube is long for this stack.' },
   kops: { neutral: 'Your knee is over the pedal, or just behind it. That is the usual starting point.' },
   ped: { 'of inseam': INSEAM }, bbs: { 'of inseam': INSEAM }
 };
@@ -2715,11 +2998,11 @@ const SAYS = {
 // and kept inside the window; below the readout where there is no room above. A box that would sit across the info panel's top line
 // is moved up clear of it, onto the drawing.
 let tipFor = null, tipAt = [0, 0];   // tipFor: the button whose box shows; tipAt: where that button was when the box opened
-function hideTip() { if (!tipFor) return; tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; $('ro-tip').textContent = ''; }
+function hideTip() { if (!tipFor) return; tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; $('ro-tip').textContent = ''; if (dimPin) { dimPin = null; setDim(); } }
 function showTip(b) {
   const ro = b.closest('.ro'), say = b.dataset.tip || (ro && (SAYS[ro.querySelector('dd').id.slice(2)] || {})[b.textContent]);
   hideTip(); if (!say) return;
-  tipFor = b; b.setAttribute('aria-expanded', 'true');
+  tipFor = b; b.setAttribute('aria-expanded', 'true'); dimPin = dimOf(b); setDim();
   const t = document.createElement('div'); t.className = 'rotip'; t.textContent = say; $('ro-tip').appendChild(t);
   const r = b.getBoundingClientRect(), o = (ro || b).getBoundingClientRect(), line = ro ? $('info').getBoundingClientRect().top : -1e6, w = t.offsetWidth, h = t.offsetHeight; tipAt = [r.left, r.top];
   let foot = o.top - 8; if (foot > line - 6 && foot < line + 24) foot = line - 6;
@@ -2745,7 +3028,8 @@ function readouts() {
   const so = spare >= 26 ? ['ok', 'clear'] : spare >= 1 ? ['warn', 'snug'] : ['bad', 'too tall'];
   $('r-standover').innerHTML = tag(len(standover), so);
   if (geo !== 'own') $('geo-tight').hidden = spare >= 1;   // a recommended frame that still reads too tall says why, in the note (which keeps its words while it is out of sight, under Custom Geometry)
-  const sl = r1(g.slope); $('r-slope').textContent = Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');   // always a number, 0.0° included
+  // Top tube slope: always a number, 0.0° included. A top tube rising more than 2° toward the seat is flagged (the seat tube is long for the stack).
+  const sl = r1(g.slope); $('r-slope').innerHTML = sl < -2 ? tag(Math.abs(sl).toFixed(1) + '°', ['warn', 'rises to seat']) : Math.abs(sl).toFixed(1) + '°' + (sl < 0 ? ' up to the seat' : '');
   $('r-wb').textContent = len(g.front[0] - g.rear[0]);
   // Toe overlap: how far the toe of the shoe reaches past the front tire's edge at the closest point of the pedal stroke, seen from the
   // side with the wheel straight. It only matters with the bars turned far at walking pace, and smaller road frames commonly have
@@ -2761,7 +3045,8 @@ function readouts() {
   // of it (about 3 cm on a mid-size bike) is upright, the recreational range; over 12% (about 9 cm) is deep, the top of the racing range.
   const drop = Math.round(g.saddleY - (b.flat ? g.grip[1] + 17 : g.bar[1] + 12)), dLo = .04 * b.saddleH, dHi = .12 * b.saddleH;
   $('r-drop').innerHTML = tag(drop >= 0 ? len(drop) : len(-drop) + NB + 'rise', ['plain', drop < dLo ? 'upright' : drop <= dHi ? 'moderate' : 'deep']);
-  const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'saddle high'] : C.kmax < 135 ? ['warn', 'saddle low'] : ['ok', 'typical'];
+  // Leg extension: the usual static target (Holmes) is 25 to 35 degrees of knee flexion at the bottom of the stroke, 145 to 155 here.
+  const ks = C.worst === 'fail' ? ['bad', 'out of reach'] : C.worst === 'stretch' || C.kmax > 155 ? ['warn', 'saddle high'] : C.kmax < 145 ? ['warn', 'saddle low'] : ['ok', 'typical'];
   $('r-kmax').innerHTML = sit(Math.round(C.kmax) + '°', ks);
   // Knee at the top of the stroke: fitters aim for about 65 to 70 degrees (110 to 115 of bend). Tighter than that the knee is over-bent,
   // the usual sign that the cranks are long or the saddle low. Closed hip: 45 to 65 covers the published road ranges; under 45 the thigh
@@ -2776,7 +3061,9 @@ function readouts() {
   $('r-back').innerHTML = tag(back + '°', bk);
   // Shoulder angle, torso to upper arm: 75 to 100 degrees is the span fitters see as normal (their targets, 80 to 95, sit inside it).
   // Less is a short reach to the bars, more a long one.
-  const sh = Math.round(g.shoulderAng); $('r-sh').innerHTML = b.flat ? sh + '°' : sit(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
+  // When the hands can't reach the bars, or the arms have to lock straight to reach them, that is said here, on any bar and in or out of the saddle.
+  const sh = Math.round(g.shoulderAng), arm = g.arm === 'fail' ? ['bad', 'out of reach'] : g.arm === 'straight' ? ['warn', 'arms straight'] : null;
+  $('r-sh').innerHTML = arm ? tag(sh + '°', arm) : b.flat ? sh + '°' : sit(sh + '°', sh < 75 ? ['warn', 'compact'] : sh <= 100 ? ['ok', 'typical'] : ['warn', 'stretched']);
   // Knee against the pedal axle: the classic starting point puts the knee over the axle or up to 20 mm behind it. Within that band (with
   // 10 mm of leeway ahead) the value is labelled neutral; outside it the value already says which way, so there is no label. Fitters
   // differ on whether this should be a target, so the label is not coloured as good or bad.
@@ -2800,9 +3087,13 @@ function readouts() {
   else if (ks[1] === 'saddle low') al.push(['warn', 'The knee stays well bent at the bottom of the stroke. The saddle is probably too low.']);
   if (g.arm === 'fail') al.push(['bad', 'The hands can’t reach this bar position. Shorten the reach or raise the bars.']);
   else if (g.arm === 'straight') al.push(['warn', 'The arms have to straighten to reach this hand position.']);
-  $('alerts').innerHTML = al.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
+  // The warnings are not shown over the drawing. Each is marked on the readout it concerns (the fork's, which has none, only here), and
+  // all of them are listed in Fit assessment's explanation, which At risk or Does not fit opens. Screen readers hear them as they change.
+  const said = al.map(a => a[1]).join(' ');
+  SAYS.fit['At risk'] = ('Something needs adjusting. ' + said).trim(); SAYS.fit['Does not fit'] = ('You can’t ride the bike this way. ' + said).trim();
+  if ($('warn-said').textContent !== said) $('warn-said').textContent = said;
   $('tab-play').dataset.alert = al.some(a => a[0] === 'bad') ? 'bad' : al.length ? 'warn' : '';   // the dot on Play's button, for a narrow screen on another page
-  // Fit assessment: the whole fit in a word. While a warning shows over the drawing it is the worst of them: Does not fit for a red
+  // Fit assessment: the whole fit in a word. While there is a warning it is the worst of them: Does not fit for a red
   // one, At risk for a yellow one. Otherwise it names the riding style the position comes nearest, in gray, as a description: the
   // style, for this kind of bike, whose back angle (in GEO) is closest to the rider's, in whole degrees. A custom bike is read as the
   // kind it started from, or as a mountain bike once it has a flat bar.
@@ -2811,7 +3102,6 @@ function readouts() {
   const fa = al.some(a => a[0] === 'bad') ? ['bad', 'Does not fit'] : al.length ? ['warn', 'At risk'] : ['plain', fb >= cut[0] ? 'Casual' : fb >= cut[1] ? 'Balanced' : 'Aggressive'];
   $('r-fit').innerHTML = `<button class="what" type="button" aria-expanded="false">${fa[1]}</button>`; $('r-fit').className = fa[0];   // the word is the whole value, so it is set at a value's size, in a label's colour; like a label, it can be clicked
   if (tipFor && !tipFor.isConnected) hideTip();   // a label whose explanation was showing has just been written again, and may say something else now
-  if (opt.incline > 0) fit();   // on a hill the view makes room for the alerts, so it is fitted again now that they are known
 
   const kmh = opt.cadence * opt.ring / opt.cog * 2 * Math.PI * g.R / 1e6 * 60, sp = `${(kmh / 1.609344).toFixed(1)}${NB}mph · ${kmh.toFixed(1)}${NB}km/h`;
   $('speed').textContent = sp;
@@ -2873,7 +3163,8 @@ function applyColors() { const st = document.documentElement.style, night = docu
   [['grp-tire', opt.tireH, opt.tireS], ['grp-wall', opt[wk + 'H'], opt[wk + 'S']]].forEach(([id, h, sat]) => { $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
   E.wheels.forEach(w => fade(w.ol, opt.tireS, opt.tireB));
   st.setProperty('--comp-edge-pct', paleness(0, opt.compGray) * 100 + '%'); }   // for the crank arms and pedals, which move, and carry their edge line as a second, smaller shape
-function update() { solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); drawFig(); save(); }
+function update() { if (bike.autoKnee) { const was = bike.saddleH; kneeSaddle(); if (bike.saddleH !== was) refresh(); }   // (the saddle set for leg extension follows whatever has changed)
+  solve(); cycle(); drawStatic(); wheelBlur(); applyColors(); readouts(); drawFrame(); drawFig(); save(); }
 
 /* ---------- boot ---------- */
 // ---------- The standing figure (Your Body) ----------
@@ -2975,12 +3266,23 @@ function figWatch() {
   sec.addEventListener('input', e => { if (of(e.target)) setFigHot(of(e.target)); });
   document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') setFigHot(of(e.target)); });
 }
+// The two tables in About this page, written from the figures the page itself uses: the average body measurements (RATIO; the
+// torso is what is left of the leg and torso stack, as in averages()) and the back angle each riding style aims for (GEO).
+function aboutTables() {
+  const pc = v => (v * 100).toFixed(1) + '%', rows = [['inseam', 'Inseam (floor to crotch)'], ['torso', 'Torso (hip to shoulder)'], ['thigh', 'Thigh (hip to knee)'], ['shank', 'Lower leg (knee to ankle)'],
+    ['upperArm', 'Upper arm (shoulder to elbow)'], ['forearm', 'Forearm (elbow to grip)'], ['foot', 'Foot length']];
+  const share = (sex, k) => k === 'torso' ? STACK - RATIO[sex].thigh - RATIO[sex].shank : RATIO[sex][k];
+  $('about-body').innerHTML = '<thead><tr><th>Share of height</th><th>Male</th><th>Female</th></tr></thead><tbody>' +
+    rows.map(([k, l]) => `<tr><td>${l}</td><td>${pc(share('m', k))}</td><td>${pc(share('f', k))}</td></tr>`).join('') + '</tbody>';
+  $('about-styles').innerHTML = '<thead><tr><th>Back angle</th><th>Road</th><th>Gravel</th><th>Mountain</th></tr></thead><tbody>' +
+    STYLES.map(st => `<tr><td>${st[0].toUpperCase() + st.slice(1)}</td>${['road', 'gravel', 'mountain'].map(kd => `<td>${GEO[kd].fit[st].back}°</td>`).join('')}</tr>`).join('') + '</tbody>';
+}
 function start() {
   defaults();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) {}
   restore(saved); openLink(); setPanelW(panelW); applyFigH(); applyTheme(); applyText(); applySoft();   // settings from a link come before the ones remembered on this device
-  buildPanel(); buildScene(); unitUI(); refresh();
-  buildFig($('bfig-page')); buildFig($('bfig-stage')); figWatch();
+  buildPanel(); aboutTables(); buildScene(); unitUI(); refresh();
+  buildFig($('bfig-page')); buildFig($('bfig-stage')); figWatch(); dimWatch();
   measureWords(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureWords);
   if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { fontGen++; if (RINGS.some(R => opt[R.text].trim())) update(); else drawFig(); });   // the lettering round the tires and the rims is spaced by the font's own widths, so it is set again when the font (or its bold or italic) arrives
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { playing = false; $('play').textContent = 'Play'; }
