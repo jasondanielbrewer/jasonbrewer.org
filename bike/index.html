@@ -36,9 +36,9 @@ img{max-width:100%}
   --rider:#000000; --rider-far:color-mix(in srgb,var(--rider) 30%,var(--stage));   /* far-side limbs: the rider's colour, mostly faded into the page */
   --go:#00af00; --caution:#d2a500; --stop:#ff0000;   /* fixed in both modes: the Confirm and Cancel buttons, the labels beside the readouts, and the dot on Play's button */
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches and the speed readout: black, white in night mode */
-  --ts:1;                                       /* Text size (Options, Display options): what every size of text on the page is multiplied by, from 0.9 for Extra small to 1.3 for Extra large; 1 is Small, the size the page was drawn at. The site name and the NIGHT MODE switch in the title bar keep their own size, which is the home page's */
+  --ts:1;                                       /* Text size (Options, Display): what every size of text on the page is multiplied by, from 0.9 for Extra small to 1.3 for Extra large; 1 is Small, the size the page was drawn at. The site name and the NIGHT MODE switch in the title bar keep their own size, which is the home page's */
   --knob:var(--ink);                            /* the sliders' lines and dots, and the panel's toggles: the page's ink, or the page theme's colour */
-  --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;   /* the page themes (Options, Display options). Each is dark enough for white lettering on it (4.6 to 1 or better) and light enough to show on the black page of night mode (3.7 to 1 or better), so one colour serves both modes */
+  --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;   /* the page themes (Options, Display). Each is dark enough for white lettering on it (4.6 to 1 or better) and light enough to show on the black page of night mode (3.7 to 1 or better), so one colour serves both modes */
   --t-yellow:#dea62e;                           /* the yellow page theme: a golden yellow, the same by day and in night mode, like the other themes. It is light: strong on black (9.6 to 1) and faint on a white page (2.2 to 1), where its lines and outlines are pale. Lettering on it is black in both modes */
   --t-gray-10:#e6e6e6; --t-gray-20:#cccccc; --t-gray-30:#b3b3b3; --t-gray-40:#999999; --t-gray-50:#808080; --t-gray-60:#666666; --t-gray-70:#4d4d4d; --t-gray-80:#333333; --t-gray-90:#1a1a1a;   /* the Grayscale page themes: 10% gray to 90% gray in steps of 10%, each that far from white to black (10% is nearly white, 90% nearly black), the same in both modes. The lightest are faint on the white page and the darkest on the black one */
   --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-lime:#ccff00; --t-neon-pink:#ff10f0; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff;   /* the Neon & RGB page themes: neon colours and the three pure ones, taken as they come and the same in both modes. Most are too light to show well on the white page, and pure blue is dim on the black one */
@@ -61,12 +61,12 @@ img{max-width:100%}
   --metal:#717171; --part:#dddddd; --spin:#424242;
   --rule:#ffffff;
 }
-/* Page theme: a colour chosen under Options, Display options, in place of black (white in night mode) for the page's own furniture:
+/* Page theme: a colour chosen under Options, Display, in place of black (white in night mode) for the page's own furniture:
    the lines that divide it, the outlines and fills of its buttons, switches and boxes, the block under the page chosen in the
    navigation, and the sliders' lines and dots. Lettering on a filled part is white. It is the same colour in both modes (these rules
    come after night mode's, and take over from them). Text keeps the page's ink, and nothing in the drawing changes: the bike and the
    rider have their own colours, under Customize. With no theme chosen, none of this applies. */
-/* Soft background (Options, Display options, under Night mode): the page is not pure white or pure black. By day it is a warm
+/* Soft background (Options, Display, under Night mode): the page is not pure white or pure black. By day it is a warm
    off-white, and in night mode a slightly lighter, warmer black. Only the page changes: everything on it keeps its colour. In night
    mode the faint lines (the outline of the Copy Link button, the track of a toggle that is off) are lifted by as much as the page
    is, so they show against it as they do against black. These rules come after night mode's, and take over from them. */
@@ -218,7 +218,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .sec-body{display:flex;flex-direction:column;gap:16px;padding:20px 0 18px}   /* 20px from the line under a section title to its first control */
 
 .group{display:flex;flex-direction:column;gap:8px}
-.group:not(.sliders)>:is(.tgl,.themes,.slider)+:is(.tgl,.themes,.slider){margin-top:4px}   /* a run of switches, or of Display options' rows: 12px apart, which is easier on the eye and on the finger than 8 */
+.group:not(.sliders)>:is(.tgl,.themes,.slider)+:is(.tgl,.themes,.slider){margin-top:4px}   /* a run of switches, or of Display's rows: 12px apart, which is easier on the eye and on the finger than 8 */
 .grp{font:500 calc(16px * var(--ts))/1.2 var(--font);color:var(--ink)}
 /* About this page (the last subsection of Options): reading text, in the page's ink at the size of the panel's notes and a little more
    open, with its own folding subsections 12px apart, and two small tables (aboutTables in the script fills them). */
@@ -920,7 +920,7 @@ svg .dlab .dv{fill:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
           </div>
         </details>
         <details class="pick">
-          <summary class="grphead"><h3 class="grp">Visibility options</h3></summary>
+          <summary class="grphead"><h3 class="grp">Show/Hide</h3></summary>
           <div class="group">
             <label class="tgl" for="o-showJoints"><span class="cap">Joints</span><input id="o-showJoints" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
             <label class="tgl" for="o-showAngles"><span class="cap">Joint angles</span><input id="o-showAngles" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
@@ -929,7 +929,7 @@ svg .dlab .dv{fill:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
           </div>
         </details>
         <details class="pick">
-          <summary class="grphead"><h3 class="grp">Display options</h3></summary>
+          <summary class="grphead"><h3 class="grp">Display</h3></summary>
           <div class="group">
             <label class="tgl" for="o-night"><span class="cap">Night mode</span><input id="o-night" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label>
             <div class="tgl"><span class="cap" id="cap-soft"><button class="what" type="button" aria-expanded="false" data-tip="Applies a softer, warmer background.">Soft background</button></span><label class="tglsw"><input id="o-soft" type="checkbox" role="switch" aria-labelledby="cap-soft"><span class="track" aria-hidden="true"><span class="thumb"></span></span></label></div>
@@ -1449,7 +1449,7 @@ const HMIN = 1400, HMAX = 2100, STORE = 'bike-fit-visualizer:v1';
 const ST_TOP = 22;   // the seat tube stood this far above the top tube centreline when it was first measured to its top (older saved bikes are carried over by it)
 const TT_DROP = 10;  // the top tube joins this much further down the head tube, so more head tube shows above it; it is moved parallel to itself, which keeps its slope
 const DEF_BIKE = { seatTube: 600, topTube: 575, sta: 73, hta: 73.5, chainstay: 410, bbDrop: 70, headLen: 159, reach: 400, stack: 574, pinTT: 'reach', pinHT: 'fork', fork: 370, rake: 43,
-  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, autoKnee: false, setback: 75, saddleLen: 280, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
+  rim: 622, tire: 25, saddleH: 759, autoSaddle: true, autoKnee: false, setback: 75, postOffset: 20, saddleLen: 280, crank: 172.5, spacers: 20, stem: 110, stemAngle: -6, barReach: 80, barDrop: 130, barAngle: 0, flat: false };   // flat: a flat handlebar in place of drops
 const SPOKES = [24, 28, 32, 36];   // the numbers of spokes a wheel can have (Spokes, under Wheels); the first is the one the page opens with
 const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe: 20, angles: false, joints: true, hideRider: false, hideBike: false, incline: 0, smiley: false,
   riderH: 0, riderS: 0, riderB: 0, frameH: 357, frameS: 100, frameB: 100, tapeH: 0, tapeS: 0, tapeB: 13, sdlH: 0, sdlS: 0, sdlB: 13, wheelGray: 74, compGray: 0, tireH: 0, tireS: 0, tireB: 11, wallOwn: false, wallH: 0, wallS: 0, wallB: 11, tread: 0, rimDepth: 18, spokes: 24, ringStyle: 'star', disc: 'off', rotor: 160,   // spokes: how many each wheel has: 24, 28, 32 or 36
@@ -1459,14 +1459,14 @@ const DEF_OPT = { cadence: 30, hands: 'hoods', ring: 50, cog: 17, elbow: 20, toe
 let infoH = null;   // the info panel's height in px, once its top line has been dragged; null: as tall as its readouts
 let figH = null;    // the height of the frame the standing figure is in (Your Body), once the line under it has been dragged; null: as the page lays it out
 const FIG_MIN = 120;   // the least it can be dragged to
-// The page theme (Options, Display options): 'ink' for none, or the name of one of the colours in the style sheet. Like NIGHT MODE it
+// The page theme (Options, Display): 'ink' for none, or the name of one of the colours in the style sheet. Like NIGHT MODE it
 // is how this device shows the page, not part of the setup: it is remembered here and left out of links.
 const THEMES = ['ink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'gray-10', 'gray-20', 'gray-30', 'gray-40', 'gray-50', 'gray-60', 'gray-70', 'gray-80', 'gray-90', 'neon-yellow', 'neon-orange', 'neon-lime', 'neon-pink', 'rgb-red', 'rgb-green', 'rgb-blue'];   // Basic, then Grayscale, then Neon & RGB
 const THEME_WAS = { 'gray': 'gray-50', 'gray-25': 'gray-30', 'gray-12': 'gray-10', 'tan': 'yellow', 'purple': 'violet', 'neon-green': 'rgb-green' };   // themes of earlier versions. Neon green has gone, and pure green is all but the same colour. Three grays (one in the first row, two among the risky ones): a device that remembers one gets the nearest step of the Grayscale row. Tan has gone, and yellow is the nearest to it; purple is the same colour under its new name, violet
-// Text size (Options, Display options): one of five, by its place in this list; the number is what the page's text is multiplied by
+// Text size (Options, Display): one of five, by its place in this list; the number is what the page's text is multiplied by
 // (--ts in the style sheet). Like the page theme it belongs to the device: remembered here, left out of links.
 const TEXT = [['Extra small', .9], ['Small', 1], ['Medium', 1.1], ['Large', 1.2], ['Extra large', 1.3]], TEXT0 = 1; let textSize = TEXT0;
-// Soft background (Options, Display options): the page's white becomes a warm off-white, and night mode's black a slightly
+// Soft background (Options, Display): the page's white becomes a warm off-white, and night mode's black a slightly
 // lighter, warmer black (.soft in the style sheet). It belongs to the device too: remembered here, left out of links. The colour a
 // phone's browser gives its own bars (theme-color) follows the page; the NIGHT MODE switch sets it to black or white, so it is put
 // right again after each change of that (nightchange).
@@ -1694,10 +1694,10 @@ function recommend(kind) {
   const standover = () => { solve(); return (G.stJ[1] + G.htJ[1]) / 2 + 14 / Math.cos(rad(G.slope)) - G.groundY; };
   const clears = () => body.inseam - standover() >= 1 && bike.saddleH - bike.seatTube >= 80;
   for (frame(i, 'casual'); i > floor && !clears(); frame(--i, 'casual'));
-  // Saddle fore and aft: the middle of the rails stays within 25 mm of a seatpost head set 10 mm behind the seat tube's line.
-  const saddle = () => { const post = -(bike.saddleH - 45) * Math.cos(rad(bike.sta)) - 10; let sb = null;
-    for (let v = 0; v <= 140; v += 5) { if (Math.abs(-v - bike.saddleLen + 150 - post) > 25) continue; bike.setback = v; solve(); cycle(); const c = Math.abs(C.kops - S.kops); if (!sb || c < sb[0]) sb = [c, v]; }
-    bike.setback = sb ? sb[1] : clamp(Math.round((-post - bike.saddleLen + 150) / 5) * 5, 0, 140); };
+  // Saddle fore and aft: the middle of the rails stays within reach of the seatpost's clamp (RAIL mm either way).
+  const saddle = () => { const post = postHeadX(bike); let sb = null;
+    for (let v = 0; v <= 140; v += 5) { if (Math.abs(-v - bike.saddleLen / 2 - post) > RAIL) continue; bike.setback = v; solve(); cycle(); const c = Math.abs(C.kops - S.kops); if (!sb || c < sb[0]) sb = [c, v]; }
+    bike.setback = sb ? sb[1] : clamp(Math.round((-post - bike.saddleLen / 2) / 5) * 5, 0, 140); };
   // The stem and spacers, with the stem up to `over` mm past the stock one. Returns how well they fit (less is better) and whether the reach is open enough.
   const cockpit = over => { const far = T.flat ? 10 : 20; let fit = null;
     for (let st = Math.max(T.stems[0], stock - far); st <= Math.min(T.stems[1], stock + over); st += 10) for (let sp = S.spacers[0]; sp <= S.spacers[1]; sp += 5) {
@@ -1762,10 +1762,12 @@ LINK_BASE[7] = { ...LINK_BASE[6], opt: { ...LINK_BASE[6].opt, ttHeight: 50 } };
 LINK_BASE[8] = { ...LINK_BASE[7], opt: { ...LINK_BASE[7].opt, wheelText: '', wtBold: false, wtItalic: false, wtWide: false, wtSides: 'one', wtHeight: 50, wtH: 0, wtS: 0, wtB: 0, spokes: 24 } };   // spokes: the number of spokes came after these links did; one that says nothing about it opens with 24, as any earlier link does
 LINK_BASE[9] = { ...LINK_BASE[8], opt: { ...LINK_BASE[8].opt, detail: 'low', back: false } };   // the standing figure's two settings (how much Body Detail, and front or back) came after links numbered 8, which open with these
 LINK_BASE[10] = { ...LINK_BASE[9], bike: { ...LINK_BASE[9].bike, saddleLen: 280, autoKnee: false }, opt: { ...LINK_BASE[9].opt, rotor: 160 } };   // links numbered 10: the saddle's length, the saddle set for leg extension and the rotors' size came after links numbered 9, which open with these
+LINK_BASE[11] = { ...LINK_BASE[10], bike: { ...LINK_BASE[10].bike, postOffset: 10 } };   // links numbered 11: the seatpost's offset came after links numbered 10, which open with 10 mm
+LINK_BASE[12] = { ...LINK_BASE[11], bike: { ...LINK_BASE[11].bike, postOffset: 20 } };   // links numbered 12: the rails were centred under the saddle and the seatpost's offset now starts at 20 mm
 const b64 = { to: t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   from: t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))) };
 function linkTo() {
-  const B = LINK_BASE[10], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 10 };   // lengths to a hundredth of a millimetre
+  const B = LINK_BASE[12], r2 = v => typeof v === 'number' ? Math.round(v * 100) / 100 : v, d = { v: 12 };   // lengths to a hundredth of a millimetre
   [['b', bike, B.bike], ['y', body, B.body], ['o', opt, B.opt]].forEach(([key, cur, base]) => { const o = {};
     for (const k in cur) { const v = r2(cur[k]); if (v !== base[k]) o[k] = v; } if (Object.keys(o).length) d[key] = o; });
   if (units !== B.units) d.u = units; if (bikeUnits !== B.bikeUnits) d.k = bikeUnits; if (geo !== B.geo) d.g = geo; if (lastGeo !== B.lastGeo) d.l = lastGeo; if (style !== 'casual') d.t = style;
@@ -1812,6 +1814,7 @@ const BIKE = [
   ['Saddle and cranks', [
     { k: 'saddleH', t: 'The distance from the center of the bottom bracket to the top of the saddle, measured along the seat tube.', l: 'Saddle height', n: 'BB to saddle top', u: 'mm', s: 1, min: 550, max: 950, step: 1, d: 0 },
     { k: 'setback', t: 'How far the nose of the saddle sits behind the center of the bottom bracket, measured level. More setback moves you back from the pedals.', l: 'Saddle setback', n: 'nose behind BB', u: 'mm', s: 1, min: 0, max: 140, step: 1, d: 0 },
+    { k: 'postOffset', t: 'How far the seatpost’s clamp sits behind the line of the post, measured level. An inline post has none, and most road and gravel posts have 15 to 25 mm. Changing it leaves the saddle where it is, unless the clamp would have to reach past the end of the saddle’s rails. Then the saddle moves just far enough to stay on them, and its setback changes with it.', l: 'Seatpost offset', u: 'mm', s: 1, min: 0, max: 40, step: 1, d: 0 },
     { k: 'saddleLen', t: 'The saddle’s length from nose to tail. Traditional road saddles are about 270 to 285 mm long, short-nose ones about 240 to 250. Setback is measured to the nose, so at the same setback a shorter saddle sits you further forward.', l: 'Saddle length', n: 'nose to tail', u: 'mm', s: 1, min: 230, max: 300, step: 1, d: 0 },
     { k: 'crank', t: 'The length of the crank arms, from the center of the bottom bracket to the pedal axle. Longer cranks make a bigger circle, so your knee bends more at the top of the stroke.', l: 'Crank length', u: 'mm', s: 1, min: 150, max: 185, step: 2.5, d: 1 }
   ]],
@@ -1926,6 +1929,14 @@ function partRange(k) {
   if (lo > hi) return [b[k], b[k]];
   return k === 'torso' ? [b.torso - hi, b.torso - lo] : [b[k] + lo, b[k] + hi];
 }
+// The seatpost's clamp: the post's own line at the height of the clamp's centre (43 mm under the saddle's top, just under the rails),
+// moved back level by the seatpost's offset. The clamp can hold the rails anywhere within RAIL mm of their middle, either way.
+const RAIL = 25;
+const postHeadX = b => -(b.saddleH * Math.sin(rad(b.sta)) - 43) / Math.tan(rad(b.sta)) - b.postOffset;
+// A new seatpost offset leaves the saddle where it is, unless the clamp would have to reach past the end of the rails: then the
+// saddle moves (its setback changes) just far enough to put that end of the rails in the clamp.
+function seatOnPost() { const d = -bike.setback - bike.saddleLen / 2 - postHeadX(bike);   // the rails' middle (the saddle's), ahead of the clamp
+  if (Math.abs(d) > RAIL) bike.setback = clamp(Math.round(bike.setback + d - Math.sign(d) * RAIL), 0, 140); }
 // Hamley's 109% rule: pedal axle at the bottom of the stroke to saddle top = 1.09 x inseam.
 function syncSaddle() { if (bike.autoSaddle) bike.saddleH = clamp(Math.round(1.09 * body.inseam - bike.crank), 550, 950); }
 // Set saddle height from recommended leg extension: the saddle height at which the knee, at its straightest over the stroke, opens to
@@ -1981,7 +1992,7 @@ function buildPanel() {
       return;
     }
     const apply = v => { touchBike(); bike[f.k] = v * scaleOf(f).k;   // v is in the units shown; unitUI() gives the slider its scale in them
-      if (f.k === 'saddleH') { bike.autoSaddle = bike.autoKnee = false; $('b-auto').checked = $('b-knee').checked = false; } if (f.k === 'crank') syncSaddle(); link(f.k); refresh(); update(); };
+      if (f.k === 'saddleH') { bike.autoSaddle = bike.autoKnee = false; $('b-auto').checked = $('b-knee').checked = false; } if (f.k === 'crank') syncSaddle(); if (f.k === 'postOffset') seatOnPost(); link(f.k); refresh(); update(); };
     el.addEventListener('input', () => apply(+el.value));
     shows.push(() => { const sc = scaleOf(f), v = bike[f.k] / sc.k; el.value = v; out.textContent = v.toFixed(sc.d) + (sc.u === '°' ? '°' : NB + sc.u); });
     typers['b-' + f.k] = { set: apply };   // a typed value is taken as typed, not rounded to the slider's step
@@ -2051,7 +2062,7 @@ function buildPanel() {
   const sf = $('o-soft'), sfShow = () => { sf.checked = soft; };
   sf.addEventListener('change', () => { soft = sf.checked; applySoft(); save(); }); shows.push(sfShow);
   document.addEventListener('nightchange', applySoft);
-  // Night mode, under Display options: one switch with NIGHT MODE in the title bar. That one keeps the setting (and remembers it, as
+  // Night mode, under Display: one switch with NIGHT MODE in the title bar. That one keeps the setting (and remembers it, as
   // the home page does), so this one works it by pressing it, and follows it whenever it changes.
   const nm = $('o-night'), nightNow = () => document.documentElement.classList.contains('night'), nmShow = () => { nm.checked = nightNow(); };
   nm.addEventListener('change', () => { if (nm.checked !== nightNow()) $('night').click(); });
@@ -2089,7 +2100,7 @@ function buildPanel() {
   range('rimDepth', v => len(v, 2), true);
   radios('spokes', () => String(opt.spokes), v => { opt.spokes = +v; update(); });
   range('ring', v => v + 'T'); range('cog', v => v + 'T');   // teeth are written 50T everywhere
-  // Visibility options: each is a switch, and on always means shown. The rider and the bike are remembered
+  // Show/Hide: each is a switch, and on always means shown. The rider and the bike are remembered
   // as hidden or not (hideRider, hideBike), so their switches read the other way round from the setting.
   [['showJoints', () => opt.joints, v => { opt.joints = v; }], ['showAngles', () => opt.angles, v => { opt.angles = v; }],
    ['showRider', () => !opt.hideRider, v => { opt.hideRider = !v; }], ['showBike', () => !opt.hideBike, v => { opt.hideBike = !v; }]]
@@ -2189,7 +2200,7 @@ function buildPanel() {
 
   // Explanations: a click on a readout's name or on its label shows what it means (showTip, further down).
   const tipClick = e => { const b = e.target.closest('.what'); if (b) { if (b === tipFor) hideTip(); else showTip(b); } };
-  info.addEventListener('click', tipClick); $('pages').addEventListener('click', tipClick);   // the control panel has two: Page theme and Soft background, under Display options
+  info.addEventListener('click', tipClick); $('pages').addEventListener('click', tipClick);   // the control panel has two: Page theme and Soft background, under Display
   document.addEventListener('pointerdown', e => { if (tipFor && !e.target.closest('.what, .rotip')) hideTip(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && tipFor) { tipFor.focus(); hideTip(); } });
   // Scrolling the panel carries the name away from its box, so the box goes (once the name has really moved: the scroll that brought a
@@ -2478,7 +2489,7 @@ function buildScene() {
   const tube = (w, cls = 'tube') => N('line', cls, root, { 'stroke-width': w });
   // The rear cog and the full chain loop sit behind the frame, so the seat stay passes in front of the chain.
   E.cog = N('circle', 'cog'); E.chainLoop = N('path', 'chain', root, { 'stroke-width': 5 });
-  E.chainstay = tube(20); E.seatstay = tube(16.25); E.seatpost = tube(22, 'comp'); E.seattube = tube(30, 'tube butt'); E.toptube = tube(28); E.downtube = tube(32);
+  E.chainstay = tube(20); E.seatstay = tube(16.25); E.seatpost = tube(22, 'comp butt'); E.seattube = tube(30, 'tube butt'); E.toptube = tube(28); E.downtube = tube(32);
   E.fork = N('path', 'tubefill'); E.steerer = tube(30, 'comp butt'); E.headtube = tube(38, 'tube butt');
   // Edge line for pale frame colours, laid over the frame: the frame shapes in black, then the same shapes 3 mm smaller in the
   // frame colour. Only a 3 mm band just inside the frame's outer edge stays black, and the group's opacity fades it in.
@@ -2488,7 +2499,7 @@ function buildScene() {
   E.inl = caps.map(c => N('line', 'tube' + c, E.olG)); E.inFork = N('path', 'tubefill', E.olG);
   // Frame text: lettering along the downtube, on top of the frame and its edge line. It is clipped to the tube, so it never runs past the ends.
   E.textG = N('g'); E.textClip = N('rect', '', N('clipPath', '', E.textG, { id: 'dt-clip' })); E.text = N('text', 'ftext', E.textG, { 'clip-path': 'url(#dt-clip)', 'text-anchor': 'middle' });
-  E.clamp = tube(16, 'comp'); E.rails = N('path', 'rails', root, { 'stroke-width': 6 }); E.saddleClip = N('path', '', N('clipPath', '', root, { id: 'saddle-clip' })); E.saddle = N('path', 'saddle', root, { 'clip-path': 'url(#saddle-clip)' });   // the rails are one line: level under the saddle, turned up into it at each end
+  E.clamp = N('path', 'compfill'); E.rails = N('path', 'rails', root, { 'stroke-width': 6 }); E.saddleClip = N('path', '', N('clipPath', '', root, { id: 'saddle-clip' })); E.saddle = N('path', 'saddle', root, { 'clip-path': 'url(#saddle-clip)' });   // the rails are one line: level under the saddle, turned up into it at each end
   // The shifter lies behind the handlebar, which is drawn over it: the bar runs unbroken through the hood. Back to front it is the shift unit, the brake lever's blade over it, and the hooded body over both.
   E.stem = N('path', 'compfill'); E.shift = ['paddle', 'blade', 'hood'].map(k => ({ k, e: N('path', 'shift') }));
   E.bar = N('path', 'tape butt', root, { 'stroke-width': 22 }); E.barTop = N('path', 'tape', root, { 'stroke-width': 22 });
@@ -2535,7 +2546,7 @@ function buildScene() {
   // is ink. The group is hidden until the part's colour nears the page's, and its opacity fades it in (see applyColors, which also
   // sizes the copies). Each entry: [part, ink copy, smaller copy, line width where the style sheet sets it, group]. The chainring's
   // arms share one centre, so their copies share one group: all five in ink, then all five smaller.
-  const edgeOver = (e, w = 0, g) => { const disc = e === E.cog || e === E.stem || e.classList.contains('hub');   // disc: a filled shape (the stem is one too), not a line
+  const edgeOver = (e, w = 0, g) => { const disc = e === E.cog || e === E.stem || e === E.clamp || e.classList.contains('hub');   // disc: a filled shape (the stem and the seatpost's head are too), not a line
     if (!g) { g = document.createElementNS(NS, 'g'); g.setAttribute('visibility', 'hidden'); e.after(g); }
     const ol = e.cloneNode(false), inn = e.cloneNode(false); ol.setAttribute('class', disc ? 'olfill' : 'ol' + (e.classList.contains('butt') ? ' butt' : ''));
     g.prepend(ol); g.append(inn); return [e, ol, inn, w, g]; };
@@ -2663,7 +2674,9 @@ function drawStatic() {
     const va = rad(VALVE); A(w.valve, { x1: r1(rs * Math.cos(va)), y1: r1(rs * Math.sin(va)), x2: r1((rs - 42) * Math.cos(va)), y2: r1((rs - 42) * Math.sin(va)) });
   });
 
-  const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 48) / g.su[1]));   // the post stops 8 mm under the rails, which lie 40 mm under the saddle's top
+  // The post rises up the seat tube's line and bends back to its clamp, under the rails (40 mm under the saddle's top). With no offset
+  // it stops 8 mm under them; the bend comes lower with more offset, so the head leans back at about 45 degrees.
+  const seatTop = along([0, 0], g.su, b.seatTube), postTop = along([0, 0], g.su, Math.max(b.seatTube, (g.saddleY - 48 - b.postOffset) / g.su[1]));
   const ssTop = along([0, 0], g.su, g.stLen - 12), dtTop = along(g.headBot, u, Math.min(30, Math.max(g.headLen, 50) / 2));
   setLine(E.chainstay, [0, 0], g.rear); setLine(E.seatstay, g.rear, ssTop);
   setLine(E.seatpost, seatTop, postTop); setLine(E.seattube, [0, 0], seatTop); setLine(E.toptube, g.stJ, g.htJ);
@@ -2706,14 +2719,29 @@ function drawStatic() {
     return `M ${at(1, rear(1))} L ${at(1, front)} L ${at(-1, front)} L ${at(-1, rear(-1))} Z`; };
   E.stem.setAttribute('d', stemD(0)); E.stem.inner = stemD(3);
   // Saddle: as long as Saddle length (280 mm to begin with, the length of a traditional road saddle; the outline below is drawn for that
-  // length and stretched or shortened to the one set, and the rails keep their place against the tail). The nose stays at the entered setback and the length runs
-  // back from there; the rails and clamp sit under its middle.
-  const nose = -b.setback, sc = nose - b.saddleLen + 150, sy = g.saddleY, cx = clamp(postTop[0], sc - 40, sc + 40);
-  // The rails run level under the middle of the saddle, 40 mm below its top (level with its deepest part), and turn up at 45 degrees at
-  // each end, back at the rear and forward at the front, to meet it. Each turned-up end stops 22 mm up, inside the saddle's outline,
-  // which is drawn over it: nothing shows above the saddle.
-  setLine(E.clamp, postTop, [cx, sy - 40]);
-  A(E.rails, { d: 'M ' + [[sc - 70, sy - 18], [sc - 48, sy - 40], [sc + 48, sy - 40], [sc + 70, sy - 18]].map(pt).join(' L ') });
+  // length and stretched or shortened to the one set; the rails stay the same length). The nose stays at the entered setback and the
+  // length runs back from there; the rails are centred under it, and the clamp holds them where the seatpost puts it (or as far along
+  // them as it may go, RAIL mm from their middle, when Saddle setback has moved the saddle further than that).
+  const nose = -b.setback, sc = nose - b.saddleLen / 2, sy = g.saddleY, cx = clamp(postHeadX(b), sc - RAIL, sc + RAIL);
+  // The rails run level for 60 mm under the middle of the saddle, 40 mm below its top, and turn up at 30 degrees at each end, back at
+  // the rear and forward at the front, to meet it. Each turned-up end stops 22 mm up, inside the saddle's outline, which is drawn over
+  // it: nothing shows above the saddle. The two bends are rounded a little: each corner is cut 6 mm back along both of its sides and
+  // joined by a curve.
+  // The seatpost's head: a curve that leaves the top of the post along its line (a quadratic curve whose first control point lies on
+  // that line, a little over half way up to the rails) and bends back to the clamp. It starts as thick as the post (22 mm) and tapers
+  // to two thirds of that where it meets the rails, with a round end there. ins draws it that much smaller all round, but not at the
+  // post, for the edge line.
+  const head = [cx, sy - 40], rise = Math.max(1, head[1] - postTop[1]), ctl = along(postTop, g.su, .55 * rise / g.su[1]);
+  const headD = ins => { const W0 = 22 - 2 * ins, W1 = 22 * 2 / 3 - 2 * ins, n0 = [-g.su[1], g.su[0]], lap = along(postTop, g.su, -1), hl = [pt(along(lap, n0, W0 / 2))], hr = [pt(along(lap, n0, -W0 / 2))];   // it starts 1 mm down inside the post, so no seam shows where they meet
+    for (let i = 0; i <= 20; i++) { const t = i / 20, a = 1 - t, w = (W0 + (W1 - W0) * t) / 2;
+      const q = [a * a * postTop[0] + 2 * a * t * ctl[0] + t * t * head[0], a * a * postTop[1] + 2 * a * t * ctl[1] + t * t * head[1]];
+      const d = [a * (ctl[0] - postTop[0]) + t * (head[0] - ctl[0]), a * (ctl[1] - postTop[1]) + t * (head[1] - ctl[1])], n = unit([-d[1], d[0]]);
+      hl.push(pt(along(q, n, w))); hr.push(pt(along(q, n, -w))); }
+    return `M ${hl.join(' L ')} A ${r1(W1 / 2)} ${r1(W1 / 2)} 0 0 1 ${hr.reverse().join(' L ')} Z`; };
+  E.clamp.setAttribute('d', headD(0)); E.clamp.inner = headD(3);
+  { const half = 30, run = 22 / Math.tan(rad(30)), cut = 6, P = [[sc - half - run, sy - 18], [sc - half, sy - 40], [sc + half, sy - 40], [sc + half + run, sy - 18]];
+    const toward = (a, c) => along(a, unit(sub(c, a)), cut);   // a point 6 mm from corner a, toward c
+    A(E.rails, { d: `M ${pt(P[0])} L ${pt(toward(P[1], P[0]))} Q ${pt(P[1])} ${pt(toward(P[1], P[2]))} L ${pt(toward(P[2], P[1]))} Q ${pt(P[2])} ${pt(toward(P[2], P[3]))} L ${pt(P[3])}` }); }
   // The saddle's outline, a plain road-saddle profile drawn as one solid shape: a slim nose, a top that runs nearly level and lifts a
   // little toward the tail, and sides that are deepest behind the middle. Points are given as [distance back from the nose tip, height
   // against the saddle-height line], so the top stays where saddle height is measured and the tip stays at the entered setback.
@@ -2928,6 +2956,8 @@ function drawDims() {
     case 'tire': { const x = fx + px(18), lo = fy + b.rim / 2, hi = fy + g.R; lin([x, lo], [x, hi], [fx, lo], [fx, hi], [1, 0], name, val); break; }
     case 'saddleH': aligned(O, along(O, g.su, b.saddleH), 1, name, val); break;
     case 'setback': { const y = g.saddleY + px(26); lin([0, y], [-b.setback, y], O, [-b.setback, g.saddleY], [0, 1], name, val); break; }
+    case 'postOffset': { const y = g.saddleY - 43, ax = -y / Math.tan(sa), hx = postHeadX(b), yd = y - px(40);   // level, from the post's line to its clamp, under the saddle
+      seg(O, [ax, y], lead); lin([ax, yd], [hx, yd], [ax, y], [hx, y], [0, -1], name, val); break; }
     case 'saddleLen': { const nose = -b.setback, tail = nose - b.saddleLen, y = g.saddleY + px(26); lin([tail, y], [nose, y], [tail, g.saddleY], [nose, g.saddleY], [0, 1], name, val); break; }
     case 'crank': aligned(O, [b.crank * Math.sin(theta), b.crank * Math.cos(theta)], 1, name, val); break;
     case 'stem': aligned(g.stemBase, g.bar, 1, name, val); break;
@@ -2992,7 +3022,7 @@ const SAYS = {
   ped: { 'of inseam': INSEAM }, bbs: { 'of inseam': INSEAM }
 };
 // The box an explanation shows in. b: the button clicked, a readout's name (its words are in its data-tip) or its label (in SAYS),
-// or a name in the control panel that explains itself the same way (Page theme and Soft background, under Display options: their
+// or a name in the control panel that explains itself the same way (Page theme and Soft background, under Display: their
 // words are in their data-tip, and the box stands just above the name).
 // The box stands just above the readout, so the name and the value stay in view, lined up with the left end of the words clicked
 // and kept inside the window; below the readout where there is no room above. A box that would sit across the info panel's top line
@@ -3156,8 +3186,8 @@ function applyColors() { const st = document.documentElement.style, night = docu
         // The steerer's copies lie over the head tube (they share the stem's group), so they start where the head tube ends, and the
         // smaller one is not cut short there: the steerer runs on into the head tube with no line across it.
         const open = e === E.steerer; if (open) { x1 = r1(G.headTop[0]); y1 = r1(-G.headTop[1]); A(ol, { x1, y1 }); }
-        const L = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / L * 3, uy = (y2 - y1) / L * 3;
-        A(inn, { x1: open ? x1 : r1(x1 + ux), y1: open ? y1 : r1(y1 + uy), x2: r1(x2 - ux), y2: r1(y2 - uy) }); } }); });
+        const L = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / L * 3, uy = (y2 - y1) / L * 3, top = e === E.seatpost;   // (the seatpost's head carries on from its top in the same way)
+        A(inn, { x1: open ? x1 : r1(x1 + ux), y1: open ? y1 : r1(y1 + uy), x2: top ? x2 : r1(x2 - ux), y2: top ? y2 : r1(y2 - uy) }); } }); });
   // Tires: one colour for the whole tire, and the tirewall's own once it has been set. A tire as pale as the page gets the edge line too.
   const wk = opt.wallOwn ? 'wall' : 'tire'; st.setProperty('--tire', hsb(opt.tireH, opt.tireS, opt.tireB)); st.setProperty('--tirewall', hsb(opt[wk + 'H'], opt[wk + 'S'], opt[wk + 'B']));
   [['grp-tire', opt.tireH, opt.tireS], ['grp-wall', opt[wk + 'H'], opt[wk + 'S']]].forEach(([id, h, sat]) => { $(id).style.setProperty('--pure', hsb(h, 100, 100)); $(id).style.setProperty('--full', hsb(h, sat, 100)); });
