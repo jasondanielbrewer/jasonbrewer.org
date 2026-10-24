@@ -12,6 +12,7 @@ try { if (localStorage.getItem('night-mode') === '1') document.documentElement.c
 (function () { var t = 'blue', d = null; try { d = JSON.parse(localStorage.getItem('bike-fit-visualizer:v1') || 'null'); if (d && typeof d.theme === 'string' && /^[a-z0-9-]+$/.test(d.theme)) t = d.theme; } catch (e) {}
   var was = { 'gray': 'gray-50', 'gray-25': 'gray-30', 'gray-12': 'gray-10', 'tan': 'yellow', 'purple': 'violet', 'neon-green': 'rgb-green' }; if (typeof was[t] === 'string' && was.hasOwnProperty(t)) t = was[t];   /* themes of earlier versions, each carried to the one that stands in for it now (THEME_WAS in the main script) */
   if (t === 'gray-90' && document.documentElement.classList.contains('night')) t = 'gray-80';   /* 90% gray is not offered in night mode (applyTheme in the main script) */
+  if (t === 'gray-10' && !document.documentElement.classList.contains('night')) t = 'gray-20';   /* nor 10% gray by day */
   if (t !== 'ink') document.documentElement.setAttribute('data-theme', t);
   /* Soft background, if this device has switched it on */
   if (d && d.soft === true) document.documentElement.classList.add('soft');
@@ -38,10 +39,11 @@ img{max-width:100%}
   --rule:#000000;                               /* the line under the title bar and the lines between the panel, the animation and the readouts, and the borders of the switches and the speed readout: black, white in night mode */
   --ts:1;                                       /* Text size (Options, Display): what every size of text on the page is multiplied by, from 0.9 for Extra small to 1.3 for Extra large; 1 is Small, the size the page was drawn at. The site name and the NIGHT MODE switch in the title bar keep their own size, which is the home page's */
   --knob:var(--ink);                            /* the sliders' lines and dots, and the panel's toggles: the page's ink, or the page theme's colour */
+  --t-warm-gray:#7a716a;                       /* the warm gray page theme, in Basic: a gray with a little brown in it, held to the same two limits as the colours below (4.8 to 1 for white lettering, 4.4 to 1 on night mode's black) */
   --t-red:#e0101a; --t-orange:#c25400; --t-green:#12872f; --t-blue:#1f6fe0; --t-indigo:#5954f0; --t-violet:#8a3fd6;   /* the page themes (Options, Display). Each is dark enough for white lettering on it (4.6 to 1 or better) and light enough to show on the black page of night mode (3.7 to 1 or better), so one colour serves both modes */
   --t-yellow:#dea62e;                           /* the yellow page theme: a golden yellow, the same by day and in night mode, like the other themes. It is light: strong on black (9.6 to 1) and faint on a white page (2.2 to 1), where its lines and outlines are pale. Lettering on it is black in both modes */
   --t-gray-10:#e6e6e6; --t-gray-20:#cccccc; --t-gray-30:#b3b3b3; --t-gray-40:#999999; --t-gray-50:#808080; --t-gray-60:#666666; --t-gray-70:#4d4d4d; --t-gray-80:#333333; --t-gray-90:#1a1a1a;   /* the Grayscale page themes: 10% gray to 90% gray in steps of 10%, each that far from white to black (10% is nearly white, 90% nearly black), the same in both modes. The lightest are faint on the white page and the darkest on the black one */
-  --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-lime:#ccff00; --t-neon-pink:#ff10f0; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff;   /* the Neon & RGB page themes: neon colours and the three pure ones, taken as they come and the same in both modes. Most are too light to show well on the white page, and pure blue is dim on the black one */
+  --t-neon-yellow:#fff01f; --t-neon-orange:#ff5f1f; --t-neon-lime:#ccff00; --t-rgb-red:#ff0000; --t-rgb-green:#00ff00; --t-rgb-blue:#0000ff; --t-rgb-indigo:#4b00ff; --t-rgb-violet:#9400ff; --t-neon-pink:#ff10f0;   /* the Neon & RGB page themes, in spectrum order: pure red, three neons, pure green and blue, an indigo and a violet at full strength (indigo and dark violet as the colour names give them, #4b0082 and #9400d3, brightened until their strongest part is full), and neon pink, past violet, taken as they come and the same in both modes. Most are too light to show well on the white page, and pure blue is dim on the black one */
   --page:#ffffff;                               /* the page behind the site name and the NIGHT MODE switch */
   --lo:#000000; --hi:#ffffff;  /* ends of the colour sliders' scales */
   --lab-fs:14px; --cap:0.72;                    /* NIGHT MODE switch: font size and capital height, set by the script as on the home page */
@@ -66,19 +68,19 @@ img{max-width:100%}
    navigation, and the sliders' lines and dots. Lettering on a filled part is white. It is the same colour in both modes (these rules
    come after night mode's, and take over from them). Text keeps the page's ink, and nothing in the drawing changes: the bike and the
    rider have their own colours, under Customize. With no theme chosen, none of this applies. */
-/* Soft background (Options, Display, under Night mode): the page is not pure white or pure black. By day it is a warm
+/* Soft background (Options, Display, under Night mode): the page is not pure white or pure black. By day it is a plain
    off-white, and in night mode a slightly lighter, warmer black. Only the page changes: everything on it keeps its colour. In night
    mode the faint lines (the outline of the Copy Link button, the track of a toggle that is off) are lifted by as much as the page
    is, so they show against it as they do against black. These rules come after night mode's, and take over from them. */
-:root.soft{--bg:#fcfcfa; --stage:#fcfcfa; --panel:#fcfcfa; --field:#fcfcfa; --page:#fcfcfa}
+:root.soft{--bg:#fafafa; --stage:#fafafa; --panel:#fafafa; --field:#fafafa; --page:#fafafa}
 :root.night.soft{--bg:#191918; --stage:#191918; --panel:#191918; --field:#191918; --page:#191918; --line:#3a3a39; --slot:#353534}
-:root[data-theme="yellow"]{--theme:var(--t-yellow)} :root[data-theme="red"]{--theme:var(--t-red)} :root[data-theme="orange"]{--theme:var(--t-orange)} :root[data-theme="green"]{--theme:var(--t-green)}
+:root[data-theme="warm-gray"]{--theme:var(--t-warm-gray)} :root[data-theme="yellow"]{--theme:var(--t-yellow)} :root[data-theme="red"]{--theme:var(--t-red)} :root[data-theme="orange"]{--theme:var(--t-orange)} :root[data-theme="green"]{--theme:var(--t-green)}
 :root[data-theme="blue"]{--theme:var(--t-blue)} :root[data-theme="indigo"]{--theme:var(--t-indigo)} :root[data-theme="violet"]{--theme:var(--t-violet)}
 :root[data-theme]{--rule:var(--theme);--accent:var(--theme);--accent-ink:#ffffff;--knob:var(--theme)}
 /* The Grayscale themes and the Neon & RGB ones (the two rows under Basic) work the same way. Lettering on the light ones is black,
    which is what reads on them (and on the yellow of the first row); on pure red it is white, as on the Cancel button, which is the
    same red. */
-:root[data-theme="neon-yellow"]{--theme:var(--t-neon-yellow)} :root[data-theme="neon-orange"]{--theme:var(--t-neon-orange)} :root[data-theme="neon-lime"]{--theme:var(--t-neon-lime)} :root[data-theme="neon-pink"]{--theme:var(--t-neon-pink)} :root[data-theme="rgb-red"]{--theme:var(--t-rgb-red)} :root[data-theme="rgb-green"]{--theme:var(--t-rgb-green)} :root[data-theme="rgb-blue"]{--theme:var(--t-rgb-blue)}
+:root[data-theme="neon-yellow"]{--theme:var(--t-neon-yellow)} :root[data-theme="neon-orange"]{--theme:var(--t-neon-orange)} :root[data-theme="neon-lime"]{--theme:var(--t-neon-lime)} :root[data-theme="rgb-red"]{--theme:var(--t-rgb-red)} :root[data-theme="rgb-green"]{--theme:var(--t-rgb-green)} :root[data-theme="rgb-blue"]{--theme:var(--t-rgb-blue)} :root[data-theme="rgb-indigo"]{--theme:var(--t-rgb-indigo)} :root[data-theme="rgb-violet"]{--theme:var(--t-rgb-violet)} :root[data-theme="neon-pink"]{--theme:var(--t-neon-pink)}
 :root[data-theme="gray-10"]{--theme:var(--t-gray-10)} :root[data-theme="gray-20"]{--theme:var(--t-gray-20)} :root[data-theme="gray-30"]{--theme:var(--t-gray-30)} :root[data-theme="gray-40"]{--theme:var(--t-gray-40)} :root[data-theme="gray-50"]{--theme:var(--t-gray-50)} :root[data-theme="gray-60"]{--theme:var(--t-gray-60)} :root[data-theme="gray-70"]{--theme:var(--t-gray-70)} :root[data-theme="gray-80"]{--theme:var(--t-gray-80)} :root[data-theme="gray-90"]{--theme:var(--t-gray-90)}
 :root[data-theme="neon-yellow"],:root[data-theme="neon-orange"],:root[data-theme="neon-lime"],:root[data-theme="neon-pink"],:root[data-theme="rgb-green"],:root[data-theme="yellow"],:root[data-theme="gray-10"],:root[data-theme="gray-20"],:root[data-theme="gray-30"],:root[data-theme="gray-40"],:root[data-theme="gray-50"]{--accent-ink:#000000}   /* of the grays, 10% to 50% take black lettering and 60% to 90% white: whichever reads better on each */
 
@@ -214,7 +216,7 @@ h1,h2,h3,p,dl,dd{margin:0}
 .tab:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}   /* inside the button: the buttons meet each other and the bar's edges */
 .tab[aria-selected="true"]:focus-visible{outline-color:var(--accent-ink)}   /* on the page showing, the ring lies on the rectangle, so it takes the panel's colour, as the icon and name do; in the rectangle's own colour it would not show */
 @media (prefers-reduced-motion:reduce){ .tab,.ready .tabs::before{transition:none} }
-.sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font:400 calc(12px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}
+.sec .sum{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:inherit;font:400 calc(12px * var(--ts)) var(--font);font-variant-numeric:tabular-nums}   /* in the title's own colour, the page's ink */
 .sec-body{display:flex;flex-direction:column;gap:16px;padding:20px 0 18px}   /* 20px from the line under a section title to its first control */
 
 .group{display:flex;flex-direction:column;gap:8px}
@@ -376,7 +378,7 @@ input[type=range]::-moz-range-track{box-shadow:none;filter:none}
 .dots label::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--c)}
 .dots input:checked+label::after{content:"";position:absolute;inset:0;border-radius:50%;border:var(--ln) solid var(--c)}
 .dots input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
-.dots input:disabled+label{opacity:.35;cursor:default}   /* a dot that cannot be chosen (90% gray, in night mode): dimmed, like any control that is switched off */
+.dots input:disabled+label{opacity:.35;cursor:default}   /* a dot that cannot be chosen (90% gray in night mode, 10% gray by day): dimmed, like any control that is switched off */
 /* Grayscale, and Neon & RGB: two more rows, of colours that may not show on the page. Their dots are the first row's in every way:
    the same size, and the one chosen has the same ring of its own colour. One dot in each mode can hardly be told from the page:
    10% gray by day, 90% gray in night mode (with Soft background on it is the page's colour all but exactly). That dot, and its
@@ -941,6 +943,7 @@ svg .dlab .dv{fill:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
             <div class="themes"><span class="cap" id="cap-basic">Basic</span>
               <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-basic">
                 <input type="radio" name="theme" id="theme-ink" value="ink" aria-label="Black and white"><label for="theme-ink" title="Black and white" style="--c:var(--ink)"></label>
+                <input type="radio" name="theme" id="theme-warm-gray" value="warm-gray" aria-label="Warm gray"><label for="theme-warm-gray" title="Warm gray" style="--c:var(--t-warm-gray)"></label>
                 <input type="radio" name="theme" id="theme-red" value="red" aria-label="Red"><label for="theme-red" title="Red" style="--c:var(--t-red)"></label>
                 <input type="radio" name="theme" id="theme-orange" value="orange" aria-label="Orange"><label for="theme-orange" title="Orange" style="--c:var(--t-orange)"></label>
                 <input type="radio" name="theme" id="theme-yellow" value="yellow" aria-label="Yellow"><label for="theme-yellow" title="Yellow" style="--c:var(--t-yellow)"></label>
@@ -965,13 +968,15 @@ svg .dlab .dv{fill:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
             </div>
             <div class="themes"><span class="cap" id="cap-neon">Neon &amp; RGB</span>
               <div class="dots" role="radiogroup" aria-labelledby="cap-theme cap-neon">
-                <input type="radio" name="theme" id="theme-neon-yellow" value="neon-yellow" aria-label="Neon yellow"><label for="theme-neon-yellow" title="Neon yellow" style="--c:var(--t-neon-yellow)"></label>
-                <input type="radio" name="theme" id="theme-neon-orange" value="neon-orange" aria-label="Neon orange"><label for="theme-neon-orange" title="Neon orange" style="--c:var(--t-neon-orange)"></label>
-                <input type="radio" name="theme" id="theme-neon-lime" value="neon-lime" aria-label="Neon yellow green"><label for="theme-neon-lime" title="Neon yellow green" style="--c:var(--t-neon-lime)"></label>
-                <input type="radio" name="theme" id="theme-neon-pink" value="neon-pink" aria-label="Neon pink"><label for="theme-neon-pink" title="Neon pink" style="--c:var(--t-neon-pink)"></label>
                 <input type="radio" name="theme" id="theme-rgb-red" value="rgb-red" aria-label="Pure red"><label for="theme-rgb-red" title="Pure red" style="--c:var(--t-rgb-red)"></label>
+                <input type="radio" name="theme" id="theme-neon-orange" value="neon-orange" aria-label="Neon orange"><label for="theme-neon-orange" title="Neon orange" style="--c:var(--t-neon-orange)"></label>
+                <input type="radio" name="theme" id="theme-neon-yellow" value="neon-yellow" aria-label="Neon yellow"><label for="theme-neon-yellow" title="Neon yellow" style="--c:var(--t-neon-yellow)"></label>
+                <input type="radio" name="theme" id="theme-neon-lime" value="neon-lime" aria-label="Neon yellow green"><label for="theme-neon-lime" title="Neon yellow green" style="--c:var(--t-neon-lime)"></label>
                 <input type="radio" name="theme" id="theme-rgb-green" value="rgb-green" aria-label="Pure green"><label for="theme-rgb-green" title="Pure green" style="--c:var(--t-rgb-green)"></label>
                 <input type="radio" name="theme" id="theme-rgb-blue" value="rgb-blue" aria-label="Pure blue"><label for="theme-rgb-blue" title="Pure blue" style="--c:var(--t-rgb-blue)"></label>
+                <input type="radio" name="theme" id="theme-rgb-indigo" value="rgb-indigo" aria-label="Indigo"><label for="theme-rgb-indigo" title="Indigo" style="--c:var(--t-rgb-indigo)"></label>
+                <input type="radio" name="theme" id="theme-rgb-violet" value="rgb-violet" aria-label="Violet"><label for="theme-rgb-violet" title="Violet" style="--c:var(--t-rgb-violet)"></label>
+                <input type="radio" name="theme" id="theme-neon-pink" value="neon-pink" aria-label="Neon pink"><label for="theme-neon-pink" title="Neon pink" style="--c:var(--t-neon-pink)"></label>
               </div>
             </div>
           </div>
@@ -1461,16 +1466,16 @@ let figH = null;    // the height of the frame the standing figure is in (Your B
 const FIG_MIN = 120;   // the least it can be dragged to
 // The page theme (Options, Display): 'ink' for none, or the name of one of the colours in the style sheet. Like NIGHT MODE it
 // is how this device shows the page, not part of the setup: it is remembered here and left out of links.
-const THEMES = ['ink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'gray-10', 'gray-20', 'gray-30', 'gray-40', 'gray-50', 'gray-60', 'gray-70', 'gray-80', 'gray-90', 'neon-yellow', 'neon-orange', 'neon-lime', 'neon-pink', 'rgb-red', 'rgb-green', 'rgb-blue'];   // Basic, then Grayscale, then Neon & RGB
+const THEMES = ['ink', 'warm-gray', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'gray-10', 'gray-20', 'gray-30', 'gray-40', 'gray-50', 'gray-60', 'gray-70', 'gray-80', 'gray-90', 'rgb-red', 'neon-orange', 'neon-yellow', 'neon-lime', 'rgb-green', 'rgb-blue', 'rgb-indigo', 'rgb-violet', 'neon-pink'];   // Basic, then Grayscale, then Neon & RGB
 const THEME_WAS = { 'gray': 'gray-50', 'gray-25': 'gray-30', 'gray-12': 'gray-10', 'tan': 'yellow', 'purple': 'violet', 'neon-green': 'rgb-green' };   // themes of earlier versions. Neon green has gone, and pure green is all but the same colour. Three grays (one in the first row, two among the risky ones): a device that remembers one gets the nearest step of the Grayscale row. Tan has gone, and yellow is the nearest to it; purple is the same colour under its new name, violet
 // Text size (Options, Display): one of five, by its place in this list; the number is what the page's text is multiplied by
 // (--ts in the style sheet). Like the page theme it belongs to the device: remembered here, left out of links.
 const TEXT = [['Extra small', .9], ['Small', 1], ['Medium', 1.1], ['Large', 1.2], ['Extra large', 1.3]], TEXT0 = 1; let textSize = TEXT0;
-// Soft background (Options, Display): the page's white becomes a warm off-white, and night mode's black a slightly
+// Soft background (Options, Display): the page's white becomes a plain off-white (#fafafa), and night mode's black a slightly
 // lighter, warmer black (.soft in the style sheet). It belongs to the device too: remembered here, left out of links. The colour a
 // phone's browser gives its own bars (theme-color) follows the page; the NIGHT MODE switch sets it to black or white, so it is put
 // right again after each change of that (nightchange).
-const SOFT = { day: '#fcfcfa', night: '#191918' }; let soft = false;
+const SOFT = { day: '#fafafa', night: '#191918' }; let soft = false;
 function applySoft() { const r = document.documentElement, night = r.classList.contains('night'), m = document.querySelector('meta[name="theme-color"]');
   r.classList.toggle('soft', soft); if (m) m.setAttribute('content', soft ? (night ? SOFT.night : SOFT.day) : night ? '#000' : '#fff'); }
 // How long the longest option of each switch is, and the longest name in the navigation, in ems (--k): the style sheet sets their
@@ -1492,7 +1497,9 @@ let theme = THEME0;
 // 90% gray is all but the colour of night mode's page (with Soft background on, the same to within a hair), so the page's lines,
 // buttons and toggles would vanish in it. In night mode it is not offered: its dot is dimmed and does not answer (grayNight, further
 // down), and if it is the theme when night mode comes on, the theme becomes 80% gray, the next step, and stays that afterwards.
-function applyTheme() { const r = document.documentElement; if (theme === 'gray-90' && r.classList.contains('night')) theme = 'gray-80';
+// 10% gray is the same by day, against the white page: it is only offered in night mode, and becomes 20% gray when night mode goes off.
+function applyTheme() { const r = document.documentElement, night = r.classList.contains('night');
+  if (theme === 'gray-90' && night) theme = 'gray-80'; if (theme === 'gray-10' && !night) theme = 'gray-20';
   if (theme === 'ink') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', theme); }
 const INFO_MIN = 80;   // the least it can be dragged to: one row of readouts, with the panel's 20px above and below it
 let bike, body, opt, units, bikeUnits, ownBody = null, panelW = 384, page = 'body';   // page: the control panel's page showing   // units: the body's (in or cm); bikeUnits: the bike's (in or mm)
@@ -2067,8 +2074,10 @@ function buildPanel() {
   const nm = $('o-night'), nightNow = () => document.documentElement.classList.contains('night'), nmShow = () => { nm.checked = nightNow(); };
   nm.addEventListener('change', () => { if (nm.checked !== nightNow()) $('night').click(); });
   document.addEventListener('nightchange', nmShow); shows.push(nmShow);
-  // 90% gray cannot be chosen in night mode (see applyTheme): its dot is switched off there, and says why under the pointer.
-  const g90 = $('theme-gray-90'), grayNight = () => { const n = nightNow(); g90.disabled = n; g90.nextElementSibling.title = n ? '90% gray (not available in night mode)' : '90% gray'; };
+  // 90% gray cannot be chosen in night mode, nor 10% gray by day (see applyTheme): the dot is switched off, and says why under the pointer.
+  const g90 = $('theme-gray-90'), g10 = $('theme-gray-10'), grayNight = () => { const n = nightNow();
+    g90.disabled = n; g90.nextElementSibling.title = n ? '90% gray (not available in night mode)' : '90% gray';
+    g10.disabled = !n; g10.nextElementSibling.title = n ? '10% gray' : '10% gray (only available in night mode)'; };
   document.addEventListener('nightchange', () => { const was = theme; applyTheme(); grayNight(); if (theme !== was) { refresh(); save(); } }); shows.push(grayNight);
   radios('ringStyle', () => opt.ringStyle, v => { opt.ringStyle = v; update(); });
   $('o-disc').addEventListener('change', e => { opt.disc = e.target.checked ? 'on' : 'off'; refresh(); update(); });   // a switch; the setting is kept as 'on' or 'off'
@@ -2393,16 +2402,18 @@ function toeCap() {
   return P;
 }
 function cycle() {
-  let kmax = 0, kmin = 999, hmin = 999, worst = 'ok', toe = Infinity; const cap = toeCap();
+  // at: the crank angle each extreme comes at, and toePt the toe's nearest point to the tire there (both for the drawing, drawDims).
+  let kmax = 0, kmin = 999, hmin = 999, worst = 'ok', toe = Infinity, toePt = null; const cap = toeCap(), at = { kmax: 0, kmin: 0, hip: 0, toe: 0 };
   for (let d = 0; d < 360; d += 5) {
-    const L = leg(rad(d)); kmax = Math.max(kmax, L.kneeAng); kmin = Math.min(kmin, L.kneeAng); hmin = Math.min(hmin, L.hipAng);
+    const th = rad(d), L = leg(th);
+    if (L.kneeAng > kmax) { kmax = L.kneeAng; at.kmax = th; } if (L.kneeAng < kmin) { kmin = L.kneeAng; at.kmin = th; } if (L.hipAng < hmin) { hmin = L.hipAng; at.hip = th; }
     if (L.state === 'fail') worst = 'fail'; else if (L.state === 'stretch' && worst !== 'fail') worst = 'stretch';
     // The toe against the front tire: the foot is turned about the ankle by its angle (as it is drawn), and the nearest point of its toe is measured from the front axle.
     const c = Math.cos(rad(-L.phi)), sn = Math.sin(rad(-L.phi));
-    for (const q of cap) toe = Math.min(toe, dist([L.ankle[0] + q[0] * c - q[1] * sn, L.ankle[1] + q[0] * sn + q[1] * c], G.front) - G.R);
+    for (const q of cap) { const p = [L.ankle[0] + q[0] * c - q[1] * sn, L.ankle[1] + q[0] * sn + q[1] * c], gap = dist(p, G.front) - G.R; if (gap < toe) { toe = gap; toePt = p; at.toe = th; } }
   }
   const L = leg(Math.PI / 2);
-  C = { kmax, kmin, hmin, worst, toe, kops: L.knee[0] + L.out[0] * .025 * G.H - G.crank };   // toe: the smallest gap between the shoe and the front tire over the stroke (under zero: they overlap)
+  C = { kmax, kmin, hmin, worst, toe, toePt, at, kops: L.knee[0] + L.out[0] * .025 * G.H - G.crank };   // toe: the smallest gap between the shoe and the front tire over the stroke (under zero: they overlap)
 }
 
 /* ---------- drawing ---------- */
@@ -2874,7 +2885,7 @@ function drawFrame() {
 }
 function tick(t) {
   const dt = Math.min(.05, Math.max(0, (t - last) / 1000)); last = t;
-  if (playing && G) {
+  if (playing && G && heldFrom === null) {   // (not while the cranks are held for a readout: see DIM_CRANK)
     const dth = opt.cadence / 60 * 2 * Math.PI * dt;
     theta = (theta + dth) % (2 * Math.PI); wheelAng = (wheelAng + deg(dth) * opt.ring / opt.cog) % 360;
     drawFrame();
@@ -2894,28 +2905,39 @@ function wheelBlur() {
 /* ---------- what a bike setting measures ---------- */
 // While a setting on the Bike Geometry page is under the pointer, in focus or being moved, or its explanation is open, the drawing
 // fades and what the setting measures is drawn over it: a dimension line, or an arc for an angle, with its name and its value as
-// the panel shows it. A readout of the bike whose explanation is open (trail, wheelbase, standover, saddle-to-bar drop, top tube
-// slope) is drawn the same way. The lines are in the scene's own millimetres and tilt with it on a hill; their offsets, ticks and
+// the panel shows it. A readout under the drawing is drawn the same way while it is under the pointer, in focus or touched, or its
+// explanation is open: all of them but Fit assessment, which is a verdict and not a measurement (and Knee vs pedal axle only while
+// it is measured, in the saddle). Stack to reach ratio draws both of its lengths. The lines are in the scene's own millimetres and tilt with it on a hill; their offsets, ticks and
 // lettering are set in screen pixels (VS: pixels to the millimetre, from fit()), so they read the same at any size.
 // dimHover: the setting under the pointer or in focus (or last touched, on a touch screen). dimPin: the one whose explanation is
 // open. dimNow: the one drawn, the pinned one first.
-const DIM_READ = { 'r-trail': 'trail', 'r-wb': 'wb', 'r-standover': 'standover', 'r-drop': 'drop', 'r-slope': 'slope' };
-let VS = 1, dimHover = null, dimPin = null, dimNow = null;
+const DIM_READ = { 'r-trail': 'trail', 'r-wb': 'wb', 'r-standover': 'standover', 'r-drop': 'drop', 'r-slope': 'slope', 'r-ratio': 'ratio', 'r-toe': 'toe',
+  'r-kmax': 'kmax', 'r-kmin': 'kmin', 'r-hip': 'hip', 'r-back': 'back', 'r-sh': 'sh', 'r-kops': 'kops', 'r-ped': 'pedal', 'r-bbs': 'bbs' };
+// The readouts measured at one place in the pedal stroke: while one is drawn, the cranks stop there (the animation stands still),
+// and they go back to where they were once it is not. Pedal to saddle top is measured with the crank in line with the seat tube.
+const DIM_CRANK = { kmax: () => C.at.kmax, kmin: () => C.at.kmin, hip: () => C.at.hip, toe: () => C.at.toe, kops: () => Math.PI / 2, pedal: () => Math.atan2(-G.su[0], -G.su[1]) };
+let VS = 1, dimHover = null, dimPin = null, dimNow = null, heldFrom = null;   // heldFrom: where the cranks were before they were held
 const rowDim = el => { const r = el && el.closest ? el.closest('#sec-bike [data-dim]') : null; return r ? r.dataset.dim : null; };
-const dimOf = el => { const k = rowDim(el); if (k) return k; const ro = el && el.closest ? el.closest('.ro') : null; return ro ? DIM_READ[ro.querySelector('dd').id] || null : null; };
-function setDim() { const k = dimPin || dimHover; if (k === dimNow) return; dimNow = k; svg.classList.toggle('dimming', !!k); drawDims(); }
+const readDim = el => { const ro = el && el.closest ? el.closest('#info .ro') : null, k = ro ? DIM_READ[ro.querySelector('dd').id] || null : null;
+  return k === 'kops' && opt.incline > SEATED ? null : k; };
+const dimOf = el => rowDim(el) || readDim(el);
+function setDim() { const k = dimPin || dimHover; if (k === dimNow) return; dimNow = k; svg.classList.toggle('dimming', !!k);
+  if (!(k && DIM_CRANK[k]) && heldFrom !== null) { theta = heldFrom; heldFrom = null; if (G) drawFrame(); }
+  drawDims(); }
 function dimWatch() {
-  const sec = $('sec-bike'), set = k => { dimHover = k; setDim(); };
-  sec.addEventListener('pointerover', e => { if (e.pointerType === 'mouse') set(rowDim(e.target) || rowDim(document.activeElement)); });
-  sec.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') set(rowDim(document.activeElement)); });
-  sec.addEventListener('focusin', e => set(rowDim(e.target)));
-  sec.addEventListener('focusout', e => set(rowDim(e.relatedTarget)));
-  sec.addEventListener('input', e => { const k = rowDim(e.target); if (k) set(k); });
-  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') set(rowDim(e.target)); });
+  const set = k => { dimHover = k; setDim(); };
+  [$('sec-bike'), $('info')].forEach(sec => {
+    sec.addEventListener('pointerover', e => { if (e.pointerType === 'mouse') set(dimOf(e.target) || dimOf(document.activeElement)); });
+    sec.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') set(dimOf(document.activeElement)); });
+    sec.addEventListener('focusin', e => set(dimOf(e.target)));
+    sec.addEventListener('focusout', e => set(dimOf(e.relatedTarget))); });
+  $('sec-bike').addEventListener('input', e => { const k = rowDim(e.target); if (k) set(k); });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') set(dimOf(e.target)); });
 }
 function drawDims() {
   const D = E.dimG; if (!D) return; D.textContent = '';
   const k = dimNow; if (!k || !G) return;
+  if (DIM_CRANK[k]) { if (heldFrom === null) heldFrom = theta; const t = DIM_CRANK[k](); theta = (t % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); drawFrame(); }
   D.setAttribute('transform', E.scene.getAttribute('transform') || '');
   const g = G, b = bike, px = v => v / VS, tick = px(4), lead = [], line = [], labs = [];
   const seg = (a, c, to) => to.push(`M ${pt(a)} L ${pt(c)}`);
@@ -2935,6 +2957,10 @@ function drawDims() {
     if (Math.abs(a1 - a0) > 1e-4) { line.push(`M ${pt(at(a0))} A ${r1(r)} ${r1(r)} 0 ${Math.abs(a1 - a0) > Math.PI ? 1 : 0} ${a1 > a0 ? 0 : 1} ${pt(at(a1))}`);
       [a0, a1].forEach(a => { const d = [Math.cos(a), Math.sin(a)]; seg(along(c, d, r - tick), along(c, d, r + tick), line); }); }
     const m = (a0 + a1) / 2, d = [Math.cos(m), Math.sin(m)]; lab(at(m), d, name, val); };
+  // A joint's angle: the arc about c between the lines to p and to q (the smaller way round), with dashed lines along both.
+  const joint = (c, p, q, r, name, val) => { const a0 = Math.atan2(p[1] - c[1], p[0] - c[0]); let d = Math.atan2(q[1] - c[1], q[0] - c[0]) - a0;
+    d = ((d + 3 * Math.PI) % (2 * Math.PI)) - Math.PI; arc(c, r, a0, a0 + d, [[c, p], [c, q]], name, val); };
+  const nm = id => $(id).parentNode.querySelector('dt .what').textContent;   // a readout's name, as the panel gives it
   const f = BIKE.flatMap(([, fs]) => fs).find(q => q.k === k), name = f ? f.l : '', val = f ? $('b-' + k + '-out').textContent : '';
   const O = [0, 0], ha = rad(b.hta), sa = rad(b.sta), hb = along(g.headTop, g.u, -b.headLen), fx = g.front[0], fy = g.front[1];
   // The drop bar's own frame: turned about its clamp by Bar angle. re, dr: bar reach and drop; br: the radius of its bend.
@@ -2975,6 +3001,17 @@ function drawDims() {
     case 'standover': { const x = (g.stJ[0] + g.htJ[0]) / 2, top = (g.stJ[1] + g.htJ[1]) / 2 + 14 / Math.cos(rad(g.slope)); lin([x, g.groundY], [x, top], null, null, [1, 0], 'Standover height', len(top - g.groundY)); break; }
     case 'drop': { const top = b.flat ? g.grip[1] + 17 : g.bar[1] + 12, bx = b.flat ? g.grip[0] : g.bar[0], x = Math.max(g.bar[0], g.grip[0]) + px(34), d = Math.round(g.saddleY - top);
       lin([x, g.saddleY], [x, top], [-b.setback, g.saddleY], [bx, top], [1, 0], 'Saddle-to-bar drop', d >= 0 ? len(d) : len(-d) + NB + 'rise'); break; }
+    case 'ratio': { const x = g.headTop[0] + px(28), y = Math.max(g.steerTop[1], b.stack) + px(24);
+      lin([x, 0], [x, b.stack], O, g.headTop, [1, 0], 'Stack', len(b.stack)); lin([0, y], [b.reach, y], O, g.headTop, [0, 1], 'Reach', len(b.reach)); break; }
+    case 'toe': { const p = C.toePt; if (!p) break; const u = unit(sub(p, g.front)), q = along(g.front, u, g.R), tg = Math.round(C.toe);   // from the tire's edge to the toe, where they come closest
+      lin(q, p, null, null, u[0] < 0 ? [u[1], -u[0]] : [-u[1], u[0]], nm('r-toe'), tg > 0 ? len(tg) + NB + 'gap' : len(-tg) + NB + 'overlap'); break; }
+    case 'kmax': case 'kmin': { const L = leg(C.at[k]); joint(L.knee, g.hip, L.ankle, 90, nm('r-' + k), Math.round(C[k]) + '°'); break; }
+    case 'hip': { const L = leg(C.at.hip); joint(g.hip, g.shoulder, L.knee, 110, nm('r-hip'), Math.round(C.hmin) + '°'); break; }
+    case 'back': arc(g.hip, 160, 0, g.tA, [[g.hip, [g.hip[0] + 240, g.hip[1]]], [g.hip, g.shoulder]], nm('r-back'), Math.round(deg(g.tA)) + '°'); break;
+    case 'sh': joint(g.shoulder, g.hip, g.elbow, 100, nm('r-sh'), Math.round(g.shoulderAng) + '°'); break;
+    case 'kops': { const L = leg(Math.PI / 2), kp = along(L.knee, L.out, .025 * G.H), y = Math.min(L.s[1], 0) - px(34), kv = Math.round(C.kops);   // a plumb line from the front of the knee, and one from the pedal axle
+      lin([kp[0], y], [L.s[0], y], kp, L.s, [0, -1], nm('r-kops'), Math.abs(kv) < 3 ? 'level' : len(Math.abs(kv)) + NB + (kv > 0 ? 'ahead' : 'behind')); break; }
+    case 'bbs': aligned(O, along(O, g.su, b.saddleH), 1, nm('r-bbs'), len(b.saddleH) + ' · ' + (100 * b.saddleH / body.inseam).toFixed(1) + '% of inseam'); break;
     case 'slope': arc(g.stJ, 200, 0, rad(g.slope), [[g.stJ, [g.stJ[0] + 280, g.stJ[1]]]], 'Top tube slope', Math.abs(r1(g.slope)).toFixed(1) + '°'); break;
   }
   N('path', 'dlead', D, { d: lead.join(' ') }); N('path', 'dline', D, { d: line.join(' ') });
