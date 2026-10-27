@@ -1,1 +1,2364 @@
+<!DOCTYPE html>
+<html lang="en" class="night page-check-in cal-day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>jasonbrewer.org</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&display=swap">
+<style>
+  :root {
+    --dot: #f0f0f0;           /* the color under the dot, replaced live */
+    --page: #000;             /* page background: black in night mode, the dot's color otherwise */
+    --ink: #f0f0f0;           /* text: the dot's color in night mode, black or white otherwise */
+    --line: #000;             /* dot outline: black or white by day, black in night mode */
+    --tick-room: 0px;         /* how far ENERGY / MOOD move down when the axis numbers show */
+    --font: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;   /* the page font */
+    --lab-fs: 14px;           /* font size of ENERGY / MOOD, set by the script */
+    --ui-fs: 1rem;            /* Settings and Calendar text: 16px, following the browser's text size setting */
+    --hour-fs: 0.75rem;       /* timeline hour labels, S M T W T F S: 12px */
+    --title-fs: 1.75rem;      /* the calendar's big title (the year, the month): 28px */
+    --tap: 44px;              /* smallest height for anything you tap */
+    --cap: 0.72;              /* capital-letter height as a fraction of the font size, measured by the script */
+    --size: min(33.333vh, calc(100vw - 48px));   /* refined by the script */
+    --cell: calc(var(--size) / 10);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }   /* no browser may enlarge text on its own */
+  html, body {
+    touch-action: pinch-zoom;   /* a finger pressed on the background can steer the dot */
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--page);
+    overscroll-behavior: none;
+  }
+  /* away from the check-in page, fingers scroll as usual */
+  :root:not(.page-check-in), :root:not(.page-check-in) body { touch-action: manipulation; }
+
+  #field {
+    position: fixed;
+    left: calc(50% - var(--size) / 2);
+    top: calc(50% - var(--size) / 2);
+    width: var(--size);
+    height: var(--size);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  #field img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    clip-path: inset(var(--gw, 1px));   /* only inside the outer lines (which cover that band anyway), so it can never show past them */
+  }
+
+  /* 11 x 11 black lines, 1px each */
+  #grid { position: absolute; inset: 0; pointer-events: none; }
+  /* drawn so every line lands on whole physical pixels: equally thick and sharp at any zoom */
+  #grid { width: 100%; height: 100%; overflow: visible; }
+  #grid rect { fill: #000; shape-rendering: crispEdges; }
+
+  #dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--cell);
+    height: var(--cell);
+    box-sizing: border-box;
+    border: 2px solid var(--line);
+    transition: border-color .15s;
+    border-radius: 50%;
+    background: var(--dot);
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    touch-action: none;
+  }
+  #dot.dragging { cursor: grabbing; }
+
+  /* heading, numbers and labels: placed in pixels by the script */
+  #text {
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    overflow: visible; pointer-events: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #text text {
+    font-family: var(--font);
+    fill: var(--ink);
+    transition: fill .15s;
+    text-rendering: geometricPrecision;   /* exact glyph positions at any size */
+  }
+  #text text { font-weight: 400; text-anchor: start; }
+  #text .lab { font-weight: 600; }
+  #text .edge { font-weight: 400; }   /* the four labels around the grid */
+  :root.no-grid-labels #text .edge { display: none; }
+  :root.night #text text { transition: none; }   /* text keeps exact pace with the dot's color */
+
+  /* The three switches. Their words are the size of ENERGY / MOOD in regular weight.
+     Each toggle is sized in the words' own units (em), to exactly the height of their
+     capital letters, and stands on the same baseline as the words. */
+  .switch {
+    --sw: calc(var(--cap) * 1em);
+    position: fixed;
+    right: calc(env(safe-area-inset-right, 0px) + 8px);
+    display: block;
+    margin: 0; padding: calc((var(--tap) - 1em) / 2) 8px;
+    border: 0; background: none; color: var(--ink);
+    font: 400 var(--ui-fs)/1 var(--font);
+    text-rendering: geometricPrecision;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* NIGHT MODE: a row on the Settings page, its words on the left and its toggle on the right */
+  /* Settings rows: words on the left, toggle on the right */
+  .setting { display: flex; justify-content: space-between; align-items: baseline; right: auto; box-sizing: border-box; }
+  :root:not(.page-settings) .setting { visibility: hidden; }
+  .setting .words { font-weight: 600; }
+
+  /* ---------- Settings: Schedule check-ins (interface only for now) ---------- */
+  #sched-panel {
+    position: fixed; left: 0; top: 0; height: 0; box-sizing: border-box;
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+    scrollbar-width: none; color: var(--ink); font-family: var(--font);
+    user-select: none; -webkit-user-select: none; visibility: hidden;
+    --line-w: calc(var(--icon) * 1.75 / 24);                 /* the nav icons' line */
+    --knob: calc(var(--icon) * 20.25 / 24);                  /* as tall as the toggles */
+  }
+  #sched-panel::-webkit-scrollbar { display: none; }
+  :root.page-settings.sched-on #sched-panel { visibility: visible; }
+  #sched-panel button { margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #sched-panel button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 999px; }
+
+  /* the three-position choice */
+  .seg {
+    display: grid; grid-template-columns: repeat(3, 1fr); height: var(--tap); margin-top: 6px;
+    border-radius: calc(var(--tap) / 2); box-shadow: inset 0 0 0 var(--line-w) currentColor;
+  }
+  .seg { position: relative; }
+  /* the filled pill behind the chosen option; it slides from one to the next */
+  .seg-thumb {
+    position: absolute; top: 0; bottom: 0; left: 0; width: calc(100% / 3);
+    border-radius: calc(var(--tap) / 2); background: var(--ink);
+    transform: translateX(calc(var(--seg-i, 0) * 100%));
+    transition: transform .3s cubic-bezier(.25, .8, .25, 1);   /* eases in, settles without overshooting the outline */
+  }
+  .seg button { position: relative; border-radius: calc(var(--tap) / 2); font: 600 var(--ui-fs)/1 var(--font) !important; transition: color .2s; }
+  #sched-panel .seg button[aria-checked="true"] { color: var(--page); }
+  @media (prefers-reduced-motion: reduce) { .seg-thumb, .seg button { transition: none; } }
+
+  /* a titled slider */
+  .field { margin-top: 28px; }
+  .field[hidden] { display: none; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; font: 600 var(--ui-fs)/1 var(--font); }
+  .field-value { font-weight: 400; }
+  .slider { position: relative; height: var(--tap); margin-top: 6px; touch-action: none; cursor: pointer; }
+  .rail, .fill { position: absolute; top: 50%; transform: translateY(-50%); background: currentColor; }
+  /* the line and its step dots are faded together as one group, so where a dot sits on the line
+     the two don't stack into a darker spot */
+  .rail-group { position: absolute; inset: 0; opacity: .3; pointer-events: none; }
+  .rail { left: calc(var(--knob) / 2); right: calc(var(--knob) / 2); height: var(--line-w); border-radius: calc(var(--line-w) / 2); }
+  .fill { height: calc(var(--line-w) * 2); border-radius: var(--line-w); }            /* the line between the two handles */
+  .stop { position: absolute; top: 50%; width: calc(var(--line-w) * 3); height: calc(var(--line-w) * 3); margin: calc(var(--line-w) * -1.5) 0 0 calc(var(--line-w) * -1.5); border-radius: 50%; background: currentColor; }   /* 3x the line's thickness */
+  .slider .knob {
+    position: absolute; top: 50%; width: var(--tap) !important; height: var(--tap);
+    margin: calc(var(--tap) / -2) 0 0 calc(var(--tap) / -2) !important; border-radius: 50%;
+    touch-action: none; cursor: grab;
+  }
+  .slider .knob::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: var(--knob); height: var(--knob); margin: calc(var(--knob) / -2) 0 0 calc(var(--knob) / -2);
+    border-radius: 50%; background: currentColor;
+  }
+  .slider .knob.dragging { cursor: grabbing; }
+  #sched-panel .slider .knob:focus, #sched-panel .slider .knob:focus-visible { outline: none; }   /* no halo around a handle in use */
+  /* hour marks under the time range: centered on their points, the two ends kept inside the row */
+  .ticks { position: relative; height: 1em; margin-top: 2px; font: 400 var(--hour-fs)/1 var(--font); opacity: .45; }
+  .ticks span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+  .ticks span:first-child { transform: none; }
+  .ticks span:last-child { transform: translateX(-100%); }
+  .preview { margin-top: 10px; font: 400 var(--hour-fs)/1.5 var(--font); opacity: .45; }
+
+  /* Custom: a list of times, each with its own toggle, and a pill to add one */
+  #f-custom { margin-top: 20px; }
+  #sched-panel .ci {
+    position: relative; right: auto; display: flex; width: 100%;
+    justify-content: space-between; align-items: baseline; box-sizing: border-box;
+    padding: calc((var(--tap) - 1em) / 2) 0; font: 600 var(--ui-fs)/1 var(--font);
+  }
+  #sched-panel .ci .words { font-variant-numeric: tabular-nums; }
+  #sched-panel .ci[aria-checked="false"] .words { opacity: .45; }
+  #sched-panel .add { display: grid; place-items: center; width: 100%; height: var(--tap); margin-top: 4px; }
+  #sched-panel .add[hidden] { display: none; }
+  .add .pill {
+    display: grid; place-items: center; width: 100%; height: var(--tap); box-sizing: border-box;   /* as tall as Frequency / Number / Custom */
+    border-radius: calc(var(--tap) / 2); box-shadow: inset 0 0 0 var(--line-w) currentColor;
+  }
+  .add svg { width: var(--ui-fs); height: var(--ui-fs); overflow: visible; }   /* the + is the size of the words above */
+  .add svg path { fill: none; stroke: currentColor; stroke-width: var(--line-w); stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  /* entering a new time: one full-width pill, like the + it replaces —
+     the time and its clock on the left, cancel (X) and add (tick) on the right */
+  .new-time {
+    display: flex; align-items: center; height: var(--tap); margin-top: 4px; padding: 0 0 0 16px; box-sizing: border-box;
+    border-radius: calc(var(--tap) / 2); box-shadow: inset 0 0 0 var(--line-w) currentColor;
+  }
+  .new-time[hidden] { display: none; }
+  .new-time input {
+    flex: none; width: auto; height: 100%; margin: 0; padding: 0; border: 0; background: none;
+    color: inherit; font: 600 var(--ui-fs)/1 var(--font); font-variant-numeric: tabular-nums;
+    color-scheme: light;
+  }
+  :root.night .new-time input { color-scheme: dark; }
+  .new-time input:focus { outline: none; }   /* the outline keeps its weight while you type; the highlighted digits show where you are */
+  .new-time input::-webkit-calendar-picker-indicator { display: none; }   /* our own clock sits beside the time instead */
+  .new-time .gap { flex: 1; }
+  #sched-panel .new-time button { display: grid; place-items: center; flex: none; height: var(--tap); }
+  /* The clock, X and check are the same circle: 28px icons whose circle (r = 11 of 24) measures
+     --ring across, line included. The check sits as far from the pill's line as it does above and
+     below (--inset), and the X sits that same distance from the check. */
+  .new-time { --ring: calc(28px * 22 / 24 + var(--line-w)); --inset: calc((var(--tap) - var(--ring)) / 2 - var(--line-w)); }
+  #sched-panel .new-time .clock { width: var(--tap); margin-left: -4px; }
+  /* Each button's tap area runs to the middle of the gap between them, so they never overlap.
+     --edge-in: the sliver between a 28px icon's box and its circle. */
+  .new-time { --edge-in: calc((28px - var(--ring)) / 2); --outside: calc((var(--tap) - var(--ring)) / 2 - var(--edge-in)); --half: calc(var(--inset) / 2 - var(--edge-in)); }
+  #sched-panel .new-time .round { width: auto; }
+  #sched-panel .new-time #new-time-cancel { padding: 0 var(--half) 0 var(--outside); }
+  #sched-panel .new-time #new-time-add { padding: 0 var(--outside) 0 var(--half); }
+  .new-time svg { overflow: visible; }
+  .new-time svg * { fill: none; stroke: currentColor; stroke-width: var(--line-w); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .new-time .clock svg, .new-time .round svg { width: 28px; height: 28px; }
+  #sched-panel .new-time button:focus-visible { outline: 2px solid currentColor; outline-offset: -6px; }
+
+  /* ---------- Calendar: Year, Month and Day ---------- */
+  .calv {
+    position: fixed; left: 0; right: 0; top: 0; height: 0; visibility: hidden;
+    color: var(--ink); font-family: var(--font);
+    user-select: none; -webkit-user-select: none;
+  }
+  :root.page-calendar.cal-year #cal-year,
+  :root.page-calendar.cal-month #cal-month, :root.page-calendar.cal-month #cal-month-head,
+  :root.page-calendar.cal-day #cal-day-head, :root.page-calendar.cal-week #cal-week-head { visibility: visible; }
+  .cal-scroll {
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+    touch-action: pan-y; scrollbar-width: none;
+  }
+  .cal-scroll::-webkit-scrollbar { display: none; }
+  .calv button {
+    margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit;
+    text-align: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .calv button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 6px; }
+  /* the big title: the year, or the month */
+  .calv .cal-title { display: block; margin: 0; min-height: 1em; font: 600 var(--title-fs)/1 var(--font); letter-spacing: -0.01em; }
+  /* S M T W T F S */
+  .wk { display: grid; grid-template-columns: repeat(7, 1fr); font: 600 var(--hour-fs)/1 var(--font); opacity: .45; text-align: center; }
+  .today-mark { background: var(--ink); color: var(--page) !important; border-radius: 50%; font-weight: 600 !important; opacity: 1 !important; }
+
+  /* Year: 12 month blocks per year, sized so one year fits the screen */
+  .yr { padding-bottom: var(--ygapy); }
+  .yr .cal-title { padding: 0 0 var(--ytitle-gap); }
+  .yr-grid { display: grid; grid-template-columns: repeat(var(--ycols), var(--yblock)); column-gap: var(--ygapx); row-gap: var(--ygapy); }
+  .mb { display: block; width: var(--yblock); }
+  .mb-name { display: block; font: 600 calc(var(--ycell) * 0.95)/1 var(--font); height: var(--yname, calc(var(--ycell) * 1.4)); }
+  .mb-days { display: grid; grid-template-columns: repeat(7, var(--ycell)); grid-auto-rows: var(--ycell); height: calc(var(--ycell) * 6);
+             font: 400 calc(var(--ycell) * 0.6)/1 var(--font); }
+  .mb-days i { font-style: normal; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+  .mb-days i.today-mark { width: calc(var(--ycell) * 0.95); height: calc(var(--ycell) * 0.95); margin: auto; }
+  /* a day with check-ins: its whole tile takes their average color, the number in black or white */
+  .mb-days i.tiled, .mo button.tiled { color: var(--tile-ink);
+    background: linear-gradient(var(--tile), var(--tile)) 0 0 / calc(100% - var(--gw, 1px)) calc(100% - var(--gw, 1px)) no-repeat; }   /* a gridline-thin gap to the right of and below each tile, on whole pixels */
+  /* today's circle on a colored tile: black or white, whichever stands out, with the number in the tile's color */
+  .mb-days i.today-mark.tiled { width: auto; height: auto; margin: 0; border-radius: 0; color: var(--tile) !important;
+    background: radial-gradient(circle closest-side, var(--tile-ink) calc(95% - 0.5px), transparent calc(95% + 0.5px)),
+                linear-gradient(var(--tile), var(--tile)) 0 0 / calc(100% - var(--gw, 1px)) calc(100% - var(--gw, 1px)) no-repeat; }
+  .mo button.tiled .today-mark { background: var(--tile-ink); color: var(--tile) !important; }
+
+  /* Month: months one after another, each month's name above its 1st */
+  #cal-month-head .wk { grid-template-columns: repeat(7, var(--mcol, 1fr)); }
+  .mo { display: grid; grid-template-columns: repeat(7, var(--mcol, 1fr)); grid-template-rows: var(--mlabel); grid-auto-rows: var(--mrow); }
+  .mo-label { grid-row: 1; height: var(--mlabel); box-sizing: border-box; align-self: stretch; display: flex; align-items: center; justify-content: center; font: 600 var(--ui-fs)/1 var(--font); }   /* centered in its row, like the dates in theirs, so it sits halfway between them */
+  .mo button { display: grid; place-items: center; font: 400 var(--ui-fs)/1 var(--font); font-variant-numeric: tabular-nums; }
+  .mo button span { display: grid; place-items: center; width: var(--mcircle); height: var(--mcircle); }
+  .mo .first-row { grid-row: 2; }
+  .mo-pad { grid-row: 1; }
+
+  /* Day: the week strip and the date line above the timeline */
+  #cal-day-head { touch-action: pan-y; }
+  .strip { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 10px; }
+  /* one circle behind the chosen date; it glides from date to date */
+  .strip-dot {
+    position: absolute; left: 0; top: 0; width: calc(100% / 7); height: 44px; pointer-events: none;
+    transform: translateX(calc(var(--strip-i, 0) * 100%));
+    transition: transform .3s cubic-bezier(.25, .8, .25, 1);
+  }
+  .strip-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: var(--ink); }
+  .strip.no-glide .strip-dot { transition: none; }
+  .strip button { position: relative; display: grid; place-items: center; height: 44px; font: 400 var(--ui-fs)/1 var(--font); font-variant-numeric: tabular-nums; transition: color .1s; }
+  .strip button span { display: grid; place-items: center; width: 36px; height: 36px; }
+  .calv .strip button.sel { color: var(--page); font-weight: 600; transition: color .12s ease .18s; }   /* turns as the circle lands, not before */
+  .strip button.today:not(.sel) span { font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .strip-dot, .strip button { transition: none; } }
+  /* the back bar along the top: empty in Year, "‹ 2026" in Month, "‹ October" in Day */
+  #cal-back {
+    position: fixed; left: 0; right: auto; top: 0; width: auto; height: var(--tap); margin: 0; padding: 0 8px; visibility: hidden;
+    border: 0; border-radius: calc(var(--tap) / 2); background: none; color: var(--ink); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; gap: 4px; font: 600 var(--ui-fs)/1 var(--font);
+  }
+  :root.page-calendar.cal-month #cal-back, :root.page-calendar.cal-week #cal-back, :root.page-calendar.cal-day #cal-back,
+  :root.page-calendar.cal-entry #cal-back { visibility: visible; }
+  #day rect.pill { cursor: pointer; }
+
+  /* ---------- a check-in, opened from Day view: the check-in page's look, with a note ---------- */
+  #review {
+    position: fixed; left: 0; right: 0; top: 0; height: 0; visibility: hidden;
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none;
+    color: var(--ink); font-family: var(--font);
+  }
+  #review::-webkit-scrollbar { display: none; }
+  :root.page-calendar.cal-entry #review { visibility: visible; }
+  #rv-inner { position: relative; width: 100%; }
+  /* the date and time: the Year / Month title's size and place; a long one wraps, its first line
+     kept exactly where a one-line title sits */
+  #rv-head { position: absolute; margin: -0.075em 0 0; text-align: left; font: 600 var(--title-fs)/1.15 var(--font); letter-spacing: -0.01em; white-space: pre-line; user-select: none; -webkit-user-select: none; }
+  #rv-text { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; user-select: none; -webkit-user-select: none; }
+  #rv-text text { font-family: var(--font); fill: var(--ink); text-rendering: geometricPrecision; font-weight: 400; }
+  #rv-text .lab { font-weight: 600; }
+  :root.no-grid-labels #rv-text .edge { display: none; }
+  #rv-field { position: absolute; user-select: none; -webkit-user-select: none; }
+  #rv-field img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; clip-path: inset(var(--gw, 1px)); }   /* only inside the outer lines, so it can never show past them */
+  #rv-grid { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  #rv-grid rect { fill: #000; shape-rendering: crispEdges; }
+  #rv-dot { position: absolute; box-sizing: border-box; border: 2px solid var(--line); border-radius: 50%; transform: translate(-50%, -50%); }
+  #rv-note {
+    position: absolute; margin: 0; padding: 0; border: 0; outline: none; resize: none; overflow: hidden;
+    background: none; color: var(--ink); caret-color: var(--ink); text-align: left;   /* starts at the grid's left edge */
+    font-family: var(--font); font-weight: 400; line-height: 1.25;
+  }
+  #rv-note::placeholder { color: var(--ink); opacity: .45; }   /* the dimness of the nav's other icons */
+  #rv-note:focus::placeholder { color: transparent; }           /* tapped: just the cursor */
+  #cal-back:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+  #cal-back svg { width: var(--ui-fs); height: var(--ui-fs); margin-left: -3px; overflow: visible; }
+  #cal-back path { fill: none; stroke: currentColor; stroke-width: calc(var(--icon) * 1.75 / 24); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  /* the week's title: the Year / Month title style; a long range wraps, with the first line
+     kept exactly where a one-line title sits */
+  #week-line.cal-title, #day-line.cal-title { line-height: 1.15; margin-top: -0.075em; text-wrap: balance; }
+  @keyframes from-right { from { transform: translateX(28px); opacity: 0; } }
+  @keyframes from-left  { from { transform: translateX(-28px); opacity: 0; } }
+  .slide-next { animation: from-right .22s ease-out; }
+  .slide-prev { animation: from-left .22s ease-out; }
+  @media (prefers-reduced-motion: reduce) { .slide-next, .slide-prev { animation: none; } }
+
+  /* Day: a scrolling timeline, midnight to midnight, between the views row and the nav */
+  #day, #week {
+    position: fixed; left: 0; right: 0; top: 0; height: 0;
+    overflow-x: hidden; overflow-y: auto;
+    overscroll-behavior: contain; touch-action: pan-y;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+            mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  }
+  #day::-webkit-scrollbar, #week::-webkit-scrollbar { display: none; }
+  :root:not(.page-calendar) #day, :root:not(.cal-day) #day,
+  :root:not(.page-calendar) #week, :root:not(.cal-week) #week { visibility: hidden; }
+  #day svg, #week svg { display: block; width: 100%; overflow: visible; }
+  #week .band { fill: transparent; cursor: pointer; }        /* tap a day to open it */
+  #day text, #week text {
+    font-family: var(--font); font-weight: 400; fill: var(--ink); fill-opacity: .45;
+    text-rendering: geometricPrecision;
+  }
+  #day rect, #week rect { fill: var(--ink); fill-opacity: .2; }
+  #week rect.band { fill-opacity: 0; }
+  /* a committed check-in: a pill in its chosen color with a black outline */
+  #day rect.pill, #week rect.pill { fill-opacity: 1; stroke: none; }
+  .switch:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; border-radius: 6px; }
+  /* The toggle matches the nav icons: as tall as the Check-in icon's circle (20.25 of its
+     24 units, outside edge to outside edge) and drawn with the icons' line (1.75 units). */
+  .switch .track {
+    --th: calc(var(--icon) * 20.25 / 24);             /* toggle height */
+    --tb: calc(var(--icon) * 1.75 / 24);              /* line thickness */
+    --td: calc(var(--th) * 0.5);                      /* thumb diameter */
+    --tg: calc((var(--th) - 2 * var(--tb) - var(--td)) / 2);   /* even gap around the thumb */
+    display: inline-block; vertical-align: baseline;   /* an empty inline block sits exactly on the text baseline */
+    position: relative; flex: none;
+    height: var(--th); width: calc(var(--th) * 1.75); box-sizing: border-box;
+    border-radius: calc(var(--th) / 2);                 /* a pure pill: straight sides, semicircle ends */
+    box-shadow: inset 0 0 0 var(--tb) currentColor;   /* the outline; browsers round real borders to whole pixels */
+    /* from the baseline, move down so the toggle's middle is level with the middle of the capitals */
+    transform: translateY(calc(var(--th) / 2 - var(--sw) / 2));
+  }
+  .switch .thumb {
+    position: absolute; top: 50%; left: calc(var(--tb) + var(--tg));
+    width: var(--td); height: var(--td); border-radius: 50%;
+    background: currentColor;
+    transform: translateY(-50%);
+    transition: transform .15s;
+  }
+  .switch .words + .track, .switch .track + .words { margin-left: calc(var(--sw) * 0.8); }
+  .switch[aria-checked="true"] .track { background: currentColor; }
+  .switch[aria-checked="true"] .thumb { background: var(--page); transform: translate(calc(var(--th) * 0.75), -50%); }
+  @media (prefers-reduced-motion: reduce) { .switch .thumb { transition: none; } }
+
+  /* the key: axis numbers 0-10 beside and below the square, each with a small tick mark */
+  #ticks { display: none; }
+  #ticks rect { fill: var(--ink); }
+  /* the square's bottom-left corner pixel, drawn over the black grid in the ticks' color so the
+     two zero ticks meet in an unbroken right angle */
+  #corner { display: none; position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; background: var(--ink); }
+  :root.ticks #corner { display: block; }
+  :root.ticks #ticks { display: inline; }
+
+  /* the big numbers and their labels step down to make room, and back up again */
+  #block { transition: transform .6s cubic-bezier(.3, 1.9, .5, 1); }
+  @supports (transition-timing-function: linear(0, 1)) {
+    #block { transition-timing-function: linear(0, 0.35 12%, 0.75 24%, 1.02 34%, 1.13 44%, 1.14 50%, 1.09 60%, 1.02 70%, 0.985 80%, 0.99 90%, 1); }
+  }
+  :root.ticks #block { transform: translateY(var(--tick-room)); }
+  @media (prefers-reduced-motion: reduce) { #block { transition: none; } }
+
+  /* ---------- commit: the circled arrow that saves a check-in ---------- */
+  #commit {
+    position: fixed; left: 0; top: 0; width: var(--tap); height: var(--tap);   /* placed by the script */
+    display: grid; place-items: center;
+    margin: 0; padding: 0; border: 0; border-radius: 50%; background: none;
+    color: var(--ink); cursor: pointer;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    opacity: 0; transform: scale(.85); pointer-events: none;
+    transition: opacity .2s, transform .2s cubic-bezier(.3, 1.6, .5, 1);
+  }
+  #commit.show { opacity: 1; transform: none; pointer-events: auto; }
+  :root:not(.page-check-in) #commit { visibility: hidden; }
+  #commit svg { display: block; width: var(--nav-icon); height: var(--nav-icon); overflow: visible; }   /* the nav icons' size */
+  #commit svg * {
+    fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round;
+    stroke-width: calc(var(--icon) * 1.75 / 24);              /* the nav icons' line */
+    vector-effect: non-scaling-stroke;
+  }
+  #commit .tick { opacity: 0; }
+  #commit.done .arrow { opacity: 0; }
+  #commit.done .tick { opacity: 1; }
+  #commit:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { #commit { transition: opacity .2s; } }
+
+  /* ---------- pages and the bottom nav ---------- */
+  :root { --nav-h: 64px; --icon: 26px; --nav-icon: calc(var(--icon) * 1.5); }   /* --icon sizes the toggles and line weights; the nav icons are 1.5x that */
+  :root:not(.page-check-in) #text,
+  :root:not(.page-check-in) #field { visibility: hidden; }
+
+  #nav {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: var(--nav-h);
+    padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    display: flex; justify-content: center; align-items: center;
+    gap: clamp(32px, 12vw, 88px);
+    user-select: none; -webkit-user-select: none;
+  }
+  #nav a {
+    display: grid; place-items: center;
+    width: 56px; height: 56px; border-radius: 14px;
+    color: var(--ink); opacity: .45;
+    transition: opacity .15s;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  #nav a:hover { opacity: .75; }
+  #nav a[aria-current="page"] { opacity: 1; }
+  #nav a:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
+  #nav svg * { vector-effect: non-scaling-stroke; }
+  #nav svg {
+    width: var(--nav-icon); height: var(--nav-icon); overflow: visible;
+    fill: none; stroke: currentColor;
+    stroke-width: calc(var(--icon) * 1.75 / 24);   /* the same line as the toggles and sliders, at any icon size */
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+</style>
+</head>
+<body>
+<svg id="text" xmlns="http://www.w3.org/2000/svg">
+  <g id="ticks"></g>
+  <text id="t-title">How are you feeling?</text>
+  <text id="e-top" class="edge">HIGH ENERGY</text>
+  <text id="e-bottom" class="edge">LOW ENERGY</text>
+  <text id="e-left" class="edge">NEGATIVE MOOD</text>
+  <text id="e-right" class="edge">POSITIVE MOOD</text>
+  <g id="block">
+    <text id="n-energy" class="num">5</text>
+    <text id="n-mood" class="num">5</text>
+    <text id="l-energy" class="lab">ENERGY</text>
+    <text id="l-mood" class="lab">MOOD</text>
+  </g>
+</svg>
+<div id="safe" aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)"></div>
+<button id="night" class="switch setting" type="button" role="switch" aria-checked="true"><span class="words">Night mode</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+<button id="sched" class="switch setting" type="button" role="switch" aria-checked="false"><span class="words">Schedule check-ins</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+<div id="sched-panel" role="group" aria-label="Check-in schedule">
+  <div class="seg" role="radiogroup" aria-label="Schedule by">
+    <span class="seg-thumb" aria-hidden="true"></span>
+    <button type="button" role="radio" data-mode="frequency" aria-checked="true">Frequency</button>
+    <button type="button" role="radio" data-mode="number" aria-checked="false">Number</button>
+    <button type="button" role="radio" data-mode="custom" aria-checked="false">Custom</button>
+  </div>
+  <div class="field" id="f-range">
+    <div class="field-head"><span id="l-range">Time range</span><span class="field-value" id="v-range"></span></div>
+    <div class="slider" id="s-range"><div class="rail-group"><div class="rail"></div></div><div class="fill"></div>
+      <button type="button" class="knob" role="slider" aria-labelledby="l-range" aria-label="Start" data-k="0"></button>
+      <button type="button" class="knob" role="slider" aria-labelledby="l-range" aria-label="End" data-k="1"></button></div>
+    <div class="ticks" aria-hidden="true"><span style="left:0">12 AM</span><span style="left:calc(var(--knob) / 2 + (100% - var(--knob)) * .25)">6 AM</span><span style="left:50%">12 PM</span><span style="left:calc(var(--knob) / 2 + (100% - var(--knob)) * .75)">6 PM</span><span style="left:100%">12 AM</span></div>
+  </div>
+  <div class="field" id="f-freq">
+    <div class="field-head"><span id="l-freq">Frequency</span><span class="field-value" id="v-freq"></span></div>
+    <div class="slider" id="s-freq"><div class="rail-group"><div class="rail"></div></div>
+      <button type="button" class="knob" role="slider" aria-labelledby="l-freq" data-k="0"></button></div>
+    <div class="preview" id="p-freq"></div>
+  </div>
+  <div class="field" id="f-num" hidden>
+    <div class="field-head"><span id="l-num">Number</span><span class="field-value" id="v-num"></span></div>
+    <div class="slider" id="s-num"><div class="rail-group"><div class="rail"></div></div>
+      <button type="button" class="knob" role="slider" aria-labelledby="l-num" data-k="0"></button></div>
+    <div class="preview" id="p-num"></div>
+  </div>
+  <div class="field" id="f-custom" hidden>
+    <div id="ci-list" role="list" aria-label="Scheduled check-ins"></div>
+    <div class="new-time" id="new-time" hidden>
+      <input type="time" id="new-time-input" aria-label="Check-in time" step="60">
+      <button type="button" class="clock" id="new-time-clock" aria-label="Choose a time"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M12 6.5V12l3.75 2.75"/></svg></button>
+      <span class="gap"></span>
+      <button type="button" class="round" id="new-time-cancel" aria-label="Cancel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg></button>
+      <button type="button" class="round" id="new-time-add" aria-label="Add"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11"/><path d="M7.5 12.5l3 3 6-6.5"/></svg></button>
+    </div>
+    <button type="button" class="add" id="ci-add" aria-label="Add a check-in time"><span class="pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg></span></button>
+  </div>
+</div>
+<button id="dynamic" class="switch setting" type="button" role="switch" aria-checked="true"><span class="words">Dynamic color</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+<button id="gridlabels" class="switch setting" type="button" role="switch" aria-checked="true"><span class="words">Show color grid labels</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>
+<div id="cal-year" class="calv cal-scroll" role="region" aria-label="Year"><div id="years"></div></div>
+<button id="cal-back" class="calv" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg><span id="cal-back-label"></span></button>
+<div id="cal-month-head" class="calv"><h2 id="month-title" class="cal-title"></h2><div class="wk" aria-hidden="true"><b>S</b><b>M</b><b>T</b><b>W</b><b>T</b><b>F</b><b>S</b></div></div>
+<div id="cal-month" class="calv cal-scroll" role="region" aria-label="Month"><div id="months"></div></div>
+<div id="cal-day-head" class="calv"><h2 id="day-line" class="cal-title"></h2><div class="wk" aria-hidden="true"><b>S</b><b>M</b><b>T</b><b>W</b><b>T</b><b>F</b><b>S</b></div><div class="strip" id="strip"></div></div>
+<button id="commit" type="button" aria-label="Save check-in" tabindex="-1">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path class="arrow" d="M7.75 12h8.5M12.5 8.25 16.25 12 12.5 15.75"/><path class="tick" d="M8 12.4l2.6 2.6 5.4-5.8"/></svg>
+</button>
+<div id="cal-week-head" class="calv"><h2 id="week-line" class="cal-title"></h2></div>
+<div id="week" class="cal-scroll" role="region" aria-label="Week"><svg id="week-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="review" role="region" aria-label="Check-in"><div id="rv-inner">
+  <div id="rv-head"></div>
+  <svg id="rv-text" xmlns="http://www.w3.org/2000/svg">
+    <text id="rv-n-energy" class="num"></text><text id="rv-n-mood" class="num"></text>
+    <text id="rv-l-energy" class="lab">ENERGY</text><text id="rv-l-mood" class="lab">MOOD</text>
+    <text id="rv-e-top" class="edge">HIGH ENERGY</text><text id="rv-e-bottom" class="edge">LOW ENERGY</text>
+    <text id="rv-e-left" class="edge">NEGATIVE MOOD</text><text id="rv-e-right" class="edge">POSITIVE MOOD</text>
+  </svg>
+  <div id="rv-field"><img id="rv-img" alt="" draggable="false"><svg id="rv-grid" xmlns="http://www.w3.org/2000/svg"></svg><div id="rv-dot"></div></div>
+  <textarea id="rv-note" rows="1" placeholder="Add a note" aria-label="Note"></textarea>
+</div></div>
+<div id="day" class="cal-scroll" role="region" aria-label="Day timeline"><svg id="day-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<nav id="nav" aria-label="Pages">
+  <a href="#settings" data-page="settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.25 6H20.75M3.25 12H20.75M3.25 18H20.75"/><g fill="currentColor" stroke="none"><circle cx="14.92" cy="6" r="1.75"/><circle cx="8.11" cy="12" r="1.75"/><circle cx="15.89" cy="18" r="1.75"/></g></svg>
+  </a>
+  <a href="#check-in" data-page="check-in" aria-label="Check-in">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path d="M12 7.75v8.5M7.75 12h8.5"/></svg>
+  </a>
+  <a href="#calendar" data-page="calendar" aria-label="Calendar">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.25" y="4.75" width="17.5" height="16" rx="2.5"/><path d="M3.25 9.75h17.5M8 2.75v4M16 2.75v4"/></svg>
+  </a>
+</nav>
+<div id="field">
+  <img id="src" alt="" draggable="false">
+  <svg id="grid" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"></svg>
+  <i id="corner" aria-hidden="true"></i>
+  <div id="dot"></div>
+</div>
+
+<script>
+(function () {
+  var root  = document.documentElement;
+  var field = document.getElementById('field');
+  var grid  = document.getElementById('grid');
+  var dot   = document.getElementById('dot');
+  var safe  = document.getElementById('safe');
+  var img   = document.getElementById('src');
+  var theme = document.querySelector('meta[name="theme-color"]');
+
+  var CELLS = 10;
+  var fx = 0.5, fy = 0.5;      // dot position as a fraction of the field
+  var pixels = null, pw = 0, ph = 0;
+
+  /* ---------- grid lines ---------- */
+  var lines = [];
+  for (var n = 0; n <= CELLS; n++) {
+    var v = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    var h = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    grid.appendChild(v); grid.appendChild(h);
+    lines.push([v, h]);
+  }
+
+  /* ---------- text ---------- */
+  // the page font: the stack used for both drawing and measuring
+  var FAMILY = '"Geist", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  var TITLE = 'How are you feeling?';
+  var tTitle  = document.getElementById('t-title');
+  var commitBtn = document.getElementById('commit');
+  var SITE_SPACE = 'jasonbrewer.org';   // the site name is gone; its old size still sets the spacing above the heading
+
+  // axis numbers: 0-10 up the left side (0 at the bottom) and 0-10 along the bottom (0 at the left)
+  var ticksG = document.getElementById('ticks'), ticksV = [], ticksH = [], marksV = [], marksH = [];
+  var axisV = document.createElementNS('http://www.w3.org/2000/svg', 'text');   // ENERGY, reading bottom to top
+  var axisH = document.createElementNS('http://www.w3.org/2000/svg', 'text');   // MOOD
+  axisV.textContent = 'ENERGY'; axisH.textContent = 'MOOD';
+  ticksG.appendChild(axisV); ticksG.appendChild(axisH);
+  for (var v = 0; v <= 10; v++) {
+    [ticksV, ticksH].forEach(function (set) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      el.textContent = String(v);
+      ticksG.appendChild(el);
+      set.push(el);
+    });
+    [marksV, marksH].forEach(function (set) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      ticksG.appendChild(el);
+      set.push(el);
+    });
+  }
+  var nMood   = document.getElementById('n-mood');
+  var nEnergy = document.getElementById('n-energy');
+  var lMood   = document.getElementById('l-mood');
+  var lEnergy = document.getElementById('l-energy');
+  var mctx = document.createElement('canvas').getContext('2d');
+
+  // Ink metrics of a string, as fractions of the font size.
+  function measure(text, weight) {
+    mctx.font = weight + ' 100px ' + FAMILY;
+    var m = mctx.measureText(text);
+    return {
+      left:  m.actualBoundingBoxLeft / 100,     // ink left of the origin
+      right: m.actualBoundingBoxRight / 100,    // ink right of the origin
+      asc:   m.actualBoundingBoxAscent / 100,   // ink above the baseline
+      desc:  m.actualBoundingBoxDescent / 100,  // ink below the baseline
+      adv:   m.width / 100
+    };
+  }
+  function place(el, x, y, fontSize) {
+    el.setAttribute('x', x);
+    el.setAttribute('y', y);
+    el.style.fontSize = fontSize + 'px';
+  }
+
+  // geometry shared by layoutText() and placeNumbers()
+  var num = { cL: 0, cR: 0, base: 0, fs: 0, labBase: 0, labFs: 0 };
+
+  // place a string so its ink is centered on x = c
+  function centered(el, weight, c, y, fs) {
+    var m = measure(el.textContent, weight);
+    place(el, c - (m.right - m.left) * fs / 2, y, fs);
+  }
+
+  // Each number is centered on a fixed point, with its label centered beneath,
+  // so nothing shifts when a number goes between one and two digits.
+  function placeNumbers() {
+    centered(nEnergy, 400, num.cL, num.base, num.fs);         // energy on the left
+    centered(nMood,   400, num.cR, num.base, num.fs);         // mood on the right
+    centered(lEnergy, 600, num.cL, num.labBase, num.labFs);
+    centered(lMood,   600, num.cR, num.labBase, num.labFs);
+  }
+
+  // mobile: 0 = desktop arrangement, 1 = mobile arrangement, in between while the window changes shape.
+  // edgeTop / edgeBottom: the usable top and bottom of the screen.
+  // side: for short, wide screens (a phone on its side), the x where the column beside the
+  // square starts; the heading and the numbers then stack in that column instead of above
+  // and below the square. null otherwise.
+  function layoutText(left, top, size, mobile, edgeTop, edgeBottom, edgeLeft, side, commitGeo) {
+    // Reference unit: the heading's font size if it spanned the full square.
+    var t = measure(TITLE, 400);
+    var fs1 = size / (t.left + t.right);
+    var textH = (t.asc + t.desc) * fs1;
+    var digits = measure('0123456789', 400);
+    var digitH = digits.asc + digits.desc;
+
+    var h = t;                    // the heading is regular weight
+    var fsT = size / (h.left + h.right);                         // heading: as wide as the square
+    var fsSite = fs1 * (7 / 8) * 0.75;                           // site name: its size is unchanged
+    var fsN = 2 * ((size - GW) / CELLS) / digitH;   // numbers: their digits exactly two grid cells tall
+    var fsL = parseFloat(getComputedStyle(root).fontSize) || 16;   // ENERGY / MOOD: 1rem, the size of the Settings rows
+
+    function mix(a, b) { return a + (b - a) * mobile; }
+    var bottom = top + size;
+    var base = 2 * textH + digitH * fs1;
+
+    // Labels around the grid: 2/3 the size of ENERGY / MOOD, regular weight, each one its own
+    // height away from the grid's edge. The left one reads bottom to top, the right one top to bottom.
+    var fsE = fsL * 2 / 3;
+    var eInk = measure('HIGHLOWENERGYNEGATIVEPOSITIVEMOOD', 400);   // one shared height, so all four match
+    var eH = (eInk.asc + eInk.desc) * fsE, eGap = 1.5 * eH;
+    var cxSq = left + size / 2, cySq = top + size / 2, rightSq = left + size;
+    centered(document.getElementById('e-top'), 400, cxSq, top - eGap - eInk.desc * fsE, fsE);
+    centered(document.getElementById('e-bottom'), 400, cxSq, bottom + eGap + eInk.asc * fsE, fsE);
+    (function () {
+      var el = document.getElementById('e-left'), m = measure(el.textContent, 400);
+      var bx = left - eGap - eInk.desc * fsE, by = cySq + (m.right - m.left) * fsE / 2;
+      place(el, bx, by, fsE); el.setAttribute('transform', 'rotate(-90 ' + bx + ' ' + by + ')');
+      el = document.getElementById('e-right'); m = measure(el.textContent, 400);
+      bx = rightSq + eGap + eInk.desc * fsE; by = cySq - (m.right - m.left) * fsE / 2;
+      place(el, bx, by, fsE); el.setAttribute('transform', 'rotate(90 ' + bx + ' ' + by + ')');
+    })();
+    var topLabelInk = top - eGap - eH, bottomLabelInk = bottom + eGap + eH;
+    if (!gridLabels) { topLabelInk = top; bottomLabelInk = bottom; }   // labels hidden: space against the grid itself
+
+    // Heading, centered over the square. Its letters (top of the capitals to the bottom of
+    // the y and g) sit halfway between the bottom of the commit button's circle and the top
+    // of HIGH ENERGY.
+    var titleW = (h.left + h.right) * fsT;
+    var above = commitGeo ? commitGeo.bottom : edgeTop;
+    var centerY = (above + topLabelInk) / 2;
+    var titleX = left + (size - titleW) / 2 + h.left * fsT;
+    if (!side) place(tTitle, titleX, centerY + (h.asc - h.desc) * fsT / 2, fsT);
+
+    // Axis numbers: regular weight, 2/3 the size of ENERGY / MOOD, set 2/3 as far
+    // from the square as before.
+    var pitch = (size - 1) / CELLS;
+    var fsK = fsL * 2 / 3;
+    var zero = measure('0', 400);
+    var clear = (pitch / 2 + fsL * 0.35) * 2 / 3;
+    var widest = measure('10', 400);
+    var clearLeft = Math.min(clear, Math.max(2, left - edgeLeft - 4 - (widest.left + widest.right) * fsK));  // never off-screen
+    // tick marks carry each numbered gridline 1/4 of a cell out from the square
+    var tick = pitch / 4;
+    var tickLeft = Math.max(0, Math.min(tick, clearLeft - fsL * 0.2));   // shorter only if the numbers had to move in
+    function box(el, x, y, w, h) {
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('width', w); el.setAttribute('height', h);
+    }
+    for (var n = 0; n <= CELLS; n++) {
+      box(marksV[n], left - tickLeft, top + Math.round((CELLS - n) * pitch), tickLeft, 1);
+      box(marksH[n], left + Math.round(n * pitch), bottom, 1, tick);
+      var m = measure(String(n), 400);
+      // up the left side: right-aligned beside its horizontal line, centered on it
+      var lineY = top + Math.round((CELLS - n) * pitch) + 0.5;
+      place(ticksV[n], left - clearLeft - m.right * fsK, lineY + (zero.asc - zero.desc) * fsK / 2, fsK);
+      // along the bottom: centered under its vertical line
+      var lineX = left + Math.round(n * pitch) + 0.5;
+      place(ticksH[n], lineX - (m.right - m.left) * fsK / 2, bottom + clear + digits.asc * fsK, fsK);
+    }
+    // Axis titles, same size and weight as the axis numbers.
+    var capK = measure('H', 400).asc * fsK;        // height of their capitals
+    var gapK = fsK * 0.7;                          // space between the numbers and their title
+    var cx0 = left + size / 2, cy0 = top + size / 2;
+
+    // ENERGY: left of the side numbers, turned to read bottom to top, centered on the square's height
+    var en = measure('ENERGY', 400);
+    var numbersLeft = left - clearLeft - (widest.left + widest.right) * fsK;      // left edge of the widest number
+    var baseX = Math.max(edgeLeft + 2 + capK, numbersLeft - gapK);                // never off-screen
+    var startY = cy0 + (en.right - en.left) * fsK / 2;
+    place(axisV, baseX, startY, fsK);
+    axisV.setAttribute('transform', 'rotate(-90 ' + baseX + ' ' + startY + ')');
+
+    // MOOD: below the bottom numbers, centered on the square's width
+    var mo = measure('MOOD', 400);
+    var rowBottom = clear + digitH * fsK;                                          // bottom of the numbers, from the square
+    place(axisH, cx0 - (mo.right - mo.left) * fsK / 2, bottom + rowBottom + gapK + capK, fsK);
+
+    // room the key takes up below the square: down to the bottom of the word MOOD
+    root.style.setProperty('--tick-room', (rowBottom + gapK + capK) * (1 - mobile / 2) + 'px');
+
+    // Numbers with their labels, treated as one block.
+    var cap = measure('MOODENERGY', 600).asc;
+    var labInk = measure('MOODENERGY', 600);
+    var labelGap = 1.5 * (labInk.asc + labInk.desc) * fsL;    // number bottom to label top: 1.5 times the labels' height
+    var blockH = digitH * fsN + labelGap + cap * fsL;
+    // The block (top of the numbers to the bottom of ENERGY / MOOD) sits halfway between the
+    // bottom of the square and the top of the nav icons as drawn.
+    var navInkTop = edgeBottom;
+    var navCircle = document.querySelector('#nav a[data-page="check-in"] circle');
+    if (navCircle) {
+      var nr = navCircle.getBoundingClientRect(), ns = navCircle.ownerSVGElement.getBoundingClientRect();
+      if (nr.height) navInkTop = nr.top - (parseFloat(getComputedStyle(navCircle).strokeWidth) || 0) / 2;   // the circle's line sits half outside it
+    }
+    // The block (top of the numbers to the bottom of ENERGY / MOOD) sits halfway between the
+    // bottom of the square and the top of the nav icons as drawn.
+    var blockTop = (bottomLabelInk + navInkTop) / 2 - blockH / 2;   // between LOW ENERGY and the nav icons
+    var cx = left + size / 2;
+
+    // Sideways: the heading and the number block stack in the column beside the square,
+    // as wide as the square, the pair centered on the square's height.
+    if (side !== null && side !== undefined) {
+      var headInk = (h.asc + h.desc) * fsT;
+      var stackGap = 1.6 * fs1;                               // heading to the top of the numbers
+      var stackTop = top + (size - (headInk + stackGap + blockH)) / 2;
+      place(tTitle, side + (size - titleW) / 2 + h.left * fsT, stackTop + h.asc * fsT, fsT);
+      blockTop = stackTop + headInk + stackGap;
+      cx = side + size / 2;
+      mobile = 0;                                             // numbers spaced as on desktop
+    }
+
+    // The two centers are set so that when both read 10, the clear space between
+    // them is half the width of one "10" on desktop, and 80% of that on mobile.
+    var ten = measure('10', 400);
+    var tenW = (ten.left + ten.right) * fsN;
+    var half = (tenW + tenW * mix(0.5, 0.4)) / 2;
+    num.fs = fsN; num.cL = cx - half; num.cR = cx + half;
+    num.base = blockTop + digits.asc * fsN;
+    num.labFs = fsL;
+    root.style.setProperty('--lab-fs', fsL + 'px');
+    root.style.setProperty('--cap', measure('H', 400).asc);  // capital height, for the switch's alignment
+    num.labBase = num.base + digits.desc * fsN + labelGap + cap * fsL;
+    placeNumbers();
+  }
+
+  // The commit button, top right: its circle 16px from the top and right edges, drawn at the
+  // same size as the nav's Check-in icon, in the middle of a 44px tap area.
+  function commitCircle(edgeTop, edgeRight) {           // where the circle is drawn: its left and bottom edges
+    var icon = document.querySelector('#nav a[data-page="check-in"] svg').getBoundingClientRect().width || 39;
+    var line = parseFloat(getComputedStyle(document.querySelector('#nav a[data-page="check-in"] circle')).strokeWidth) || 1.9;
+    var D = icon * 18.5 / 24 + line;
+    return { left: edgeRight - 16 - D, bottom: edgeTop + 16 + D };
+  }
+  function placeCommit(edgeTop, edgeRight) {
+    var icon = document.querySelector('#nav a[data-page="check-in"] svg').getBoundingClientRect().width || 39;
+    var line = parseFloat(getComputedStyle(document.querySelector('#nav a[data-page="check-in"] circle')).strokeWidth) || 1.9;
+    var D = icon * 18.5 / 24 + line;                     // the circle, outside edge to outside edge
+    var tap = commitBtn.getBoundingClientRect().width || 44;
+    var scale = parseFloat(getComputedStyle(commitBtn).transform.split(',')[0].replace('matrix(', '')) || 1;
+    tap /= scale;                                        // it's drawn slightly smaller while hidden
+    commitBtn.style.left = (edgeRight - 16 - D / 2 - tap / 2) + 'px';
+    commitBtn.style.top = (edgeTop + 16 + D / 2 - tap / 2) + 'px';
+  }
+
+  // The top rows (Night mode on Settings, Day / Week / Month on Calendar) share one place:
+  // up to 480px wide, centered on the screen (on phones, edge to edge, 16px in), with the
+  // Night mode toggle 16px from the top edge and both rows' words on the same line.
+  function placeSwitches(edgeTop, edgeBottom, H, edgeLeft, W) {
+    var EDGE = 16;
+    var x = edgeLeft + EDGE;
+
+    var nb = document.getElementById('night');
+    var edgeRight = W - (parseFloat(getComputedStyle(safe).paddingRight) || 0);
+    var rowW = Math.min(480, edgeRight - EDGE - x);
+    var rowX = (edgeLeft + edgeRight) / 2 - rowW / 2;
+    nb.style.left = (rowX - 8) + 'px';              // the button's 8px side padding sits outside the row
+    nb.style.width = (rowW + 16) + 'px';
+    nb.style.top = '0px';
+    var nt = nb.querySelector('.track').getBoundingClientRect();
+    var rowTop = edgeTop + EDGE;                     // top of the toggle
+    nb.style.top = (rowTop - (nt.top - nb.getBoundingClientRect().top)) + 'px';
+
+    // Dynamic color: the next row down, its tap area starting where Night mode's ends
+    var db = document.getElementById('dynamic');
+    var nbr = nb.getBoundingClientRect();
+    db.style.left = nb.style.left;
+    db.style.width = nb.style.width;
+    db.style.top = nbr.bottom + 'px';
+
+    // Schedule check-ins: the row below that, and its options below it, scrolling if they run long
+    var sb = document.getElementById('sched'), sp = document.getElementById('sched-panel');
+    sb.style.left = nb.style.left;
+    sb.style.width = nb.style.width;
+    var gb = document.getElementById('gridlabels');
+    gb.style.left = nb.style.left;
+    gb.style.width = nb.style.width;
+    gb.style.top = db.getBoundingClientRect().bottom + 'px';
+    sb.style.top = gb.getBoundingClientRect().bottom + 'px';
+    var spTop = sb.getBoundingClientRect().bottom;
+    sp.style.left = rowX + 'px';
+    sp.style.width = rowW + 'px';
+    sp.style.top = spTop + 'px';
+    sp.style.height = Math.max(0, edgeBottom - spTop) + 'px';
+    sp.style.paddingBottom = EDGE + 'px';
+
+    layoutCalendar(rowX, rowW, x, edgeRight - EDGE, edgeTop, edgeBottom);
+  }
+
+  /* ---------- Day: the timeline ---------- */
+  // 12 AM to 12 AM. The visible part is sized so that, scrolled to its default place,
+  // 8 AM sits at the top and 10 PM at the bottom; earlier and later hours are a scroll away.
+  var daySvg = document.getElementById('day-svg'), dayBox = document.getElementById('day');
+  var HOUR_TOP = 8, HOUR_BOTTOM = 22;
+  var dayRows = [], dayHour = 0, dayTopHour = HOUR_TOP, dayVisible = null;
+  function hourName(n) {
+    var h = n % 12 === 0 ? 12 : n % 12;
+    return h + (n % 24 < 12 ? ' AM' : ' PM');
+  }
+  for (var n = 0; n <= 24; n++) {
+    var tl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    var ln = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    tl.textContent = hourName(n);
+    daySvg.appendChild(tl); daySvg.appendChild(ln);
+    dayRows.push([tl, ln]);
+  }
+  // Pinch (or a trackpad pinch: ctrl + scroll) to zoom; the time under your fingers stays put.
+  function zoomDay(visible, clientY) {
+    if (!dayGeo) return;
+    var r = dayBox.getBoundingClientRect(), fy = clientY - r.top;
+    var atHour = (dayBox.scrollTop + fy - dayGeo.inset) / dayGeo.hour;
+    dayVisible = Math.max(6, Math.min(24, visible));
+    placeDayTimeline();
+    dayBox.scrollTop = atHour * dayGeo.hour + dayGeo.inset - fy;
+    dayTopHour = dayBox.scrollTop / dayGeo.hour;
+  }
+  var pinch = null, pinchedAt = 0;
+  function fingers(e) {
+    var a = e.touches[0], b = e.touches[1];
+    return { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), y: (a.clientY + b.clientY) / 2 };
+  }
+  dayBox.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) { e.preventDefault(); pinch = { d: fingers(e).d, v: dayVisible }; }
+  }, { passive: false });
+  dayBox.addEventListener('touchmove', function (e) {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    var f = fingers(e);
+    zoomDay(pinch.v * pinch.d / Math.max(1, f.d), f.y);      // fingers apart: fewer hours, bigger
+  }, { passive: false });
+  dayBox.addEventListener('touchend', function (e) {
+    if (pinch && e.touches.length < 2) { pinch = null; pinchedAt = Date.now(); }
+  });
+  dayBox.addEventListener('touchcancel', function () { if (pinch) { pinch = null; pinchedAt = Date.now(); } });
+  dayBox.addEventListener('wheel', function (e) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    zoomDay(dayVisible * Math.exp(e.deltaY * 0.01), e.clientY);
+  }, { passive: false });
+  // Safari's own page zoom shouldn't take over a pinch on the timeline
+  document.addEventListener('gesturestart', function (e) { if (page === 'calendar' && calLevel === 'day') e.preventDefault(); });
+  function justPinched() { return pinch || Date.now() - pinchedAt < 400; }
+
+  // the hour at the top of the view, kept while the window changes size
+  dayBox.addEventListener('scroll', function () {
+    if (dayHour) dayTopHour = dayBox.scrollTop / dayHour;
+  });
+  function layoutDay(x, right, top, bottom) {
+    var fs = parseFloat(getComputedStyle(dayBox).getPropertyValue('--hour-fs')) *
+             parseFloat(getComputedStyle(root).fontSize) || 12;   // hour labels: 0.75rem
+    var cap = measure('H', 400).asc * fs;
+    var widest = 0;
+    for (var n = 0; n <= 24; n++) widest = Math.max(widest, measure(dayRows[n][0].textContent, 400).right * fs);
+    var inset = Math.max(12, fs);                        // room for the first and last labels inside the view
+    var V = Math.max(1, bottom - top);
+    // Zoom: how many hours fit on screen, from 6 (zoomed in) to 24 (the whole day, 12 AM to 12 AM).
+    // It starts at 8 AM–10 PM, or fewer hours on a short screen (a phone on its side) so the
+    // labels keep about 2.7 label heights apart; pinching changes it.
+    var full = V - 2 * inset;
+    if (dayVisible === null) dayVisible = Math.min(HOUR_BOTTOM - HOUR_TOP, full / (fs * 8 / 3));
+    dayVisible = Math.max(6, Math.min(24, dayVisible));
+    var hour = full / dayVisible;
+    // when hours get close, label every 2nd, 3rd, 4th or 6th one so the labels never crowd
+    var step = [1, 2, 3, 4, 6].filter(function (k) { return hour * k >= fs * 1.8; })[0] || 6;
+    var lineX = x + widest + fs * 0.75;
+    dayBox.style.top = snap(top) + 'px';
+    dayBox.style.height = snap(V) + 'px';
+    dayBox.style.setProperty('--fade', inset * 0.6 + 'px');
+    daySvg.setAttribute('height', 24 * hour + 2 * inset);
+    for (var n = 0; n <= 24; n++) {
+      var y = snap(inset + n * hour);                     // lines on whole physical pixels stay sharp
+      var m = measure(dayRows[n][0].textContent, 400);
+      place(dayRows[n][0], x + widest - m.right * fs, y + GW / 2 + cap / 2, fs);   // right-aligned, capitals centered on the line
+      dayRows[n][0].style.visibility = n % step === 0 ? '' : 'hidden';
+      var ln = dayRows[n][1];
+      ln.setAttribute('x', lineX); ln.setAttribute('width', Math.max(0, right - lineX));
+      ln.setAttribute('y', y); ln.setAttribute('height', GW);
+    }
+    dayHour = hour;
+    dayGeo = { x: lineX, w: Math.max(0, right - lineX), inset: inset, hour: hour };
+    renderDay();
+    dayBox.scrollTop = dayTopHour * hour;
+  }
+
+  // The chosen day's committed check-ins, each a pill centered on its time, as wide as the hour lines.
+  var dayGeo = null, dayPills = [];
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function renderDay() {
+    if (!dayGeo) return;
+    dayPills.forEach(function (el) { el.remove(); });
+    dayPills = [];
+    var ph = Math.max(20, Math.min(28, dayGeo.hour * 0.5));   // pill height
+    checkins.forEach(function (c) {
+      var d = new Date(c.t);
+      if (!sameDay(d, selDate)) return;
+      var mins = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+      var y = dayGeo.inset + mins / 60 * dayGeo.hour;
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('class', 'pill');
+      el.setAttribute('data-t', c.t);
+      el.setAttribute('x', dayGeo.x); el.setAttribute('width', Math.max(0, dayGeo.w));
+      el.setAttribute('y', y - ph / 2); el.setAttribute('height', ph);
+      el.setAttribute('rx', ph / 2); el.setAttribute('ry', ph / 2);
+      el.style.fill = 'rgb(' + c.rgb.join(',') + ')';
+      var tip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      tip.textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) +
+                        ' · Energy ' + c.energy + ', Mood ' + c.mood;
+      el.appendChild(tip);
+      daySvg.appendChild(el);
+      dayPills.push(el);
+    });
+  }
+
+  /* ---------- sizing ---------- */
+  var DPR = 1, GW = 1;
+  var reviewEntry = null;   // the check-in opened from Day view, if any
+  var gridLabels = true;   // Settings: Show color grid labels     // physical pixels per CSS pixel; grid line thickness in CSS pixels
+  function snap(v) { return Math.round(v * DPR) / DPR; }   // to the nearest physical pixel
+  var PAD = 16;            // distance of the corner controls (and the key) from the screen edges
+  var GAP_TOP = 12;        // least space between the top row and the heading
+  var GAP_BOTTOM = 14;     // least space between the big numbers and the bottom row
+  var NEAR = 0.09;         // heading stays this fraction of the square away from it
+  var BLOCK_GAP = 0.10;    // big numbers stay this fraction of the square below it (or below the key)
+
+  // The largest square the mobile arrangement can hold. Every text size is a fixed
+  // fraction of the square, so the space needed around it is (k * size + px).
+  // These fractions mirror layoutText().
+  function mobileFit(W, edgeTop, edgeBottom, edgeLeft) {
+    var t = measure(TITLE, 400), u = 1 / (t.left + t.right);
+    var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
+    var capH = measure('H', 400).asc, capB = measure('MOODENERGY', 600).asc;
+    var ten = measure('10', 400), site = measure(SITE_SPACE, 400);
+    var fsL = 0.5625 * u, fsK = fsL * 2 / 3;
+    var clear = (0.05 + fsL * 0.35) * 2 / 3;
+    var keySide = clear + (ten.left + ten.right) * fsK + 0.7 * fsK + capH * fsK;   // key, left of the square
+    var keyDown = clear + digitH * fsK + 0.7 * fsK + capH * fsK;                   // key, below the square
+    var blockH  = digitH * 3 * u + 2.25 * capB * 0.45 * u + capB * fsL;            // big numbers and labels
+    var above = { k: NEAR + (t.asc + t.desc) * u + (site.asc + site.desc) * 0.65625 * u, px: PAD + GAP_TOP };
+    var below = { k: BLOCK_GAP + keyDown + blockH + capH * fsL, px: PAD + GAP_BOTTOM };
+    return {
+      // wide enough that the key, when shown, ends PAD from the screen's left edge
+      byWidth:  (W - 2 * (edgeLeft + PAD)) / (1 + 2 * keySide),
+      // tall enough for the heading above and the key plus the big numbers below
+      byHeight: (edgeBottom - edgeTop - above.px - below.px) / (1 + above.k + below.k),
+      below: below
+    };
+  }
+
+  // Desktop: the square is 1/3 of the screen's height.
+  // Mobile (portrait): the square grows to fill the width, leaving only the room the key
+  // needs at the sides, for as long as the text above and below still fits.
+  // The two blend gradually as the window changes shape; there is no breakpoint.
+  function layout() {
+    var W = window.innerWidth, H = window.innerHeight;
+    var cs = getComputedStyle(safe);
+    var edgeTop = parseFloat(cs.paddingTop) || 0;
+    var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    var edgeBottom = H - (parseFloat(cs.paddingBottom) || 0) - navH;   // the content ends where the nav begins
+    var edgeLeft = parseFloat(cs.paddingLeft) || 0;
+
+    // 0 while the window is wider than tall, 1 once it is 4:3 portrait or taller
+    var k = Math.min(1, Math.max(0, (1 - W / H) / 0.25));
+    var mobile = k * k * (3 - 2 * k);
+
+    var margin = Math.max(24, W * 0.06);
+    var desk = Math.min(H / 3, W - 2 * margin);
+    var fit = mobileFit(W, edgeTop, edgeBottom, edgeLeft);
+    var mob = Math.min(fit.byWidth, fit.byHeight, Math.max(H / 3, 400));   // tablets stay near 1/3 height
+    // Everything in the square sits on whole physical pixels, so on screens where one CSS
+    // pixel isn't a whole number of physical pixels (Windows scaling, browser zoom) every
+    // line comes out equally sharp and equally thick.
+    DPR = window.devicePixelRatio || 1;
+    GW = Math.max(1, Math.round(DPR)) / DPR;        // line thickness: 1 CSS px, rounded to physical pixels
+    var size = Math.max(21, snap(desk + (mob - desk) * mobile));
+
+    // Sideways (short and wide, like a phone on its side): the stacked arrangement would leave
+    // the square and its text too small to read, so the square goes on the left and the heading
+    // and numbers in a column of the same width on its right, the pair centered on the screen.
+    var availH = edgeBottom - edgeTop;
+    var edgeRight = W - (parseFloat(cs.paddingRight) || 0);
+    var side = null, sideGap = 0;
+    if (availH < 480 && W >= 1.4 * H) {
+      var sideMargin = 24;
+      var edgeRoom = gridLabels ? 2.5 * 0.75 * (2 / 3) * (parseFloat(getComputedStyle(root).fontSize) || 16) : 0;   // a grid label and its gap
+      size = Math.max(21, snap(Math.min(availH - 2 * (PAD + edgeRoom), (edgeRight - edgeLeft - 2 * (sideMargin + edgeRoom)) / 2.15)));
+      sideGap = size * 0.15;
+      mobile = 0;
+    }
+    var pitch = (size - GW) / CELLS;                // one cell
+
+    root.style.setProperty('--size', size + 'px');
+    root.style.setProperty('--cell', pitch + 'px');
+    root.style.setProperty('--gw', GW + 'px');
+    var left = snap((W - size) / 2);
+    if (sideGap) {
+      left = snap((edgeLeft + edgeRight) / 2 - (2 * size + sideGap) / 2);
+      side = left + size + sideGap;
+    }
+    // centered, moving up only as far as the text below the square needs
+    var top = (H - navH - size) / 2;
+    top -= mobile * Math.max(0, top + size + fit.below.k * size + fit.below.px - edgeBottom);
+    if (side !== null) top = edgeTop + (availH - size) / 2;   // centered between the top and the nav
+    top = snap(top);
+    field.style.left = left + 'px';
+    field.style.top  = top + 'px';
+
+    layoutText(left, top, size, mobile, edgeTop, edgeBottom, edgeLeft, side, commitCircle(edgeTop, edgeRight));
+    placeCommit(edgeTop, edgeRight);
+    placeSwitches(edgeTop, edgeBottom, H, edgeLeft, W);
+
+    ensureField(size * DPR);                   // as many pixels as the square has on screen
+    drawGridLines(field, grid, size);
+  }
+
+  // Grid lines on whole physical pixels, so every line is equally sharp and the outer ones sit
+  // exactly over the band the color field leaves uncovered at its edges. Browsers draw an SVG
+  // from the nearest whole CSS pixel, so the line layer is put on one, and each line is placed
+  // from there onto the physical pixel it belongs on.
+  function drawGridLines(box, svg, size) {
+    var g = box.getBoundingClientRect();
+    var L = snap(g.left), T = snap(g.top);                // the square's corner, on a physical pixel
+    var OX = Math.round(g.left), OY = Math.round(g.top);  // the line layer's corner, on a whole CSS pixel
+    svg.style.left = (OX - g.left) + 'px'; svg.style.top = (OY - g.top) + 'px';
+    svg.style.width = svg.style.height = (size + 2) + 'px';
+    var dx = L - OX, dy = T - OY, pitch = (size - GW) / CELLS, html = '';
+    for (var n = 0; n <= CELLS; n++) {
+      var at = snap(n * pitch);
+      html += '<rect x="' + (dx + at) + '" y="' + dy + '" width="' + GW + '" height="' + size + '"/>' +
+              '<rect x="' + dx + '" y="' + (dy + at) + '" width="' + size + '" height="' + GW + '"/>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* ---------- color sampling (from the image, never the grid) ---------- */
+  /* ---------- the color field: the Illustrator gradient mesh, drawn here ----------
+     151 tensor-product patches (PDF shading type 7) exported from Illustrator. Each patch:
+     16 control points (x, y as 16-bit fractions of the square, y down) in the PDF's order, then
+     its four corner colors (8-bit RGB). The page draws them at the screen's own resolution, so the
+     field is as sharp as the screen at any size, from about 15 KB of data. */
+  var MESH_DATA = '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';
+  var MESH = null, fieldN = 0;
+  function decodeMesh(b64) {
+    var s = atob(b64), n = s.length / 76, out = [];
+    for (var p = 0, o = 0; p < n; p++) {
+      var pts = [], cols = [], k;
+      for (k = 0; k < 16; k++, o += 4) pts.push([(s.charCodeAt(o) | s.charCodeAt(o + 1) << 8) / 65535, (s.charCodeAt(o + 2) | s.charCodeAt(o + 3) << 8) / 65535]);
+      for (k = 0; k < 4; k++, o += 3) cols.push([s.charCodeAt(o), s.charCodeAt(o + 1), s.charCodeAt(o + 2)]);
+      out.push({ pts: pts, cols: cols });
+    }
+    return out;
+  }
+  // the PDF's point order: around the edge from p00, then the four inside
+  var MESH_ORDER = [[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[3,3],[3,2],[3,1],[3,0],[2,0],[1,0],[1,1],[1,2],[2,2],[2,1]];
+  // each patch is cut into K×K small cells (two triangles each); positions follow the patch's
+  // bicubic surface, colors blend between its four corners, as the PDF defines it
+  function renderMesh(mesh, N, K) {
+    var buf = new Uint8ClampedArray(N * N * 4), M = (K + 1) * (K + 1);
+    var gx = new Float64Array(M), gy = new Float64Array(M), gc = new Float64Array(M * 3);
+    var Bs = [];
+    for (var i = 0; i <= K; i++) { var t = i / K, s = 1 - t; Bs.push([s * s * s, 3 * t * s * s, 3 * t * t * s, t * t * t]); }
+    function tri(a, b, c) {
+      var ax = gx[a], ay = gy[a], bx = gx[b], by = gy[b], cx = gx[c], cy = gy[c];
+      var area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+      if (area === 0) return;
+      var x0 = Math.max(0, Math.ceil(Math.min(ax, bx, cx) - 0.5)), x1 = Math.min(N - 1, Math.floor(Math.max(ax, bx, cx) - 0.5));
+      var y0 = Math.max(0, Math.ceil(Math.min(ay, by, cy) - 0.5)), y1 = Math.min(N - 1, Math.floor(Math.max(ay, by, cy) - 0.5));
+      var inv = 1 / area, e = -1e-6;   // a hair of overlap, so no pixel falls between two triangles
+      for (var y = y0; y <= y1; y++) {
+        var py = y + 0.5;
+        for (var x = x0; x <= x1; x++) {
+          var px = x + 0.5;
+          var wa = ((bx - px) * (cy - py) - (by - py) * (cx - px)) * inv;
+          if (wa < e) continue;
+          var wb = ((cx - px) * (ay - py) - (cy - py) * (ax - px)) * inv;
+          if (wb < e) continue;
+          var wc = 1 - wa - wb;
+          if (wc < e) continue;
+          var o = (y * N + x) * 4;
+          buf[o]     = wa * gc[a * 3]     + wb * gc[b * 3]     + wc * gc[c * 3];
+          buf[o + 1] = wa * gc[a * 3 + 1] + wb * gc[b * 3 + 1] + wc * gc[c * 3 + 1];
+          buf[o + 2] = wa * gc[a * 3 + 2] + wb * gc[b * 3 + 2] + wc * gc[c * 3 + 2];
+          buf[o + 3] = 255;
+        }
+      }
+    }
+    mesh.forEach(function (patch) {               // in the file's order: later patches paint over earlier ones
+      var P = [[], [], [], []], c = patch.cols;   // corner colors: c00 c03 c33 c30
+      patch.pts.forEach(function (pt, k) { P[MESH_ORDER[k][0]][MESH_ORDER[k][1]] = pt; });
+      for (var iu = 0; iu <= K; iu++) for (var iv = 0; iv <= K; iv++) {
+        var bu = Bs[iu], bv = Bs[iv], x = 0, y = 0, u = iu / K, v = iv / K, g = iu * (K + 1) + iv;
+        for (var i = 0; i < 4; i++) for (var j = 0; j < 4; j++) { var w = bu[i] * bv[j]; x += w * P[i][j][0]; y += w * P[i][j][1]; }
+        gx[g] = x * N; gy[g] = y * N;
+        for (var ch = 0; ch < 3; ch++)
+          gc[g * 3 + ch] = (1 - u) * (1 - v) * c[0][ch] + (1 - u) * v * c[1][ch] + u * v * c[2][ch] + u * (1 - v) * c[3][ch];
+      }
+      for (iu = 0; iu < K; iu++) for (iv = 0; iv < K; iv++) {
+        var a = iu * (K + 1) + iv, b = a + 1, d = a + K + 1;
+        tri(a, d, d + 1); tri(a, d + 1, b);
+      }
+    });
+    for (var q = 3; q < buf.length; q += 4) if (!buf[q]) {   // safety net: copy a neighbor into any pixel left empty
+      var r = q - 3, from = r >= 4 && buf[r - 1] ? r - 4 : (buf[r + 7] ? r + 4 : (r >= N * 4 ? r - N * 4 : r + N * 4));
+      buf[r] = buf[from]; buf[r + 1] = buf[from + 1]; buf[r + 2] = buf[from + 2]; buf[q] = 255;
+    }
+    return buf;
+  }
+  // draw the field at (at least) this many physical pixels across; sharper only, never redrawn smaller
+  function ensureField(px) {
+    var n = Math.min(2048, Math.max(256, Math.ceil(px)));
+    if (n <= fieldN) return;
+    if (!MESH) MESH = decodeMesh(MESH_DATA);
+    var buf = renderMesh(MESH, n, Math.max(8, Math.min(48, Math.ceil(n / 48))));   // cells about 4 pixels across
+    pixels = buf; pw = ph = fieldN = n;              // colors are read straight from these pixels
+    // shown as an image (a canvas in the page would be composited apart from the grid lines,
+    // which then no longer land on whole physical pixels)
+    var c = document.createElement('canvas');
+    c.width = c.height = n;
+    c.getContext('2d').putImageData(new ImageData(buf, n, n), 0, 0);
+    // a data: URL, not a blob: one: previews and embeds often only allow data: images
+    var url = c.toDataURL('image/png');
+    img.src = url; document.getElementById('rv-img').src = url;
+    if (typeof paintTiles === 'function') paintTiles();   // the calendar's day tiles take their colors from the field
+  }
+
+  function paint() {
+    dot.style.left = 'calc(var(--gw) / 2 + (100% - var(--gw)) * ' + fx + ')';
+    dot.style.top  = 'calc(var(--gw) / 2 + (100% - var(--gw)) * ' + fy + ')';
+
+    // nearest grid point, 0-10: energy runs bottom to top, mood left to right
+    var energy = String(Math.round((1 - fy) * CELLS));
+    var mood = String(Math.round(fx * CELLS));
+    if (nMood.textContent !== mood || nEnergy.textContent !== energy) {
+      nMood.textContent = mood;
+      nEnergy.textContent = energy;
+      placeNumbers();
+    }
+    if (typeof noteMove === 'function') noteMove();
+
+    if (!pixels) return;
+    var x = Math.min(pw - 1, Math.max(0, Math.floor(fx * pw)));
+    var y = Math.min(ph - 1, Math.max(0, Math.floor(fy * ph)));
+    var k = (y * pw + x) * 4;
+    rgb = [pixels[k], pixels[k + 1], pixels[k + 2]];
+    applyColor();
+  }
+
+  /* ---------- colors: day and night ---------- */
+  var night = false, rgb = null;
+  var nightBtn = document.getElementById('night');
+
+  var dynamic = true;   // Dynamic color: the page follows the color under the dot
+  var dynamicBtn = document.getElementById('dynamic');
+
+  // the neutral gray at the center of the color field
+  function centerRGB() {
+    if (!pixels) return null;
+    var k = (Math.floor(ph / 2) * pw + Math.floor(pw / 2)) * 4;
+    return [pixels[k], pixels[k + 1], pixels[k + 2]];
+  }
+  function css(c) { return c ? 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')' : '#f0f0f0'; }
+
+  function applyColor() {
+    var cur = reviewEntry ? reviewEntry.rgb : rgb; // an opened check-in shows its own color
+    var color = css(cur);                          // the color under the dot: the dot always shows it
+    var tint = dynamic ? cur : centerRGB();        // what the page follows: the dot's color, or the neutral gray
+    var page, ink;
+    if (night) {
+      // black page; the text takes the color under the dot (or stays the neutral gray)
+      page = '#000';
+      ink = css(tint);
+    } else {
+      // the page takes the color under the dot (or stays the neutral gray);
+      // text is black, or white where black would be hard to read
+      page = css(tint);
+      ink = '#000';
+      if (tint) {
+        var lum = 0.2126 * lin(tint[0]) + 0.7152 * lin(tint[1]) + 0.0722 * lin(tint[2]);
+        if (lum <= 0.179) ink = '#fff';
+      }
+    }
+    root.style.setProperty('--dot', color);
+    root.style.setProperty('--page', page);
+    root.style.setProperty('--ink', ink);
+    root.style.setProperty('--line', night ? '#000' : ink);
+    if (theme) theme.setAttribute('content', page);
+  }
+  function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+
+  function setNight(on) {
+    night = on;
+    root.classList.toggle('night', on);
+    nightBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    applyColor();
+  }
+  nightBtn.addEventListener('click', function () {
+    setNight(!night);
+    try { localStorage.setItem('night-mode', night ? '1' : '0'); } catch (err) {}   // remembered on this device
+  });
+  // night mode is on by default; a device that has switched it off keeps it off
+  var savedNight = null;
+  try { savedNight = localStorage.getItem('night-mode'); } catch (err) {}
+
+  function setDynamic(on) {
+    dynamic = on;
+    dynamicBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    applyColor();
+  }
+  dynamicBtn.addEventListener('click', function () {
+    setDynamic(!dynamic);
+    try { localStorage.setItem('dynamic-color', dynamic ? '1' : '0'); } catch (err) {}   // remembered on this device
+  });
+  // dynamic color is on by default, and remembered like night mode
+  var savedDynamic = null;
+  try { savedDynamic = localStorage.getItem('dynamic-color'); } catch (err) {}
+  dynamic = savedDynamic !== '0';
+  dynamicBtn.setAttribute('aria-checked', dynamic ? 'true' : 'false');
+
+  // Show color grid labels: on by default, remembered on this device
+  var gridBtn = document.getElementById('gridlabels');
+  function setGridLabels(on) {
+    gridLabels = on;
+    gridBtn.setAttribute('aria-checked', on ? 'true' : 'false');
+    root.classList.toggle('no-grid-labels', !on);
+  }
+  var savedGrid = null;
+  try { savedGrid = localStorage.getItem('grid-labels'); } catch (err) {}
+  setGridLabels(savedGrid !== '0');
+  gridBtn.addEventListener('click', function () {
+    setGridLabels(!gridLabels);
+    try { localStorage.setItem('grid-labels', gridLabels ? '1' : '0'); } catch (err) {}
+    layout();
+  });
+  setNight(savedNight !== '0');
+
+  /* ---------- Settings: Schedule check-ins (the interface only; nothing is scheduled yet) ---------- */
+  var FREQS = [15, 30, 60, 120, 180, 240, 300, 360];       // minutes between check-ins
+  var sched = { on: false, mode: 'frequency', start: 8, end: 22, freq: 3, num: 4, custom: [] };   // custom: [{ t: 'HH:MM', on }]
+  try { var savedSched = JSON.parse(localStorage.getItem('schedule') || 'null'); if (savedSched) for (var key in sched) if (key in savedSched) sched[key] = savedSched[key]; } catch (err) {}
+  function saveSched() { try { localStorage.setItem('schedule', JSON.stringify(sched)); } catch (err) {} }
+  var schedBtn = document.getElementById('sched');
+  var segBtns = document.querySelectorAll('#sched-panel .seg button');
+  function hourText(h) {                                   // 0-24 → "12 AM", "8 AM", "12 PM", ... "12 AM"
+    h = h % 24;
+    return (h % 12 === 0 ? 12 : h % 12) + (h < 12 ? ' AM' : ' PM');
+  }
+  function timeText(mins) {                                // minutes after midnight → "12:40 PM"
+    var h = Math.floor(mins / 60) % 24, m = Math.round(mins % 60);
+    if (m === 60) { h = (h + 1) % 24; m = 0; }
+    return (h % 12 === 0 ? 12 : h % 12) + (m ? ':' + (m < 10 ? '0' : '') + m : '') + (h < 12 ? ' AM' : ' PM');
+  }
+  function freqText(i) {
+    var m = FREQS[i];
+    return m < 60 ? 'Every ' + m + ' minutes' : m === 60 ? 'Every hour' : 'Every ' + (m / 60) + ' hours';
+  }
+
+  // A slider: steps 0..max, one or two handles; handles never cross (and two keep one step apart)
+  function makeSlider(el, max, values, onChange, valueText, stops) {
+    var knobs = el.querySelectorAll('.knob'), fill = el.querySelector('.fill');
+    if (stops) for (var i = 0; i <= max; i++) {
+      var d = document.createElement('i'); d.className = 'stop';
+      d.style.left = 'calc(var(--knob) / 2 + (100% - var(--knob)) * ' + (i / max) + ')';
+      el.querySelector('.rail-group').appendChild(d);   // faded with the line, as one
+    }
+    function at(v) { return 'calc(var(--knob) / 2 + (100% - var(--knob)) * ' + (v / max) + ')'; }
+    function draw() {
+      for (var i = 0; i < knobs.length; i++) {
+        knobs[i].style.left = at(values[i]);
+        knobs[i].setAttribute('aria-valuemin', i === 1 ? values[0] + 1 : 0);
+        knobs[i].setAttribute('aria-valuemax', i === 0 && knobs.length > 1 ? values[1] - 1 : max);
+        knobs[i].setAttribute('aria-valuenow', values[i]);
+        knobs[i].setAttribute('aria-valuetext', valueText(values[i], i));
+      }
+      if (fill) { fill.style.left = at(values[0]); fill.style.width = 'calc((100% - var(--knob)) * ' + ((values[1] - values[0]) / max) + ')'; }
+    }
+    function set(i, v) {
+      v = Math.max(0, Math.min(max, Math.round(v)));
+      if (knobs.length > 1) v = i === 0 ? Math.min(v, values[1] - 1) : Math.max(v, values[0] + 1);
+      if (v === values[i]) return;
+      values[i] = v; draw(); onChange(values);
+    }
+    function valueAt(e) {
+      var r = el.getBoundingClientRect(), k = parseFloat(getComputedStyle(el).getPropertyValue('--knob')) || 22;
+      return (e.clientX - r.left - k / 2) / (r.width - k) * max;
+    }
+    var active = -1;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      var v = valueAt(e);
+      active = 0;                                          // the nearer handle; on a tie, the one that can move that way
+      if (knobs.length > 1) {
+        var d0 = Math.abs(v - values[0]), d1 = Math.abs(v - values[1]);
+        active = d1 < d0 || (d1 === d0 && v > values[1]) ? 1 : 0;
+      }
+      knobs[active].classList.add('dragging');
+      knobs[active].focus({ preventScroll: true });
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      set(active, v);
+      e.preventDefault();
+    });
+    el.addEventListener('pointermove', function (e) { if (active >= 0) set(active, valueAt(e)); });
+    function end() { if (active >= 0) knobs[active].classList.remove('dragging'); active = -1; }
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    for (var j = 0; j < knobs.length; j++) (function (i) {
+      knobs[i].addEventListener('keydown', function (e) {
+        var step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+        if (step) set(i, values[i] + step);
+        else if (e.key === 'Home') set(i, 0);
+        else if (e.key === 'End') set(i, max);
+        else return;
+        e.preventDefault();
+      });
+    })(j);
+    draw();
+  }
+
+  function updateSchedText() {
+    document.getElementById('v-range').textContent = hourText(sched.start) + ' – ' + hourText(sched.end);
+    document.getElementById('v-freq').textContent = freqText(sched.freq);
+    document.getElementById('v-num').textContent = sched.num + (sched.num === 1 ? ' check-in' : ' check-ins');
+    var span = (sched.end - sched.start) * 60;
+    var count = Math.floor(span / FREQS[sched.freq]) + 1;
+    document.getElementById('p-freq').textContent = count + (count === 1 ? ' check-in' : ' check-ins') +
+      ' a day, from ' + hourText(sched.start) + ' to ' + timeText(sched.start * 60 + (count - 1) * FREQS[sched.freq]);
+    var times = [];
+    for (var i = 0; i < sched.num; i++) times.push(timeText(sched.start * 60 + (sched.num === 1 ? 0 : span * i / (sched.num - 1))));
+    document.getElementById('p-num').textContent = times.join('  ·  ');
+  }
+  var rangeVals = [sched.start, sched.end], freqVals = [sched.freq], numVals = [sched.num - 1];
+  makeSlider(document.getElementById('s-range'), 24, rangeVals,
+    function (v) { sched.start = v[0]; sched.end = v[1]; updateSchedText(); saveSched(); },
+    function (v, i) { return (i ? 'End ' : 'Start ') + hourText(v); });
+  makeSlider(document.getElementById('s-freq'), FREQS.length - 1, freqVals,
+    function (v) { sched.freq = v[0]; updateSchedText(); saveSched(); },
+    function (v) { return freqText(v); }, true);
+  makeSlider(document.getElementById('s-num'), 11, numVals,
+    function (v) { sched.num = v[0] + 1; updateSchedText(); saveSched(); },
+    function (v) { return (v + 1) + ((v + 1) === 1 ? ' check-in' : ' check-ins'); }, true);
+
+  function showSched() {
+    schedBtn.setAttribute('aria-checked', sched.on ? 'true' : 'false');
+    root.classList.toggle('sched-on', sched.on);
+    for (var i = 0; i < segBtns.length; i++) {
+      var on = segBtns[i].getAttribute('data-mode') === sched.mode;
+      segBtns[i].setAttribute('aria-checked', on ? 'true' : 'false');
+      segBtns[i].tabIndex = on ? 0 : -1;
+      if (on) segBtns[i].parentNode.style.setProperty('--seg-i', i);   // slide the filled pill here
+    }
+    document.getElementById('f-range').hidden = sched.mode === 'custom';
+    document.getElementById('f-freq').hidden = sched.mode !== 'frequency';
+    document.getElementById('f-num').hidden = sched.mode !== 'number';
+    document.getElementById('f-custom').hidden = sched.mode !== 'custom';
+    if (sched.mode !== 'custom') closeNewTime();
+    renderCustom();
+    updateSchedText();
+  }
+
+  // Custom times: each row is the time on the left and its own toggle on the right
+  var ciList = document.getElementById('ci-list'), ciAdd = document.getElementById('ci-add');
+  var newRow = document.getElementById('new-time'), newInput = document.getElementById('new-time-input');
+  if (!Array.isArray(sched.custom)) sched.custom = [];
+  function hhmmText(t) {                                   // "13:05" → "1:05 PM"
+    var h = +t.slice(0, 2), m = t.slice(3, 5);
+    return (h % 12 === 0 ? 12 : h % 12) + ':' + m + (h < 12 ? ' AM' : ' PM');
+  }
+  function renderCustom() {
+    sched.custom.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
+    ciList.innerHTML = sched.custom.map(function (c, i) {
+      return '<button type="button" class="switch ci" role="switch" data-i="' + i + '" aria-checked="' + (c.on ? 'true' : 'false') +
+             '" aria-label="' + hhmmText(c.t) + ' check-in"><span class="words">' + hhmmText(c.t) +
+             '</span><span class="track" aria-hidden="true"><span class="thumb"></span></span></button>';
+    }).join('');
+  }
+  ciList.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.ci');
+    if (!b) return;
+    var c = sched.custom[+b.getAttribute('data-i')];
+    c.on = !c.on;
+    b.setAttribute('aria-checked', c.on ? 'true' : 'false');
+    saveSched();
+  });
+  function openNewTime() {
+    var now = new Date();                                  // start on the next whole hour
+    var h = (now.getHours() + 1) % 24;
+    newInput.value = (h < 10 ? '0' : '') + h + ':00';
+    newRow.hidden = false;
+    ciAdd.hidden = true;
+    newInput.focus();
+    try { if (newInput.showPicker) newInput.showPicker(); } catch (err) {}   // open the system time picker where allowed
+  }
+  function closeNewTime() { newRow.hidden = true; ciAdd.hidden = false; }
+  // After closing the time entry, focus goes back to the + only when the keyboard was used;
+  // after a tap or click nothing is focused, so no focus ring appears around the +.
+  function afterClose(byKeyboard) {
+    if (byKeyboard) ciAdd.focus({ preventScroll: true });
+    else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function addNewTime(e) {
+    var t = newInput.value;
+    if (!/^\d\d:\d\d/.test(t)) { newInput.focus(); return; }
+    t = t.slice(0, 5);
+    var same = sched.custom.filter(function (c) { return c.t === t; })[0];
+    if (same) same.on = true;                              // already listed: just make sure it's on
+    else sched.custom.push({ t: t, on: true });
+    saveSched();
+    renderCustom();
+    closeNewTime();
+    afterClose(!e || e.detail === 0);                    // a click from the keyboard has detail 0
+  }
+  ciAdd.addEventListener('click', openNewTime);
+  document.getElementById('new-time-add').addEventListener('click', addNewTime);
+  document.getElementById('new-time-clock').addEventListener('click', function () {
+    newInput.focus();
+    try { if (newInput.showPicker) newInput.showPicker(); } catch (err) {}
+  });
+  document.getElementById('new-time-cancel').addEventListener('click', function (e) { closeNewTime(); afterClose(e.detail === 0); });
+  newInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { addNewTime(); e.preventDefault(); }
+    else if (e.key === 'Escape') { closeNewTime(); afterClose(true); e.preventDefault(); }
+  });
+  schedBtn.addEventListener('click', function () { sched.on = !sched.on; showSched(); saveSched(); });
+  for (var si = 0; si < segBtns.length; si++) {
+    segBtns[si].addEventListener('click', function () { sched.mode = this.getAttribute('data-mode'); showSched(); saveSched(); });
+    segBtns[si].addEventListener('keydown', function (e) {        // arrows move the choice, as in a radio group
+      var step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      if (!step) return;
+      var modes = ['frequency', 'number', 'custom'];
+      sched.mode = modes[(modes.indexOf(sched.mode) + step + 3) % 3];
+      showSched(); saveSched();
+      document.querySelector('#sched-panel .seg [data-mode="' + sched.mode + '"]').focus();
+      e.preventDefault();
+    });
+  }
+  showSched();
+
+  /* ---------- check-ins: commit and keep ---------- */
+  // Each check-in is { t: time in ms, mood, energy, rgb: [r, g, b] }, kept on this device.
+  var STORE = 'checkins';
+  var checkins = [];
+  try { checkins = JSON.parse(localStorage.getItem(STORE) || '[]') || []; } catch (err) { checkins = []; }
+  if (!Array.isArray(checkins)) checkins = [];
+  function saveCheckins() {
+    try { localStorage.setItem(STORE, JSON.stringify(checkins)); } catch (err) {}   // some previews forbid storage; it then lasts until reload
+  }
+
+  // The button appears once the dot has moved to a new point, and goes once that is committed.
+  var lastPoint = null, dirty = false, doneTimer = 0;
+  function pointKey() { return nMood.textContent + '/' + nEnergy.textContent; }
+  function setCommitVisible(on) {
+    commitBtn.classList.toggle('show', on);
+    commitBtn.tabIndex = on ? 0 : -1;
+  }
+  function noteMove() {
+    if (lastPoint === null) { lastPoint = pointKey(); return; }
+    if (!dirty && pointKey() !== lastPoint) {
+      dirty = true;
+      clearTimeout(doneTimer);
+      commitBtn.classList.remove('done');
+      setCommitVisible(true);
+    }
+  }
+  function colorAtPoint() {
+    // the color at the grid point the dot is on (or heading to), as the pill will show it
+    if (!pixels) return rgb || [240, 240, 240];
+    var px = Math.round(tx * CELLS) / CELLS, py = Math.round(ty * CELLS) / CELLS;
+    var x = Math.min(pw - 1, Math.max(0, Math.floor(px * pw)));
+    var y = Math.min(ph - 1, Math.max(0, Math.floor(py * ph)));
+    var k = (y * pw + x) * 4;
+    return [pixels[k], pixels[k + 1], pixels[k + 2]];
+  }
+  commitBtn.addEventListener('click', function () {
+    if (!dirty) return;
+    checkins.push({
+      t: Date.now(),
+      mood: Math.round(tx * CELLS),
+      energy: Math.round((1 - ty) * CELLS),
+      rgb: colorAtPoint()
+    });
+    saveCheckins();
+    renderDay();
+    if (typeof renderWeekPills === 'function') renderWeekPills();
+    if (typeof paintTiles === 'function') paintTiles();
+    dirty = false;
+    lastPoint = Math.round(tx * CELLS) + '/' + Math.round((1 - ty) * CELLS);
+    commitBtn.classList.add('done');            // a tick, briefly, then it goes
+    commitBtn.tabIndex = -1;
+    doneTimer = setTimeout(function () {
+      commitBtn.classList.remove('show');
+      setTimeout(function () { if (!dirty) commitBtn.classList.remove('done'); }, 250);
+    }, 700);
+  });
+
+  /* ---------- pages ---------- */
+  var PAGES = ['settings', 'check-in', 'calendar'];
+  var page = 'check-in';
+  var navLinks = document.querySelectorAll('#nav a');
+  function showPage(want) {
+    if (typeof want !== 'string') want = location.hash.slice(1);
+    page = PAGES.indexOf(want) >= 0 ? want : 'check-in';
+    PAGES.forEach(function (p) { root.classList.toggle('page-' + p, p === page); });
+    if (page === 'calendar') setLevel(calLevel);
+    for (var i = 0; i < navLinks.length; i++) {
+      if (navLinks[i].getAttribute('data-page') === page) navLinks[i].setAttribute('aria-current', 'page');
+      else navLinks[i].removeAttribute('aria-current');
+    }
+  }
+  // switching pages replaces the address instead of piling up history
+  for (var i = 0; i < navLinks.length; i++) {
+    navLinks[i].addEventListener('click', function (e) {
+      e.preventDefault();
+      var want = this.getAttribute('data-page');
+      if (want === 'calendar' && page === 'calendar') { calUp(); return; }   // already here: up a level
+      showPage(want);
+      // keep the address in step where allowed; some previews and embeds forbid changing it
+      try { history.replaceState(null, '', '#' + want); } catch (err) {}
+    });
+  }
+  window.addEventListener('hashchange', function () { showPage(); });
+
+  /* ---------- calendar: Year → Month → Day ---------- */
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+               'September', 'October', 'November', 'December'];
+  var TODAY = new Date(); TODAY.setHours(0, 0, 0, 0);
+  var Y0 = TODAY.getFullYear() - 3, Y1 = TODAY.getFullYear() + 3;   // the years you can scroll through
+  var calLevel = 'day';                              // the Calendar opens on today's Day view
+  var selDate = new Date(TODAY);                     // the day the Day view shows
+  var anchor = { y: TODAY.getFullYear(), m: TODAY.getMonth() };   // the month the Month view opens on
+  var yearBox = document.getElementById('cal-year'), yearsEl = document.getElementById('years');
+  var monthHead = document.getElementById('cal-month-head'), monthTitle = document.getElementById('month-title');
+  var monthBox = document.getElementById('cal-month'), monthsEl = document.getElementById('months');
+  var dayHead = document.getElementById('cal-day-head'), stripEl = document.getElementById('strip');
+  var dayLine = document.getElementById('day-line');
+  function daysIn(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function isToday(y, m, d) { return y === TODAY.getFullYear() && m === TODAY.getMonth() && d === TODAY.getDate(); }
+
+  // Year: each year's title, then its 12 month blocks
+  (function buildYears() {
+    var html = '';
+    for (var y = Y0; y <= Y1; y++) {
+      html += '<section class="yr" data-y="' + y + '"><h2 class="cal-title">' + y + '</h2><div class="yr-grid">';
+      for (var m = 0; m < 12; m++) {
+        var dow = new Date(y, m, 1).getDay(), n = daysIn(y, m);
+        html += '<button type="button" class="mb" data-y="' + y + '" data-m="' + m + '" aria-label="' + MONTH[m] + ' ' + y + '">' +
+                '<span class="mb-name">' + MON[m] + '</span><span class="mb-days" aria-hidden="true">';
+        for (var d = 1; d <= n; d++) {
+          var c = (dow + d - 1) % 7 + 1, row = Math.floor((dow + d - 1) / 7) + 1;
+          html += '<i data-k="' + y + '-' + m + '-' + d + '" style="grid-area:' + row + '/' + c + '"' + (isToday(y, m, d) ? ' class="today-mark"' : '') + '>' + d + '</i>';
+        }
+        html += '</span></button>';
+      }
+      html += '</div></section>';
+    }
+    yearsEl.innerHTML = html;
+  })();
+  yearsEl.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.mb');
+    if (!b) return;
+    anchor = { y: +b.getAttribute('data-y'), m: +b.getAttribute('data-m') };
+    backYear = anchor.y;                               // Month's back button returns to this year
+    setLevel('month');
+  });
+
+  // Month: one month after another; each starts with its name above the column of its 1st
+  (function buildMonths() {
+    var html = '';
+    for (var y = Y0; y <= Y1; y++) for (var m = 0; m < 12; m++) {
+      var dow = new Date(y, m, 1).getDay(), n = daysIn(y, m);
+      html += '<section class="mo" data-y="' + y + '" data-m="' + m + '">' +
+              '<div class="mo-label" style="grid-area:1/' + (dow + 1) + '">' + MON[m] + '</div>';
+      for (var d = 1; d <= n; d++) {
+        var c = (dow + d - 1) % 7 + 1, row = Math.floor((dow + d - 1) / 7) + 2;
+        html += '<button type="button" data-d="' + d + '" data-k="' + y + '-' + m + '-' + d + '" style="grid-area:' + row + '/' + c + '" aria-label="' +
+                MONTH[m] + ' ' + d + ', ' + y + '"><span' + (isToday(y, m, d) ? ' class="today-mark"' : '') + '>' + d + '</span></button>';
+      }
+      html += '</section>';
+    }
+    monthsEl.innerHTML = html;
+  })();
+  var monthSecs = monthsEl.querySelectorAll('.mo');
+
+  // Year and Month: each day's tile in the color at that day's average Energy and Mood
+  var tileEls = null, tiled = [];
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  function toLin(v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  function paintTiles() {
+    if (!tileEls) {                                   // every day tile in both views, by date
+      tileEls = {};
+      [].forEach.call(document.querySelectorAll('#years [data-k], #months [data-k]'), function (el) {
+        var k = el.getAttribute('data-k'); (tileEls[k] || (tileEls[k] = [])).push(el);
+      });
+    }
+    tiled.forEach(function (el) { el.classList.remove('tiled'); el.style.removeProperty('--tile'); el.style.removeProperty('--tile-ink'); });
+    tiled = [];
+    if (!pixels) return;                              // the field isn't drawn yet; it repaints these when it is
+    var sums = {};
+    checkins.forEach(function (c) {                   // each day's average Energy and Mood...
+      if (!c || typeof c.mood !== 'number' || typeof c.energy !== 'number') return;
+      var k = dayKey(c.t), s = sums[k] || (sums[k] = [0, 0, 0]);
+      s[0] += c.mood; s[1] += c.energy; s[2]++;
+    });
+    Object.keys(sums).forEach(function (k) {
+      var s = sums[k], fx = s[0] / s[2] / CELLS, fy = 1 - s[1] / s[2] / CELLS;
+      var x = Math.min(pw - 1, Math.max(0, Math.floor(fx * pw)));   // ...is a point on the color field; the tile takes its color
+      var y = Math.min(ph - 1, Math.max(0, Math.floor(fy * ph)));
+      var o = (y * pw + x) * 4, rgb = [pixels[o], pixels[o + 1], pixels[o + 2]];
+      var L = 0.2126 * toLin(rgb[0]) + 0.7152 * toLin(rgb[1]) + 0.0722 * toLin(rgb[2]);   // the number in whichever of black or white reads better
+      var ink = (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? '#000' : '#fff';
+      var color = 'rgb(' + rgb.join(',') + ')';
+      (tileEls[k] || []).forEach(function (el) {
+        el.classList.add('tiled'); el.style.setProperty('--tile', color); el.style.setProperty('--tile-ink', ink);
+        tiled.push(el);
+      });
+    });
+  }
+  paintTiles();
+  monthsEl.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b) return;
+    var sec = b.parentNode;
+    selDate = new Date(+sec.getAttribute('data-y'), +sec.getAttribute('data-m'), +b.getAttribute('data-d'));
+    backMonth = { y: selDate.getFullYear(), m: selDate.getMonth() };   // Week's back button returns to this month
+    weekStart = sundayOf(selDate);
+    setLevel('week');
+  });
+  // the title names the month at the top of the scroll
+  function monthName(y, m) { return MONTH[m] + (y === TODAY.getFullYear() ? '' : ' ' + y); }
+  function updateMonthTitle() {
+    var st = monthBox.scrollTop + 2, cur = monthSecs[0];
+    for (var i = 0; i < monthSecs.length; i++) { if (monthSecs[i].offsetTop <= st) cur = monthSecs[i]; else break; }
+    var y = +cur.getAttribute('data-y'), m = +cur.getAttribute('data-m');
+    var t = monthName(y, m);
+    if (monthTitle.textContent !== t) monthTitle.textContent = t;
+    anchor = { y: y, m: m };
+  }
+  monthBox.addEventListener('scroll', updateMonthTitle);
+  monthTitle.textContent = monthName(anchor.y, anchor.m);
+
+  // Day: the week strip, the date line, and the timeline for selDate
+  // The bar of dates stays put; only its dates change when the day moves into another week.
+  // One circle sits behind the chosen date and glides to the next one.
+  var stripWeek = null, stripDot = null;
+  function renderStrip(glide) {
+    var start = new Date(selDate); start.setDate(start.getDate() - start.getDay());
+    if (!stripWeek || stripWeek.getTime() !== start.getTime()) {
+      var html = '<span class="strip-dot" aria-hidden="true"></span>';
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(start); d.setDate(start.getDate() + i);
+        html += '<button type="button" data-t="' + d.getTime() + '" aria-label="' +
+                d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + '"' +
+                (sameDay(d, TODAY) ? ' class="today"' : '') + '><span>' + d.getDate() + '</span></button>';
+      }
+      var oldI = stripDot ? stripEl.style.getPropertyValue('--strip-i') : null;
+      stripEl.innerHTML = html;
+      stripDot = stripEl.querySelector('.strip-dot');
+      stripWeek = start;
+      if (oldI !== null && glide) {                       // a new week: start from where the circle was, then glide
+        stripEl.classList.add('no-glide');
+        stripEl.style.setProperty('--strip-i', oldI);
+        void stripEl.offsetWidth;
+        stripEl.classList.remove('no-glide');
+      }
+    }
+    var btns = stripEl.querySelectorAll('button');
+    for (var j = 0; j < btns.length; j++) {
+      var on = sameDay(new Date(+btns[j].getAttribute('data-t')), selDate);
+      btns[j].classList.toggle('sel', on);
+      if (on) btns[j].setAttribute('aria-current', 'date'); else btns[j].removeAttribute('aria-current');
+    }
+    if (!glide) stripEl.classList.add('no-glide');         // opening the view: no glide, just place it
+    stripEl.style.setProperty('--strip-i', selDate.getDay());
+    if (!glide) { void stripEl.offsetWidth; stripEl.classList.remove('no-glide'); }
+    var before = dayHead.offsetHeight;
+    dayLine.textContent = selDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+      .replace(/(\w+) (\d+), (\d+)$/, '$1\u00a0$2,\u00a0$3');   // a long title wraps after the weekday, never inside the date
+    if (dayHead.offsetHeight !== before) placeDayTimeline();   // one line or two: the timeline starts under it
+  }
+  stripEl.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b || swiped) return;
+    var d = new Date(+b.getAttribute('data-t'));
+    if (!sameDay(d, selDate)) changeDay(d < selDate ? -1 : 1, d);
+  });
+  function changeDay(step, to) {
+    var d = to ? new Date(to) : new Date(selDate.getFullYear(), selDate.getMonth(), selDate.getDate() + step);
+    if (d.getFullYear() < Y0 || d.getFullYear() > Y1) return;
+    selDate = d;
+    renderStrip(true);
+    renderDay();
+    [dayLine, dayBox].forEach(function (el) {         // the title and timeline slide in the direction of travel; the bar stays
+      el.classList.remove('slide-next', 'slide-prev'); void el.offsetWidth;
+      el.classList.add(step > 0 ? 'slide-next' : 'slide-prev');
+    });
+  }
+  // swipe left for the next day, right for the day before
+  var swipe = null, swiped = false;
+  [dayHead, dayBox].forEach(function (el) {
+    el.addEventListener('pointerdown', function (e) { swipe = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+    el.addEventListener('pointerup', function (e) {
+      if (!swipe || e.pointerId !== swipe.id) return;
+      var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+      swipe = null;
+      if (justPinched()) return;                       // two fingers zooming, not a swipe
+      if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) {
+        changeDay(dx < 0 ? 1 : -1);
+        swiped = true;                               // a swipe that ends on a date shouldn't also pick it
+        setTimeout(function () { swiped = false; }, 0);
+      }
+    });
+    el.addEventListener('pointercancel', function () { swipe = null; });
+  });
+
+  function scrollYearTo(y) {
+    var sec = yearsEl.querySelector('.yr[data-y="' + y + '"]');
+    if (sec) yearBox.scrollTop = sec.offsetTop - (parseFloat(yearsEl.style.paddingTop) || 0);
+  }
+  function scrollMonthTo(y, m) {
+    var sec = monthsEl.querySelector('.mo[data-y="' + y + '"][data-m="' + m + '"]');
+    if (sec) monthBox.scrollTop = sec.offsetTop;
+    updateMonthTitle();
+  }
+  function setLevel(level) {
+    calLevel = level;
+    ['year', 'month', 'week', 'day', 'entry'].forEach(function (l) { root.classList.toggle('cal-' + l, l === level); });
+    if (level !== 'entry' && reviewEntry) closeReview();
+    if (level === 'year') scrollYearTo(anchor.y);
+    if (level === 'month') scrollMonthTo(anchor.y, anchor.m);
+    if (level === 'week') { renderWeekLine(); placeWeek(); }
+    if (level === 'day') { renderStrip(); renderDay(); placeDayTimeline(); }
+    if (level === 'entry') layoutReview();
+    updateBack();
+  }
+  // back: Day → its week, Week → the month you came from, Month → the year you came from
+  var backYear = TODAY.getFullYear(), backMonth = { y: TODAY.getFullYear(), m: TODAY.getMonth() };
+  var calBack = document.getElementById('cal-back'), calBackLabel = document.getElementById('cal-back-label');
+  function updateBack() {
+    var label = calLevel === 'month' ? String(backYear)
+              : calLevel === 'week' ? monthName(backMonth.y, backMonth.m)
+              : calLevel === 'day' ? weekRange(sundayOf(selDate), true)
+              : calLevel === 'entry' ? selDate.toLocaleDateString('en-US', { weekday: 'long' }) : '';
+    calBackLabel.textContent = label;
+    calBack.setAttribute('aria-label', 'Back to ' + (calLevel === 'week' ? MONTH[backMonth.m] + ' ' + backMonth.y
+                                                    : calLevel === 'day' ? 'the week of ' + weekRange(sundayOf(selDate))
+                                                    : calLevel === 'entry' ? selDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : label));
+    calBack.tabIndex = calLevel === 'year' ? -1 : 0;
+  }
+  function calUp() {
+    if (calLevel === 'entry') setLevel('day');
+    else if (calLevel === 'day') { weekStart = sundayOf(selDate); setLevel('week'); }
+    else if (calLevel === 'week') { anchor = { y: backMonth.y, m: backMonth.m }; backYear = backMonth.y; setLevel('month'); }
+    else if (calLevel === 'month') { anchor = { y: backYear, m: anchor.m }; setLevel('year'); }
+  }
+  calBack.addEventListener('click', calUp);
+  document.addEventListener('keydown', function (e) {
+    if (page !== 'calendar' || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Escape') { calUp(); e.preventDefault(); }
+    else if (calLevel === 'day' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      changeDay(e.key === 'ArrowRight' ? 1 : -1); e.preventDefault();
+    }
+    else if (calLevel === 'week' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      changeWeek(e.key === 'ArrowRight' ? 1 : -1); e.preventDefault();
+    }
+  });
+
+  // Sizes and places for all three levels
+  var calGeo = null;
+  function layoutCalendar(rowX, rowW, x, right, edgeTop, edgeBottom) {
+    calGeo = { rowX: rowX, rowW: rowW, x: x, right: right, edgeTop: edgeTop, edgeBottom: edgeBottom };
+    var rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var titleFs = 1.75 * rem, EDGE = 16;
+    var TAP = 44, barTop = edgeTop + 4;                // the back bar along the top
+    calBack.style.left = (rowX - 8) + 'px';            // its chevron lines up with the titles below
+    calBack.style.top = barTop + 'px';
+    edgeTop = barTop + TAP - EDGE / 2;                 // everything below starts under the bar
+    calGeo.contentTop = edgeTop;
+    var H = edgeBottom - edgeTop;
+
+    // Year: pick the number of columns that gives the biggest days with a whole year on screen
+    var availW = right - x, availH = H - EDGE - (titleFs + EDGE) - EDGE;
+    var best = { cell: 0, cols: 3 };
+    [2, 3, 4, 6].forEach(function (cols) {
+      var rows = 12 / cols;
+      var byW = availW / (7 * cols + 1.4 * (cols - 1));
+      var byH = availH / (7.4 * rows + 1.2 * (rows - 1));
+      var c = Math.min(byW, byH);
+      if (c > best.cell) best = { cell: c, cols: cols };
+    });
+    // every size a whole number of physical pixels, so the day tiles and the gaps between them land on whole pixels
+    var fl = function (v) { return Math.floor(v * DPR) / DPR; };
+    var cell = fl(Math.min(40, best.cell));
+    var gx = snap(cell * 1.4), gy = snap(cell * 1.2);
+    var gridW = best.cols * 7 * cell + (best.cols - 1) * gx;
+    yearBox.style.top = snap(edgeTop) + 'px';
+    yearBox.style.height = H + 'px';
+    yearBox.style.setProperty('--ycols', best.cols);
+    yearBox.style.setProperty('--ycell', cell + 'px');
+    yearBox.style.setProperty('--yblock', 7 * cell + 'px');
+    yearBox.style.setProperty('--ygapx', gx + 'px');
+    yearBox.style.setProperty('--ygapy', gy + 'px');
+    yearBox.style.setProperty('--yname', snap(cell * 1.4) + 'px');
+    yearBox.style.setProperty('--ytitle-gap', (snap(titleFs + EDGE) - titleFs) + 'px');
+    yearsEl.style.padding = EDGE + 'px 0 0 ' + snap(x + (availW - gridW) / 2) + 'px';
+
+    // Month: the title and S M T W T F S stay put; the months scroll below them
+    var mcell = rowW / 7, mcol = Math.floor(mcell * DPR) / DPR;
+    monthHead.style.left = monthBox.style.left = snap(rowX + (rowW - 7 * mcol) / 2) + 'px';
+    monthHead.style.setProperty('--mcol', mcol + 'px'); monthBox.style.setProperty('--mcol', mcol + 'px');
+    monthHead.style.width = monthBox.style.width = rowW + 'px';
+    monthHead.style.top = (edgeTop + EDGE) + 'px';
+    monthHead.style.height = 'auto';
+    monthHead.querySelector('.wk').style.marginTop = EDGE + 'px';
+    var mhBottom = monthHead.getBoundingClientRect().bottom;
+    monthBox.style.top = snap(mhBottom + 4) + 'px';
+    monthBox.style.height = Math.max(0, edgeBottom - mhBottom - 4) + 'px';
+    monthBox.style.setProperty('--mrow', snap(Math.max(44, Math.min(64, mcell * 0.9))) + 'px');
+    monthBox.style.setProperty('--mlabel', '34px');
+    monthBox.style.setProperty('--mcircle', Math.min(36, Math.max(30, mcell * 0.7)) + 'px');
+
+    // Day: the week strip and date line, then the timeline
+    dayHead.style.left = rowX + 'px';
+    dayHead.style.width = rowW + 'px';
+    dayHead.style.top = (edgeTop + EDGE) + 'px';
+    dayHead.style.height = 'auto';
+    dayHead.querySelector('.wk').style.marginTop = (1.5 * EDGE - 0.075 * titleFs) + 'px';   // room under the title
+    placeDayTimeline();
+    if (calLevel === 'entry') layoutReview();
+
+    // Week: the date range line, then the seven days
+    weekHead.style.left = rowX + 'px';
+    weekHead.style.width = rowW + 'px';
+    weekHead.style.top = (edgeTop + EDGE) + 'px';
+    weekHead.style.height = 'auto';
+    placeWeek();
+    if (calLevel === 'year' && !calGeo.scrolled) { scrollYearTo(anchor.y); calGeo.scrolled = true; }
+  }
+  function placeDayTimeline() {
+    if (!calGeo) return;
+    var bottom = dayHead.getBoundingClientRect().bottom + 16;   // room under the dates
+    layoutDay(calGeo.x, calGeo.right, bottom, calGeo.edgeBottom);
+  }
+  /* ---------- Week: SUN to SAT down the side, a line at each midnight ---------- */
+  var weekHead = document.getElementById('cal-week-head'), weekLine = document.getElementById('week-line');
+  var weekBox = document.getElementById('week'), weekSvg = document.getElementById('week-svg');
+  var DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  var weekStart = sundayOf(TODAY), weekGeo = null;
+  function sundayOf(d) { var s = new Date(d.getFullYear(), d.getMonth(), d.getDate()); s.setDate(s.getDate() - s.getDay()); return s; }
+  // "October 25 – 31, 2026", "November 29 – December 5, 2026", "December 27, 2026 – January 2, 2027";
+  // short: "Oct 25 – 31"
+  function weekRange(start, short) {
+    var end = new Date(start); end.setDate(start.getDate() + 6);
+    var M = short ? MON : MONTH;
+    if (short) return M[start.getMonth()] + ' ' + start.getDate() + ' – ' +
+                      (end.getMonth() === start.getMonth() ? '' : M[end.getMonth()] + ' ') + end.getDate();
+    if (start.getFullYear() !== end.getFullYear())
+      return M[start.getMonth()] + ' ' + start.getDate() + ', ' + start.getFullYear() + ' – ' + M[end.getMonth()] + ' ' + end.getDate() + ', ' + end.getFullYear();
+    return M[start.getMonth()] + ' ' + start.getDate() + ' – ' +
+           (end.getMonth() === start.getMonth() ? '' : M[end.getMonth()] + ' ') + end.getDate() + ', ' + end.getFullYear();
+  }
+  function renderWeekLine() { weekLine.textContent = weekRange(weekStart); }
+  function placeWeek() {
+    if (!calGeo) return;
+    var top = weekHead.getBoundingClientRect().bottom + 4, bottom = calGeo.edgeBottom;   // a little space under the title, as in Month
+    var x = calGeo.x, right = calGeo.right;
+    var fs = parseFloat(getComputedStyle(weekBox).getPropertyValue('--hour-fs')) * parseFloat(getComputedStyle(root).fontSize) || 12;
+    var cap = measure('H', 400).asc * fs;
+    // the label column is as wide as the Day view's, so the lines start in the same place in both
+    var widest = 0;
+    DAYS.forEach(function (d) { widest = Math.max(widest, measure(d, 400).right * fs); });
+    widest = Math.max(widest, measure('30', 400).right * fs * 2);   // the dates are twice the size
+    for (var n = 0; n <= 24; n++) widest = Math.max(widest, measure(dayRows[n][0].textContent, 400).right * fs);
+    var lineX = x + widest + fs * 0.75, w = Math.max(0, right - lineX);
+    var inset = Math.max(12, fs), V = Math.max(1, bottom - top);
+    var band = Math.max(cap * 6, (V - 2 * inset) / 7);          // the whole week on screen, scrolling only when a day can't fit its date and name
+    weekBox.style.top = snap(top) + 'px';
+    weekBox.style.height = snap(V) + 'px';
+    weekBox.style.setProperty('--fade', inset * 0.6 + 'px');
+    weekSvg.setAttribute('height', 7 * band + 2 * inset);
+    var NS = 'http://www.w3.org/2000/svg', html = [];
+    weekSvg.innerHTML = '';
+    for (var i = 0; i <= 7; i++) {
+      var y = snap(inset + i * band);
+      if (i < 7) {                                             // a tap area for the day, under everything else
+        var area = document.createElementNS(NS, 'rect');
+        area.setAttribute('class', 'band'); area.setAttribute('data-i', i);
+        area.setAttribute('x', 0); area.setAttribute('width', '100%');
+        area.setAttribute('y', y); area.setAttribute('height', band);
+        weekSvg.appendChild(area);
+      }
+      var ln = document.createElementNS(NS, 'rect');           // the line at this day's 12 AM
+      ln.setAttribute('x', lineX); ln.setAttribute('width', w);
+      ln.setAttribute('y', y); ln.setAttribute('height', GW);
+      weekSvg.appendChild(ln);
+      if (i < 7) {
+        // the date, twice the size, with the day's name under it, each centered in the label column, the pair centered between its day's two midnight lines
+        var dd = new Date(weekStart); dd.setDate(weekStart.getDate() + i);
+        var fsD = fs * 2, capD = cap * 2, gap = cap, mid = inset + (i + 0.5) * band + GW / 2, pairTop = mid - (capD + gap + cap) / 2;
+        [[String(dd.getDate()), pairTop + capD, fsD], [DAYS[i], pairTop + capD + gap + cap, fs]].forEach(function (row) {
+          var t = document.createElementNS(NS, 'text'), m = measure(row[0], 400);
+          t.textContent = row[0];
+          place(t, x + widest / 2 - (m.left + m.right) / 2 * row[2], row[1], row[2]);   // centered on the column; row[1] is the baseline
+          weekSvg.appendChild(t);
+        });
+      }
+    }
+    weekGeo = { x: lineX, w: w, inset: inset, band: band };
+    renderWeekPills();
+  }
+  // this week's check-ins: pills at their time of day within their day, as wide as the lines
+  function renderWeekPills() {
+    if (!weekGeo) return;
+    [].slice.call(weekSvg.querySelectorAll('.pill')).forEach(function (el) { el.remove(); });
+    var ph = Math.max(8, Math.min(14, weekGeo.band * 0.12));
+    var end = new Date(weekStart); end.setDate(weekStart.getDate() + 7);
+    checkins.forEach(function (c) {
+      var d = new Date(c.t);
+      if (d < weekStart || d >= end) return;
+      var day = Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - weekStart) / 864e5 + 0.5);
+      var mins = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+      var y = weekGeo.inset + day * weekGeo.band + mins / 1440 * weekGeo.band;
+      y = Math.max(weekGeo.inset + day * weekGeo.band + ph / 2 + 1, Math.min(weekGeo.inset + (day + 1) * weekGeo.band - ph / 2 - 1, y));   // stays inside its day
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('class', 'pill');
+      el.setAttribute('x', weekGeo.x); el.setAttribute('width', Math.max(0, weekGeo.w));
+      el.setAttribute('y', y - ph / 2); el.setAttribute('height', ph);
+      el.setAttribute('rx', ph / 2); el.setAttribute('ry', ph / 2);
+      el.style.fill = 'rgb(' + c.rgb.join(',') + ')';
+      weekSvg.appendChild(el);
+    });
+  }
+  // tap a day to open it
+  weekSvg.addEventListener('click', function (e) {
+    if (weekSwiped) return;
+    var r = weekSvg.getBoundingClientRect();
+    var i = Math.floor((e.clientY - r.top - weekGeo.inset) / weekGeo.band);
+    if (i < 0 || i > 6) return;
+    selDate = new Date(weekStart); selDate.setDate(weekStart.getDate() + i);
+    setLevel('day');
+  });
+  function changeWeek(step) {
+    var d = new Date(weekStart); d.setDate(weekStart.getDate() + 7 * step);
+    if (d.getFullYear() < Y0 || d.getFullYear() > Y1) return;
+    weekStart = d;
+    renderWeekLine();
+    placeWeek();                                         // the title may now take one line or two
+    updateBack();
+    [weekHead, weekBox].forEach(function (el) {
+      el.classList.remove('slide-next', 'slide-prev'); void el.offsetWidth;
+      el.classList.add(step > 0 ? 'slide-next' : 'slide-prev');
+    });
+  }
+  // swipe left for the next week, right for the week before
+  var weekSwipe = null, weekSwiped = false;
+  [weekHead, weekBox].forEach(function (el) {
+    el.addEventListener('pointerdown', function (e) { weekSwipe = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+    el.addEventListener('pointerup', function (e) {
+      if (!weekSwipe || e.pointerId !== weekSwipe.id) return;
+      var dx = e.clientX - weekSwipe.x, dy = e.clientY - weekSwipe.y;
+      weekSwipe = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) {
+        changeWeek(dx < 0 ? 1 : -1);
+        weekSwiped = true; setTimeout(function () { weekSwiped = false; }, 0);
+      }
+    });
+    el.addEventListener('pointercancel', function () { weekSwipe = null; });
+  });
+
+  /* ---------- a check-in, opened from Day view ---------- */
+  var reviewBox = document.getElementById('review'), rvInner = document.getElementById('rv-inner');
+  var rvHead = document.getElementById('rv-head'), rvField = document.getElementById('rv-field');
+  var rvGrid = document.getElementById('rv-grid'), rvDot = document.getElementById('rv-dot');
+  var rvNote = document.getElementById('rv-note'), rvGeo = null, rvTitle = { date: '', time: '' };
+  // tap a check-in in Day view to open it
+  dayBox.addEventListener('click', function (e) {
+    var pill = e.target.closest && e.target.closest('rect.pill');
+    if (!pill || swiped || justPinched()) return;
+    var t = +pill.getAttribute('data-t');
+    var c = checkins.filter(function (x) { return x.t === t; })[0];
+    if (c) openReview(c);
+  });
+  function openReview(c) {
+    reviewEntry = c;
+    rvNote.value = c.note || '';
+    var d = new Date(c.t);
+    // "Tuesday, Oct 27, 2026 · 2:30 PM": when it wraps, the time moves down whole and "Oct 27" never splits
+    var NB = '\u00a0';
+    var dateTxt = d.toLocaleDateString('en-US', { weekday: 'long' }) + ', ' + MON[d.getMonth()] + NB + d.getDate() + ', ' + d.getFullYear();
+    rvTitle = { date: dateTxt, time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(' ', NB) };
+    document.getElementById('rv-n-energy').textContent = c.energy;
+    document.getElementById('rv-n-mood').textContent = c.mood;
+    applyColor();                                         // the page takes this check-in's color
+    reviewBox.scrollTop = 0;
+    setLevel('entry');
+  }
+  function closeReview() {
+    reviewEntry = null;
+    rvNote.blur();
+    applyColor();                                         // back to the check-in page's own color
+  }
+  // the note: saved as you type; the box grows with it, and the page scrolls once it's taller than the screen
+  var noteTimer = 0;
+  rvNote.addEventListener('input', function () {
+    if (!reviewEntry) return;
+    reviewEntry.note = rvNote.value;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveCheckins, 300);
+    sizeNote();
+  });
+  rvNote.addEventListener('blur', function () { clearTimeout(noteTimer); if (reviewEntry) saveCheckins(); });
+  // The scroll position can leave the square a sliver off the physical pixel grid; shift the
+  // whole square (color field, lines and dot together) by that sliver so the outer lines cover
+  // the field's edges exactly.
+  var rvSize = 0;
+  function alignReviewGrid() {
+    if (!rvSize) return;
+    rvField.style.transform = '';
+    var g = rvField.getBoundingClientRect();
+    rvField.style.transform = 'translate(' + (snap(g.left) - g.left) + 'px, ' + (snap(g.top) - g.top) + 'px)';
+    drawGridLines(rvField, rvGrid, rvSize);
+  }
+  reviewBox.addEventListener('scroll', alignReviewGrid);
+  function sizeNote() {
+    if (!rvGeo) return;
+    rvNote.style.height = 'auto';
+    var h = Math.max(rvGeo.lineH, rvNote.scrollHeight);
+    rvNote.style.height = h + 'px';
+    rvInner.style.height = Math.max(rvGeo.V, rvGeo.noteTop + h + rvGeo.gap) + 'px';
+    // keep the line being typed in view
+    if (document.activeElement === rvNote) {
+      var caretBottom = rvGeo.noteTop + h;
+      if (caretBottom > reviewBox.scrollTop + rvGeo.V - 16) reviewBox.scrollTop = caretBottom - rvGeo.V + 16;
+    }
+  }
+  // Laid out like the check-in page: the same square and type, the numbers and their labels above
+  // the grid, the note below, spaced evenly from the date at the top to the nav.
+  function layoutReview() {
+    if (!reviewEntry || !calGeo) return;
+    var c = reviewEntry, W = window.innerWidth;
+    var size = field.getBoundingClientRect().width || 280;
+    var rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var t = measure(TITLE, 400), fsT = size / (t.left + t.right);
+    var digits = measure('0123456789', 400), digitH = digits.asc + digits.desc;
+    var fsN = num.fs || 2 * ((size - GW) / CELLS) / digitH, fsL = rem;
+    var labInk = measure('MOODENERGY', 600), cap = labInk.asc;
+    var labelGap = 1.5 * (labInk.asc + labInk.desc) * fsL;
+    var blockH = digitH * fsN + labelGap + cap * fsL;
+    var fsE = fsL * 2 / 3, eInk = measure('HIGHLOWENERGYNEGATIVEPOSITIVEMOOD', 400);
+    var eH = (eInk.asc + eInk.desc) * fsE, eGap = 1.5 * eH, lab = gridLabels ? eGap + eH : 0;
+    var lineH = fsT * 1.25;
+
+    var top = calGeo.contentTop + 8, V = Math.max(1, calGeo.edgeBottom - top);   // under the back button
+    reviewBox.style.top = snap(top) + 'px';
+    reviewBox.style.height = snap(V) + 'px';
+    rvHead.style.top = (calGeo.contentTop + 16 - top) + 'px';   // where the Month title sits
+    rvHead.style.left = calGeo.rowX + 'px';
+    rvHead.style.width = calGeo.rowW + 'px';
+    // one line: "date · time"; if the time would sit alone on a second line, drop the dot
+    var NB = '\u00a0', oneLine = parseFloat(getComputedStyle(rvHead).lineHeight) * 1.5;
+    rvHead.textContent = rvTitle.date + NB + '· ' + rvTitle.time;
+    if (rvHead.offsetHeight > oneLine) {
+      rvHead.textContent = rvTitle.date + '\n' + rvTitle.time;
+      if (rvHead.offsetHeight > oneLine * 1.6) rvHead.textContent = rvTitle.date + NB + '· ' + rvTitle.time;   // the date itself wraps: keep the dot
+    }
+    var A = rvHead.offsetTop + rvHead.offsetHeight;      // under the date and time
+    var gap = Math.max(16, (V - A - blockH - (size + 2 * lab) - lineH) / 4);
+    var blockTop = A + gap, gridTop = blockTop + blockH + gap + lab, noteTop = gridTop + size + lab + gap;
+    var left = snap((W - size) / 2), cx = left + size / 2;
+
+    // numbers and their labels, spaced as on the check-in page
+    var half = num.cR && num.cL ? (num.cR - num.cL) / 2 : size / 4;
+    var base = blockTop + digits.asc * fsN, labBase = base + digits.desc * fsN + labelGap + cap * fsL;
+    function put(id, weight, x, y, fs) { var el = document.getElementById(id); var m = measure(el.textContent, weight); place(el, x - (m.right - m.left) * fs / 2, y, fs); }
+    put('rv-n-energy', 400, cx - half, base, fsN); put('rv-n-mood', 400, cx + half, base, fsN);
+    put('rv-l-energy', 600, cx - half, labBase, fsL); put('rv-l-mood', 600, cx + half, labBase, fsL);
+
+    // the grid: the same square, lines on whole physical pixels, the dot at this check-in's point
+    gridTop = snap(gridTop);
+    rvField.style.left = left + 'px'; rvField.style.top = gridTop + 'px';
+    rvField.style.width = rvField.style.height = size + 'px';
+    var pitch = (size - GW) / CELLS;
+    rvSize = size;
+    ensureField(size * DPR);
+    alignReviewGrid();
+    var fx = c.mood / CELLS, fy = 1 - c.energy / CELLS;
+    rvDot.style.left = (GW / 2 + (size - GW) * fx) + 'px';
+    rvDot.style.top = (GW / 2 + (size - GW) * fy) + 'px';
+    rvDot.style.width = rvDot.style.height = pitch + 'px';
+    rvDot.style.background = 'rgb(' + c.rgb.join(',') + ')';
+
+    // the grid's labels, as on the check-in page
+    var cy = gridTop + size / 2;
+    put('rv-e-top', 400, cx, gridTop - eGap - eInk.desc * fsE, fsE);
+    put('rv-e-bottom', 400, cx, gridTop + size + eGap + eInk.asc * fsE, fsE);
+    var el = document.getElementById('rv-e-left'), m = measure(el.textContent, 400);
+    var bx = left - eGap - eInk.desc * fsE, by = cy + (m.right - m.left) * fsE / 2;
+    place(el, bx, by, fsE); el.setAttribute('transform', 'rotate(-90 ' + bx + ' ' + by + ')');
+    el = document.getElementById('rv-e-right'); m = measure(el.textContent, 400);
+    bx = left + size + eGap + eInk.desc * fsE; by = cy - (m.right - m.left) * fsE / 2;
+    place(el, bx, by, fsE); el.setAttribute('transform', 'rotate(90 ' + bx + ' ' + by + ')');
+
+    // the note: the heading's size and style, as wide as the square
+    rvNote.style.left = left + 'px'; rvNote.style.width = size + 'px';
+    rvNote.style.top = noteTop + 'px';
+    rvNote.style.fontSize = fsT + 'px';
+    rvGeo = { V: V, gap: gap, noteTop: noteTop, lineH: lineH };
+    sizeNote();
+  }
+
+  renderStrip();
+  showPage();
+
+  /* ---------- moving the dot (mouse, touch, pen) ---------- */
+  var JUMP_MS = 210, SNAP_MS = 180, FOLLOW_MS = 90;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var activeId = null, grabX = 0, grabY = 0;
+  var dragging = false, downX = 0, downY = 0;
+  var tx = fx, ty = fy;         // where the dot is headed
+  var anim = null, frame = 0;   // a glide in progress, if any
+
+  function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+
+  // The glide's easing is 1 + (c+1)u^3 + c*u^2 with u = progress - 1. With c = 0 it is a plain
+  // ease-out; a larger c makes it run past the destination and come back. Its furthest point
+  // beyond the destination is 4c^3 / 27(c+1)^2 of the trip, so c is solved from the overshoot wanted.
+  function overshootConstant(over) {
+    var lo = 0, hi = 4;
+    for (var i = 0; i < 30; i++) {
+      var c = (lo + hi) / 2;
+      if (4 * c * c * c / (27 * (c + 1) * (c + 1)) < over) lo = c; else hi = c;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // Glide from the current position to (tx, ty). The target may keep moving while the glide
+  // runs; every frame repaints, so the colors along the way show.
+  function glide(ms, overshoot) {
+    cancelAnimationFrame(frame);
+    if (reduceMotion.matches || (fx === tx && fy === ty)) {
+      fx = tx; fy = ty; anim = null; paint();
+      return;
+    }
+    var c = 0;
+    if (overshoot) {
+      // go 12% past the destination, but never more than about a third of a cell,
+      // so the numbers never flick to a neighboring value on the way
+      var trip = Math.sqrt((tx - fx) * (tx - fx) + (ty - fy) * (ty - fy));
+      c = overshootConstant(Math.min(0.12, 0.035 / trip));
+    }
+    anim = { x0: fx, y0: fy, start: null, dur: ms, p: 0, c: c };
+    frame = requestAnimationFrame(step);
+  }
+  function step(now) {
+    if (!anim) return;
+    if (anim.start === null) anim.start = now;
+    anim.p = Math.min(1, (now - anim.start) / anim.dur);
+    var u = anim.p - 1;
+    var e = 1 + (anim.c + 1) * u * u * u + anim.c * u * u;
+    fx = clamp01(anim.x0 + (tx - anim.x0) * e);     // never past the square's edges
+    fy = clamp01(anim.y0 + (ty - anim.y0) * e);
+    if (anim.p >= 1) { fx = tx; fy = ty; anim = null; }
+    paint();
+    if (anim) frame = requestAnimationFrame(step);
+  }
+
+  // The pointer's position as a place on the square; anything outside lands on the nearest edge.
+  function pointerTarget(e) {
+    var r = field.getBoundingClientRect();
+    tx = clamp01((e.clientX - grabX - r.left - GW / 2) / (r.width  - GW));
+    ty = clamp01((e.clientY - grabY - r.top  - GW / 2) / (r.height - GW));
+  }
+  function snapTarget() {
+    tx = Math.round(tx * CELLS) / CELLS;
+    ty = Math.round(ty * CELLS) / CELLS;
+  }
+
+  // A press anywhere on the page that is not a control moves the dot.
+  document.addEventListener('pointerdown', function (e) {
+    if (activeId !== null) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (page !== 'check-in') return;
+    if (e.target && e.target.closest && e.target.closest('button, #nav')) return;
+    activeId = e.pointerId;
+    try { field.setPointerCapture(e.pointerId); } catch (err) {}
+    dot.classList.add('dragging');
+
+    if (e.target === dot) {
+      // grabbed the dot itself: stop any glide and keep the grab offset so it doesn't jump
+      cancelAnimationFrame(frame); anim = null;
+      var r = field.getBoundingClientRect();
+      grabX = e.clientX - (r.left + GW / 2 + fx * (r.width  - GW));
+      grabY = e.clientY - (r.top  + GW / 2 + fy * (r.height - GW));
+      tx = fx; ty = fy;
+      dragging = true;
+    } else {
+      // a click on the square or the background: jump to the nearest grid point,
+      // which for a background click is on the edge of the square facing the click
+      grabX = grabY = 0;
+      dragging = false; downX = e.clientX; downY = e.clientY;
+      pointerTarget(e);
+      snapTarget();
+      glide(JUMP_MS, true);
+    }
+    e.preventDefault();
+  });
+
+  field.addEventListener('pointermove', function (e) {
+    if (e.pointerId !== activeId) return;
+    if (!dragging) {
+      // the press only becomes a drag once the pointer has really moved
+      var dx = e.clientX - downX, dy = e.clientY - downY;
+      if (dx * dx + dy * dy < 16) return;
+      dragging = true;
+      pointerTarget(e);
+      glide(FOLLOW_MS, false);                      // catch up with the pointer, then follow it
+    } else {
+      pointerTarget(e);
+      if (!anim) { fx = tx; fy = ty; paint(); }     // mid-glide, the glide follows the new target
+    }
+    e.preventDefault();
+  });
+
+  // After a drag the dot settles on the nearest line intersection. After a plain click
+  // there is nothing to do: the jump it started already ends on one.
+  function release(e) {
+    if (e.pointerId !== activeId) return;
+    activeId = null;
+    dot.classList.remove('dragging');
+    if (!dragging) return;
+    dragging = false;
+    snapTarget();
+    glide(SNAP_MS, false);
+  }
+  field.addEventListener('pointerup', release);
+  field.addEventListener('pointercancel', release);
+  field.addEventListener('lostpointercapture', release);
+  dot.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  field.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  /* ---------- start ---------- */
+  layout();
+  paint();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', layout);
+  (function watchDensity() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)');
+    var again = function () { layout(); watchDensity(); };
+    if (mq.addEventListener) mq.addEventListener('change', again, { once: true });
+    else if (mq.addListener) mq.addListener(function h() { mq.removeListener(h); again(); });
+  })();
+
+  // re-fit the text once the font in use has arrived
+  function fontsArrived() {
+    if (!(document.fonts && document.fonts.load)) return;
+    var family = 'Geist';
+    var sample = TITLE + '0123456789MOODENERGYNight mode';
+    ['400', '600'].forEach(function (w) {
+      document.fonts.load(w + ' 16px "' + family + '"', sample).then(layout, function () {});
+    });
+    if (document.fonts.ready) document.fonts.ready.then(layout);
+  }
+  fontsArrived();
+
+  // an earlier version let a click on the site name switch fonts and remembered the choice; forget it
+  try { localStorage.removeItem('page-font'); } catch (err) {}
+
+  ensureField(Math.max(512, field.getBoundingClientRect().width * DPR));
+  paint();
+})();
+</script>
+</body>
+</html>
